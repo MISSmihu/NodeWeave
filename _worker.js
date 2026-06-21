@@ -2,26 +2,26 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
-import { auth } from './auth.js';
-import { oauth } from './oauth.js';
-import { account } from './account.js';
-import { posts } from './posts.js';
-import { comments } from './comments.js';
-import { level } from './level.js';
-import { users } from './users.js';
-import { coins } from './coins.js';
-import { signin } from './signin.js';
-import { badges } from './badges.js';
-import { boardsRouter } from './boards.js';
-import { achievementsRouter } from './achievements.js';
-import { notificationsRouter } from './notifications.js';
-import { followRouter } from './follow.js';
-import { siteConfig } from './site-config.js';
-import { inviteCodes } from './admin/invite-codes.js';
-import { moderation } from './admin/moderation.js';
-import { bans } from './admin/bans.js';
-import { aiConfig } from './admin/ai-config.js';
-import { siteConfigAdmin } from './admin/site-config-admin.js';
+import { auth } from './api/auth.js';
+import { oauth } from './api/oauth.js';
+import { account } from './api/account.js';
+import { posts } from './api/posts.js';
+import { comments } from './api/comments.js';
+import { level } from './api/level.js';
+import { users } from './api/users.js';
+import { coins } from './api/coins.js';
+import { signin } from './api/signin.js';
+import { badges } from './api/badges.js';
+import { boardsRouter } from './api/boards.js';
+import { achievementsRouter } from './api/achievements.js';
+import { notificationsRouter } from './api/notifications.js';
+import { followRouter } from './api/follow.js';
+import { siteConfig } from './api/site-config.js';
+import { inviteCodes } from './api/admin/invite-codes.js';
+import { moderation } from './api/admin/moderation.js';
+import { bans } from './api/admin/bans.js';
+import { aiConfig } from './api/admin/ai-config.js';
+import { siteConfigAdmin } from './api/admin/site-config-admin.js';
 
 
 // 数据库自动迁移
