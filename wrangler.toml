@@ -1,4 +1,4 @@
-﻿name = "nodeweave-api"
+﻿name = "nodeweave"
 main = "api/index.js"
 compatibility_date = "2024-09-01"
 compatibility_flags = ["nodejs_compat"]
