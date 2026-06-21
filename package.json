@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "nodeweave",
   "private": true,
   "type": "module",
@@ -9,7 +9,9 @@
     "db:migrate:remote": "wrangler d1 execute nodeweave-db --remote --file=api/migrations"
   },
   "devDependencies": {
-    "wrangler": "^3",
+    "wrangler": "^3"
+  },
+  "dependencies": {
     "hono": "^4"
   }
 }

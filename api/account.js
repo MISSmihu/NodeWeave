@@ -1,4 +1,5 @@
 // api/account.js - 账号相关：发送验证码、验证手机号、修改密码、账号删除等
+import { Hono } from 'hono';
 import { hashPassword, verifyPassword } from './lib/password.js';
 import { authUser, sign, setTokenCookie } from './lib/jwt.js';
 import { verifyTurnstile } from './lib/turnstile.js';
