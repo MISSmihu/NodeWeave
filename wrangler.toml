@@ -14,3 +14,8 @@ CLOUDINARY_URL = "cloudinary://473595321597911:PkeOohALwEeHtDuz40H_R2D3xLg@dqskg
 ENV = "production"
 TURNSTILE_SITE_KEY = "1x00000000000000000000AA"
 SITE_URL = "https://nodeweave.pages.dev"
+
+[assets]
+directory = "./"
+not_found_404 = false
+html_handling = "auto-trailing-slash"
