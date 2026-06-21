@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>撰写帖子 // NEXUS</title>
+<title>撰写帖子 // NodeWeave</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
@@ -519,7 +519,7 @@ document.getElementById('postType').value,
     tags: tags,
     savedAt: new Date().toISOString()
   };
-  localStorage.setItem('nexus_draft', JSON.stringify(draft));
+  localStorage.setItem('nodeweave_draft', JSON.stringify(draft));
   showSuccess('草稿已保存');
 });
 </script>

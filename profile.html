@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>个人主页 // NEXUS</title>
+<title>个人主页 // NodeWeave</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
@@ -165,7 +165,7 @@ async function loadProfile() {
       document.getElementById('bio').textContent = u.bio || '';
       document.getElementById('profileAvatar').textContent = (u.display_name || u.username).substring(0, 2).toUpperCase();
       document.getElementById('profileAvatar').style.background = u.avatar_color || 'var(--cyan)';
-      document.title = (u.display_name || u.username) + ' // NEXUS';
+      document.title = (u.display_name || u.username) + ' // NodeWeave';
 
       // 等级
       if (u.level) {

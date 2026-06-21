@@ -144,9 +144,9 @@ async function sendDeleteEmail(to, link, env) {
       method: "POST",
       headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: "NEXUS <noreply@nexus.dev>", to,
-        subject: "NEXUS 账号注销确认",
-        html: "<h2>账号注销确认</h2><p>点击下方链接确认注销您的NEXUS账号。此操作不可撤销。</p><p><a href=\"" + link + "\">" + link + "</a></p><p>此链接在1小时内有效，过期请重新申请。</p>",
+        from: "NodeWeave <NodeWeave@xmhcloud.com>", to,
+        subject: "NodeWeave 账号注销确认",
+        html: "<h2>账号注销确认</h2><p>点击下方链接确认注销您的NodeWeave账号。此操作不可撤销。</p><p><a href=\"" + link + "\">" + link + "</a></p><p>此链接在1小时内有效，过期请重新申请。</p>",
       }),
     });
   } catch(e) { console.error("Failed to send delete email:", e); }

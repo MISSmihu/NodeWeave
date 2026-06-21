@@ -1,11 +1,11 @@
-﻿name = "nexus-api"
+﻿name = "nodeweave-api"
 main = "api/index.js"
 compatibility_date = "2024-09-01"
 compatibility_flags = ["nodejs_compat"]
 
 [[d1_databases]]
 binding = "DB"
-database_name = "nexus-db"
+database_name = "nodeweave-db"
 database_id = ""
 
 [vars]

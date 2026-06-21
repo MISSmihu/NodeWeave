@@ -1,6 +1,6 @@
 ﻿{
-  "name": "NEXUS 赛博社区",
-  "short_name": "NEXUS",
+  "name": "NodeWeave 赛博社区",
+  "short_name": "NodeWeave",
   "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#0a0a0f",

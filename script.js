@@ -1,4 +1,4 @@
-/* ===== NEXUS // 赛博社区 交互脚本 ===== */
+/* ===== NodeWeave // 赛博社区 交互脚本 ===== */
 
 // 数字滚动动画（统计数据）
 function animateCount(el){

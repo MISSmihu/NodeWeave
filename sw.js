@@ -1,4 +1,4 @@
-﻿const CACHE = 'nexus-v1';
+﻿const CACHE = 'nodeweave-v1';
 const ASSETS = ['/','/index.html','/style.css','/script.js','/login.html'];
 
 self.addEventListener('install', e => {

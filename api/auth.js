@@ -1,4 +1,4 @@
-﻿// api/auth.js - NEXUS 认证路由
+﻿// api/auth.js - NodeWeave 认证路由
 // /api/auth/*  : 注册、邮箱验证、登录、忘记密码、重置密码
 import { Hono } from 'hono';
 import { hashPassword, verifyPassword } from './lib/password.js';
@@ -206,21 +206,21 @@ auth.post('/reset-password', async (c) => {
 
 // ====== 邮件发送辅助 ======
 async function sendVerificationEmail(to, token, env) {
-  const siteUrl = env.SITE_URL || 'https://nexus.pages.dev';
+  const siteUrl = env.SITE_URL || 'https://nodeweave.pages.dev';
   const link = `${siteUrl}/verify-email.html?token=${token}`;
-  await sendEmail(to, 'NEXUS 邮箱验证', `
-    <h2>欢迎加入 NEXUS 赛博社区</h2>
+  await sendEmail(to, 'NodeWeave 邮箱验证', `
+    <h2>欢迎加入 NodeWeave 赛博社区</h2>
     <p>请点击下方链接验证您的邮箱（1小时内有效）：</p>
     <p><a href="${link}">${link}</a></p>
     <p>如果这不是您发起的操作，请忽略此邮件。</p>
-    <p style="color:#888">// NEXUS // CYBER COMMUNITY</p>
+    <p style="color:#888">// NodeWeave // CYBER COMMUNITY</p>
   `, env);
 }
 
 async function sendPasswordResetEmail(to, token, env) {
-  const siteUrl = env.SITE_URL || 'https://nexus.pages.dev';
+  const siteUrl = env.SITE_URL || 'https://nodeweave.pages.dev';
   const link = `${siteUrl}/forgot-password.html?token=${token}`;
-  await sendEmail(to, 'NEXUS 密码重置', `
+  await sendEmail(to, 'NodeWeave 密码重置', `
     <h2>密码重置请求</h2>
     <p>请点击下方链接重置密码（1小时内有效）：</p>
     <p><a href="${link}">${link}</a></p>
@@ -240,7 +240,7 @@ async function sendEmail(to, subject, html, env) {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: 'NEXUS <noreply@nexus.dev>',
+        from: 'NodeWeave <NodeWeave@xmhcloud.com>',
         to, subject, html,
       }),
     });

@@ -59,19 +59,19 @@ async function verify(token, env) {
 // 从 Cookie 中提取 JWT 并验证，返回 payload 或 null
 async function authUser(c, env) {
   const cookie = c.req.header('Cookie') || '';
-  const match = cookie.match(/nexus_token=([^;]+)/);
+  const match = cookie.match(/nodeweave_token=([^;]+)/);
   if (!match) return null;
   return await verify(match[1], env);
 }
 
 // 设置 JWT Cookie
 function setTokenCookie(c, token) {
-  c.header('Set-Cookie', `nexus_token=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=604800`);
+  c.header('Set-Cookie', `nodeweave_token=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=604800`);
 }
 
 // 清除 JWT Cookie
 function clearTokenCookie(c) {
-  c.header('Set-Cookie', `nexus_token=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0`);
+  c.header('Set-Cookie', `nodeweave_token=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0`);
 }
 
 export { sign, verify, authUser, setTokenCookie, clearTokenCookie };

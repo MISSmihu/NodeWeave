@@ -128,7 +128,7 @@ badges.post("/seed", async (c) => {
   if (existing && existing.cnt > 0) return ok(c, { message: "已有 " + existing.cnt + " 个徽章" });
 
   const defaults = [
-    { id: "bg_newcomer", name: "初来乍到", icon: "🌱", color: "#7fff00", rarity: "common", category: "general", price: 10, desc: "欢迎加入 NEXUS" },
+    { id: "bg_newcomer", name: "初来乍到", icon: "🌱", color: "#7fff00", rarity: "common", category: "general", price: 10, desc: "欢迎加入 NodeWeave" },
     { id: "bg_poster", name: "发帖达人", icon: "📝", color: "#00f0ff", rarity: "common", category: "general", price: 30, desc: "累计发帖 10 篇" },
     { id: "bg_commenter", name: "评论家", icon: "💬", color: "#00f0ff", rarity: "common", category: "general", price: 20, desc: "累计评论 50 条" },
     { id: "bg_popular", name: "人气之星", icon: "⭐", color: "#ffd700", rarity: "rare", category: "social", price: 100, desc: "帖子被点赞 100 次" },
@@ -138,8 +138,8 @@ badges.post("/seed", async (c) => {
     { id: "bg_hacker", name: "赛博黑客", icon: "🕶️", color: "#ff003c", rarity: "epic", category: "tech", price: 300, desc: "掘金赛博世界的真相" },
     { id: "bg_mentor", name: "技术导师", icon: "🎓", color: "#9d00ff", rarity: "rare", category: "tech", price: 200, desc: "乐于帮助新人" },
     { id: "bg_social", name: "社交蝴蝶", icon: "🦋", color: "#ff69b4", rarity: "uncommon", category: "social", price: 40, desc: "关注者超过 100" },
-    { id: "bg_legend", name: "传奇缔造者", icon: "👑", color: "#ffd700", rarity: "legendary", category: "special", price: 999, desc: "NEXUS 最耀眼的明星" },
-    { id: "bg_early", name: "先驱者", icon: "🚀", color: "#00f0ff", rarity: "epic", category: "special", price: 500, desc: "NEXUS 早期用户限定" },
+    { id: "bg_legend", name: "传奇缔造者", icon: "👑", color: "#ffd700", rarity: "legendary", category: "special", price: 999, desc: "NodeWeave 最耀眼的明星" },
+    { id: "bg_early", name: "先驱者", icon: "🚀", color: "#00f0ff", rarity: "epic", category: "special", price: 500, desc: "NodeWeave 早期用户限定" },
     { id: "bg_nightowl", name: "夜猫子", icon: "🦉", color: "#8a2be2", rarity: "common", category: "social", price: 15, desc: "深夜出没的极客" },
     { id: "bg_bugcatcher", name: "Bug猎人", icon: "🐛", color: "#ff003c", rarity: "uncommon", category: "tech", price: 80, desc: "发现并报告 Bug" },
     { id: "bg_creator", name: "内容创造者", icon: "🎨", color: "#ffd700", rarity: "rare", category: "special", price: 250, desc: "原创优质内容贡献者" },

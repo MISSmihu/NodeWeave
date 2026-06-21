@@ -6,7 +6,7 @@ import { ok, err, CODE } from './lib/response.js';
 
 const oauth = new Hono();
 
-const SITE_URL = (env) => env.SITE_URL || 'https://nexus.pages.dev';
+const SITE_URL = (env) => env.SITE_URL || 'https://nodeweave.pages.dev';
 
 // ========== CSRF State 工具 ==========
 function setStateCookie(c, state) {
@@ -99,7 +99,7 @@ oauth.get('/github/callback', async (c) => {
 
   // Get user info
   const ghUser = await fetch('https://api.github.com/user', {
-    headers: { 'Authorization': `Bearer ${tokenRes.access_token}`, 'User-Agent': 'NEXUS' },
+    headers: { 'Authorization': `Bearer ${tokenRes.access_token}`, 'User-Agent': 'NodeWeave' },
   }).then(r => r.json());
 
   if (!ghUser.id) return err(c, CODE.UNAUTHORIZED, 'Failed to get GitHub user', 401);

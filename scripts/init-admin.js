@@ -1,4 +1,4 @@
-﻿// scripts/init-admin.js - NEXUS 建站脚本：创建首任站长 (owner)
+﻿// scripts/init-admin.js - NodeWeave 建站脚本：创建首任站长 (owner)
 // 用法: node scripts/init-admin.js
 // 交互式输入用户名/邮箱/密码，PBKDF2 哈希后写入 D1
 
@@ -37,7 +37,7 @@ function ask(q) { return new Promise(resolve => rl.question(q, resolve)); }
 
 async function main() {
   console.log('╔══════════════════════════════════╗');
-  console.log('║  NEXUS 建站脚本 · 创建首任站长   ║');
+  console.log('║  NodeWeave 建站脚本 · 创建首任站长   ║');
   console.log('╚══════════════════════════════════╝');
   console.log('');
 
@@ -74,10 +74,10 @@ INSERT OR IGNORE INTO site_config (id) VALUES (1);
   console.log('\n---');
   console.log('请在终端中运行以下命令写入数据库:');
   console.log('');
-  console.log(`  wrangler d1 execute nexus-db --remote --command="${sql.replace(/"/g, '\\"').replace(/\n/g, ' ')}"`);
+  console.log(`  wrangler d1 execute nodeweave-db --remote --command="${sql.replace(/"/g, '\\"').replace(/\n/g, ' ')}"`);
   console.log('');
   console.log('或保存以上 SQL 到文件后执行:');
-  console.log('  wrangler d1 execute nexus-db --remote --file=scripts/init-admin.sql');
+  console.log('  wrangler d1 execute nodeweave-db --remote --file=scripts/init-admin.sql');
   console.log('');
 
   rl.close();

@@ -25,7 +25,7 @@ import { siteConfigAdmin } from './admin/site-config-admin.js';
 
 const app = new Hono();
 app.use('*', logger());
-app.use('/api/*', cors({ origin: ['https://nexus.pages.dev', 'http://localhost:8080', 'http://127.0.0.1:8080'], credentials: true }));
+app.use('/api/*', cors({ origin: ['https://nodeweave.pages.dev', 'http://localhost:8080', 'http://127.0.0.1:8080'], credentials: true }));
 
 app.route('/api/auth', auth);
 app.route('/api/oauth', oauth);

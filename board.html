@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>板块 // NEXUS</title>
+<title>板块 // NodeWeave</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
@@ -89,7 +89,7 @@ async function loadBoard() {
   document.getElementById('boardName').textContent = (info.icon||'') + ' ' + info.name;
   document.getElementById('boardDesc').textContent = info.description || info.desc || '';
   document.getElementById('boardPostCount').textContent = (info.post_count||0) + ' 帖子';
-  document.title = info.name + ' // NEXUS';
+  document.title = info.name + ' // NodeWeave';
 
   loadPosts();
 }

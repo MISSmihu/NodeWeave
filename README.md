@@ -1,4 +1,4 @@
-# NEXUS — 赛博朋克社区论坛
+# NodeWeave — 赛博朋克社区论坛
 
 > 「未来已来，只是尚未均匀分布」
 >
@@ -115,12 +115,12 @@ npx wrangler dev
 npx wrangler login
 
 # 创建 D1 数据库
-npx wrangler d1 create nexus-db
+npx wrangler d1 create nodeweave-db
 # 将返回的 database_id 填入 wrangler.toml
 
 # 执行迁移
-npx wrangler d1 execute nexus-db --file=api/migrations/0001_users.sql
-npx wrangler d1 execute nexus-db --file=api/migrations/0002_site_config.sql
+npx wrangler d1 execute nodeweave-db --file=api/migrations/0001_users.sql
+npx wrangler d1 execute nodeweave-db --file=api/migrations/0002_site_config.sql
 # ... 依次执行全部 18 个迁移
 
 # 设置密钥
@@ -159,4 +159,4 @@ MIT
 
 ---
 
-**NEXUS** — 连接每一个创造者 ⚡
+**NodeWeave** — 连接每一个创造者 ⚡

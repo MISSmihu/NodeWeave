@@ -76,7 +76,7 @@ INSERT OR IGNORE INTO badges(id,name,description,icon,color,rarity,category,pric
 ('badge_spc_05','圣诞老人','圣诞节限定','🎅','#ff003c','rare','special',0,1,500,0),
 ('badge_spc_06','情人节','情人节限定','💘','#ff003c','epic','special',0,1,300,0),
 ('badge_spc_07','愚人节','愚人节限定','🤡','#7fff00','rare','special',0,1,500,0),
-('badge_spc_08','周年庆','NEXUS周年限定','🎂','#ffd700','legendary','special',0,1,100,0),
+('badge_spc_08','周年庆','NodeWeave周年限定','🎂','#ffd700','legendary','special',0,1,100,0),
 ('badge_spc_09','内测先锋','内测期间活跃用户','🔬','#9d00ff','legendary','special',0,1,200,0),
 ('badge_spc_10','Bug猎人','发现并提交有效Bug','🐛','#ffd700','legendary','special',0,1,50,0),
 
