@@ -1,4 +1,4 @@
-﻿name = "nodeweave"
+name = "nodeweave"
 main = "api/index.js"
 compatibility_date = "2024-09-01"
 compatibility_flags = ["nodejs_compat"]
@@ -9,6 +9,8 @@ database_name = "nodeweave-db"
 database_id = "9fb68337-7fd3-4ac7-895b-05c1aa3950d9"
 
 [vars]
+JWT_SECRET = "nw_95wq9amr0nrj0er2l75hhlgc0axvhqzm20brmssrjxq7vx7w"
+CLOUDINARY_URL = "cloudinary://473595321597911:PkeOohALwEeHtDuz40H_R2D3xLg@dqskgzuqi"
 ENV = "production"
 TURNSTILE_SITE_KEY = "1x00000000000000000000AA"
 SITE_URL = "https://nodeweave.pages.dev"
