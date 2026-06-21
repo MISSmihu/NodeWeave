@@ -6,7 +6,7 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "nodeweave-db"
-database_id = ""
+database_id = "9fb68337-7fd3-4ac7-895b-05c1aa3950d9"
 
 [vars]
 ENV = "development"
