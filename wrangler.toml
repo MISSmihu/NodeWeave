@@ -17,5 +17,4 @@ SITE_URL = "https://nodeweave.pages.dev"
 
 [assets]
 directory = "./"
-not_found_404 = false
-html_handling = "auto-trailing-slash"
+ignore = ["node_modules/**", ".git/**", ".wrangler/**", "api/**", "nexus-badges/**", "badges_prompts/**", "_rename.py", ".agents/**"]
