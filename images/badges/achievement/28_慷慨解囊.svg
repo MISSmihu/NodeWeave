@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1a1005"/>
+      <stop offset="100%" stop-color="#0a0802"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="warmGold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffd700"/>
+      <stop offset="50%" stop-color="#ffe066"/>
+      <stop offset="100%" stop-color="#daa520"/>
+    </linearGradient>
+    <linearGradient id="pink" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffb6c1"/>
+      <stop offset="100%" stop-color="#ff69b4"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="95" fill="url(#bg)"/>
+  <circle cx="100" cy="100" r="92" fill="none" stroke="#5a3a1a" stroke-width="6"/>
+  <!-- Two hands cupping -->
+  <!-- Left hand -->
+  <path d="M55,105 Q55,90 65,85 Q75,80 85,85 Q90,88 95,95" fill="none" stroke="url(#warmGold)" stroke-width="2.5" filter="url(#glow)"/>
+  <!-- Right hand -->
+  <path d="M145,105 Q145,90 135,85 Q125,80 115,85 Q110,88 105,95" fill="none" stroke="url(#warmGold)" stroke-width="2.5" filter="url(#glow)"/>
+  <!-- Cupped hands base -->
+  <path d="M55,105 Q65,130 100,130 Q135,130 145,105" fill="none" stroke="url(#warmGold)" stroke-width="2" filter="url(#glow)" opacity="0.7"/>
+  <!-- Heart between hands -->
+  <path d="M100,70 Q85,60 80,72 Q78,82 100,95 Q122,82 120,72 Q115,60 100,70 Z" fill="url(#pink)" opacity="0.3" filter="url(#glow)"/>
+  <path d="M100,70 Q85,60 80,72 Q78,82 100,95 Q122,82 120,72 Q115,60 100,70 Z" fill="none" stroke="url(#pink)" stroke-width="1.5" filter="url(#glow)"/>
+  <!-- Number 5000 -->
+  <text x="100" y="88" text-anchor="middle" fill="#ffd700" font-size="16" font-weight="bold" font-family="Arial" filter="url(#glow)">5000</text>
+  <!-- Heart particles floating up -->
+  <path d="M70,50 Q67,45 70,42 Q73,45 70,50" fill="#ff69b4" opacity="0.5" filter="url(#glow)"/>
+  <path d="M90,38 Q87,33 90,30 Q93,33 90,38" fill="#ffb6c1" opacity="0.4" filter="url(#glow)"/>
+  <path d="M110,42 Q107,37 110,34 Q113,37 110,42" fill="#ff69b4" opacity="0.5" filter="url(#glow)"/>
+  <path d="M130,48 Q127,43 130,40 Q133,43 130,48" fill="#ffb6c1" opacity="0.4" filter="url(#glow)"/>
+  <text x="100" y="160" text-anchor="middle" fill="#ffe066" font-size="11" font-family="Arial" filter="url(#glow)">慷慨解囊</text>
+</svg>

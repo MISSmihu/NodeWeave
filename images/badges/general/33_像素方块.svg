@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0a1508"/>
+      <stop offset="100%" stop-color="#050a05"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <circle cx="100" cy="100" r="95" fill="url(#bg)"/>
+  <circle cx="100" cy="100" r="92" fill="none" stroke="#1a3a1a" stroke-width="6"/>
+  <!-- 8-bit pixel heart shape -->
+  <!-- Row 1 (top) -->
+  <rect x="82" y="52" width="8" height="8" fill="#00ff88" filter="url(#glow)" opacity="0.9"/>
+  <rect x="110" y="52" width="8" height="8" fill="#00ff88" filter="url(#glow)" opacity="0.9"/>
+  <!-- Row 2 -->
+  <rect x="74" y="60" width="8" height="8" fill="#00ff88" filter="url(#glow)" opacity="0.85"/>
+  <rect x="82" y="60" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="90" y="60" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="102" y="60" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="110" y="60" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="118" y="60" width="8" height="8" fill="#00ff88" filter="url(#glow)" opacity="0.85"/>
+  <!-- Row 3 -->
+  <rect x="66" y="68" width="8" height="8" fill="#00ff88" filter="url(#glow)" opacity="0.8"/>
+  <rect x="74" y="68" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="82" y="68" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="90" y="68" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="98" y="68" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="106" y="68" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="114" y="68" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="122" y="68" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="130" y="68" width="8" height="8" fill="#00ff88" filter="url(#glow)" opacity="0.8"/>
+  <!-- Row 4 -->
+  <rect x="66" y="76" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="74" y="76" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="82" y="76" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="90" y="76" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="98" y="76" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="106" y="76" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="114" y="76" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="122" y="76" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="130" y="76" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <!-- Row 5 -->
+  <rect x="66" y="84" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="74" y="84" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="82" y="84" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="90" y="84" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="98" y="84" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="106" y="84" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="114" y="84" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="122" y="84" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="130" y="84" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <!-- Row 6 -->
+  <rect x="74" y="92" width="8" height="8" fill="#00ff88" filter="url(#glow)" opacity="0.9"/>
+  <rect x="82" y="92" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="90" y="92" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="98" y="92" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="106" y="92" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="114" y="92" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="122" y="92" width="8" height="8" fill="#00ff88" filter="url(#glow)" opacity="0.9"/>
+  <!-- Row 7 -->
+  <rect x="82" y="100" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="90" y="100" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="98" y="100" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="106" y="100" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="114" y="100" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <!-- Row 8 -->
+  <rect x="90" y="108" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="98" y="108" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <rect x="106" y="108" width="8" height="8" fill="#00ff88" filter="url(#glow)"/>
+  <!-- Row 9 -->
+  <rect x="98" y="116" width="8" height="8" fill="#00ff88" filter="url(#glow)" opacity="0.8"/>
+  <!-- Game console border -->
+  <rect x="50" y="130" width="100" height="30" rx="5" fill="none" stroke="#00cc66" stroke-width="1.5" filter="url(#glow)" opacity="0.4"/>
+  <circle cx="70" cy="145" r="4" fill="none" stroke="#00ff88" stroke-width="1" filter="url(#glow)" opacity="0.4"/>
+  <circle cx="130" cy="145" r="4" fill="none" stroke="#00ff88" stroke-width="1" filter="url(#glow)" opacity="0.4"/>
+  <text x="100" y="175" text-anchor="middle" fill="#00ff88" font-size="11" font-family="Arial" filter="url(#glow)">像素方块</text>
+</svg>

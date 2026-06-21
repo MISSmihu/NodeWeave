@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1a0505"/>
+      <stop offset="100%" stop-color="#0a0202"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="redNeon" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff0040"/>
+      <stop offset="50%" stop-color="#ff2255"/>
+      <stop offset="100%" stop-color="#cc0030"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#667788"/>
+      <stop offset="50%" stop-color="#99aabb"/>
+      <stop offset="100%" stop-color="#667788"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="95" fill="url(#bg)"/>
+  <circle cx="100" cy="100" r="92" fill="none" stroke="#3a2a2a" stroke-width="6"/>
+  <!-- Eye shape - almond -->
+  <path d="M45,100 Q100,50 155,100 Q100,150 45,100 Z" fill="none" stroke="url(#metal)" stroke-width="3"/>
+  <!-- Iris -->
+  <circle cx="100" cy="100" r="32" fill="none" stroke="url(#redNeon)" stroke-width="2" filter="url(#glow)"/>
+  <circle cx="100" cy="100" r="32" fill="#ff0040" opacity="0.1"/>
+  <!-- Iris inner rings -->
+  <circle cx="100" cy="100" r="25" fill="none" stroke="#ff2255" stroke-width="1" filter="url(#glow)" opacity="0.5"/>
+  <circle cx="100" cy="100" r="18" fill="none" stroke="#ff0040" stroke-width="0.8" filter="url(#glow)" opacity="0.4"/>
+  <!-- Circuit pupil -->
+  <circle cx="100" cy="100" r="10" fill="none" stroke="#ff0040" stroke-width="1.5" filter="url(#glow)"/>
+  <line x1="100" y1="88" x2="100" y2="112" stroke="#ff2255" stroke-width="0.5" opacity="0.6"/>
+  <line x1="88" y1="100" x2="112" y2="100" stroke="#ff2255" stroke-width="0.5" opacity="0.6"/>
+  <line x1="92" y1="92" x2="108" y2="108" stroke="#ff2255" stroke-width="0.3" opacity="0.4"/>
+  <line x1="108" y1="92" x2="92" y2="108" stroke="#ff2255" stroke-width="0.3" opacity="0.4"/>
+  <!-- Circuit lines extending from eye -->
+  <line x1="45" y1="100" x2="30" y2="95" stroke="#667788" stroke-width="1" opacity="0.4"/>
+  <line x1="155" y1="100" x2="170" y2="95" stroke="#667788" stroke-width="1" opacity="0.4"/>
+  <line x1="55" y1="80" x2="40" y2="70" stroke="#667788" stroke-width="0.8" opacity="0.3"/>
+  <line x1="145" y1="80" x2="160" y2="70" stroke="#667788" stroke-width="0.8" opacity="0.3"/>
+  <!-- Metal frame details -->
+  <circle cx="45" cy="100" r="3" fill="none" stroke="#99aabb" stroke-width="1" opacity="0.5"/>
+  <circle cx="155" cy="100" r="3" fill="none" stroke="#99aabb" stroke-width="1" opacity="0.5"/>
+  <text x="100" y="170" text-anchor="middle" fill="#ff0040" font-size="11" font-family="Arial" filter="url(#glow)">赛博之眼</text>
+</svg>

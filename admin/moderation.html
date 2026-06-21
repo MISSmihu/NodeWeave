@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>内容审核 // NEXUS ADMIN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+<style>
+.admin-layout{display:flex;min-height:100vh;padding-top:60px}
+.admin-sidebar{width:200px;background:var(--surface);border-right:1px solid var(--border);padding:20px 0;position:fixed;top:60px;bottom:0;left:0;overflow-y:auto}
+.admin-sidebar a{display:block;padding:10px 20px;color:var(--text-dim);font-family:var(--font-mono);font-size:13px;text-decoration:none}
+.admin-sidebar a:hover,.admin-sidebar a.active{color:var(--cyan);background:rgba(0,240,255,.05)}
+.admin-main{margin-left:200px;flex:1;padding:24px;max-width:1100px}
+.admin-main h2{font-family:var(--font-display);font-size:20px;color:var(--cyan);margin-bottom:20px}
+.tabs{display:flex;gap:0;margin-bottom:16px;border-bottom:1px solid var(--border)}
+.tabs button{padding:8px 16px;background:none;border:none;color:var(--text-dim);font-family:var(--font-mono);font-size:12px;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s}
+.tabs button.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.review-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:18px 20px;margin-bottom:12px}
+.review-item .meta{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--text-mute);margin-bottom:8px}
+.review-item .item-type{display:inline-block;padding:2px 8px;border-radius:3px;font-family:var(--font-mono);font-size:10px;background:rgba(0,240,255,.1);color:var(--cyan)}
+.review-item .title{font-size:15px;color:var(--text);margin-bottom:6px}
+.review-item .excerpt{font-size:13px;color:var(--text-dim);line-height:1.5;margin-bottom:10px;max-height:80px;overflow:hidden}
+.review-item .ai-badge{display:inline-block;padding:2px 8px;border-radius:3px;font-family:var(--font-mono);font-size:10px;margin-right:6px}
+.ai-safe{background:rgba(127,255,0,.1);color:var(--green)}
+.ai-sus{background:rgba(255,200,0,.1);color:#ffc800}
+.ai-violation{background:rgba(255,0,60,.1);color:var(--magenta)}
+.review-item .actions{display:flex;gap:8px;margin-top:8px}
+.review-item .actions button{padding:6px 14px;border-radius:3px;font-family:var(--font-mono);font-size:11px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-dim);transition:all .2s}
+.review-item .actions button:hover{border-color:var(--cyan);color:var(--cyan)}
+.review-item .actions .btn-danger{color:var(--magenta);border-color:var(--magenta)}
+.review-item .actions .btn-danger:hover{background:var(--magenta);color:#fff}
+.review-item .actions .btn-success{color:var(--green);border-color:var(--green)}
+.review-item .actions .btn-success:hover{background:var(--green);color:var(--bg)}
+.empty-state{text-align:center;padding:40px;color:var(--text-mute)}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div><div class="bg-scanlines"></div><div class="bg-glow"></div>
+<header class="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="logo"><span class="logo-mark">◈</span><span class="logo-text">NE<span class="x">X</span>US</span><span class="logo-sub">// ADMIN</span></a>
+    <div class="nav-actions"><a href="../index.html" class="btn-ghost">返回首页</a></div>
+  </div>
+</header>
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <a href="site-config.html">站点配置</a>
+    <a href="invite-codes.html">邀请码管理</a>
+    <a href="moderation.html" class="active">内容审核</a>
+    <a href="users.html">用户管理</a>
+    <a href="ai-config.html">AI审核配置</a>
+  </aside>
+  <main class="admin-main">
+    <h2>内容审核</h2>
+    <div class="tabs">
+      <button class="active" data-status="pending">待审核</button>
+      <button data-status="approved">已通过</button>
+      <button data-status="rejected">已驳回</button>
+    </div>
+    <div id="queueList"></div>
+  </main>
+</div>
+<script>
+let currentStatus = 'pending';
+
+document.querySelectorAll('.tabs button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentStatus = btn.dataset.status; loadQueue();
+  });
+});
+
+async function loadQueue() {
+  try {
+    const res = await fetch('/api/admin/moderation/queue?status=' + currentStatus);
+    const json = await res.json();
+    if (json.code !== 0) return;
+    const list = document.getElementById('queueList');
+    if (!json.data.items.length) { list.innerHTML = '<div class="empty-state">📋 暂无审核项</div>'; return; }
+    list.innerHTML = json.data.items.map(item => {
+      const aiBadge = item.ai_verdict ?
+        '<span class="ai-badge ai-' + (item.ai_verdict==='safe'?'safe':item.ai_verdict==='suspicious'?'sus':'violation') + '">AI: ' + item.ai_verdict + ' (' + item.ai_score + ')</span>' : '';
+      const canAct = currentStatus === 'pending';
+      return '<div class="review-item">' +
+        '<div class="meta">' +
+          '<span class="item-type">' + (item.item_type==='post'?'帖子':'评论') + '</span>' +
+          '<span>作者: ' + h(item.author_name) + '</span>' +
+          aiBadge +
+          '<span>' + new Date(item.created_at).toLocaleString('zh-CN') + '</span>' +
+        '</div>' +
+        (item.title ? '<div class="title">' + h(item.title) + '</div>' : '') +
+        '<div class="excerpt">' + h(item.excerpt || '') + '</div>' +
+        (canAct ? '<div class="actions">' +
+          '<button class="btn-success" onclick="act(\'' + item.id + '\',\'approve\')">通过</button>' +
+          '<button onclick="act(\'' + item.id + '\',\'reject\')">驳回</button>' +
+          '<button onclick="act(\'' + item.id + '\',\'delete\')">删除</button>' +
+          '<button onclick="act(\'' + item.id + '\',\'pin\')">置顶</button>' +
+          '<button onclick="act(\'' + item.id + '\',\'warn\')">警告</button>' +
+        '</div>' : '<div style="color:var(--text-mute);font-size:11px;margin-top:4px">' + (item.result||'') + '</div>') +
+      '</div>';
+    }).join('');
+  } catch(e) {}
+}
+
+window.act = async function(id, action) {
+  try {
+    const res = await fetch('/api/admin/moderation/' + id + '/action', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({action}),
+    });
+    const json = await res.json();
+    if (json.code !== 0) { alert(json.msg); return; }
+    loadQueue();
+  } catch(e) { alert('操作失败'); }
+};
+
+function h(s) { const d=document.createElement('div');d.textContent=s||'';return d.innerHTML; }
+loadQueue();
+</script>
+</body>
+</html>

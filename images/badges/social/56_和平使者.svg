@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#050a1a"/>
+      <stop offset="100%" stop-color="#020510"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00bfff"/>
+      <stop offset="50%" stop-color="#1e90ff"/>
+      <stop offset="100%" stop-color="#4169e1"/>
+    </linearGradient>
+    <linearGradient id="olive" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#808000"/>
+      <stop offset="100%" stop-color="#556b2f"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="95" fill="url(#bg)"/>
+  <circle cx="100" cy="100" r="92" fill="none" stroke="#1a2a4a" stroke-width="6"/>
+  <!-- Dove body -->
+  <path d="M70,90 Q60,75 70,60 Q85,50 110,55 Q130,60 140,75 Q145,90 135,100 Q120,108 100,105 Q85,103 75,100 Z" fill="none" stroke="url(#blue)" stroke-width="2.5" filter="url(#glow)"/>
+  <path d="M70,90 Q60,75 70,60 Q85,50 110,55 Q130,60 140,75 Q145,90 135,100 Q120,108 100,105 Q85,103 75,100 Z" fill="#00bfff" opacity="0.06"/>
+  <!-- Dove head -->
+  <circle cx="135" cy="70" r="12" fill="none" stroke="url(#blue)" stroke-width="2" filter="url(#glow)"/>
+  <!-- Dove beak -->
+  <path d="M145,68 L155,65 L145,72 Z" fill="none" stroke="#00bfff" stroke-width="1" filter="url(#glow)" opacity="0.6"/>
+  <!-- Dove eye -->
+  <circle cx="138" cy="68" r="2" fill="#00bfff" opacity="0.6" filter="url(#glow)"/>
+  <!-- Dove wing -->
+  <path d="M85,75 Q90,60 100,65 Q95,75 85,75" fill="none" stroke="#1e90ff" stroke-width="1.5" filter="url(#glow)" opacity="0.5"/>
+  <path d="M95,72 Q100,58 110,62 Q105,72 95,72" fill="none" stroke="#00bfff" stroke-width="1.2" filter="url(#glow)" opacity="0.4"/>
+  <!-- Dove tail -->
+  <path d="M70,90 L55,85 L60,95 L55,100" fill="none" stroke="#00bfff" stroke-width="1.5" filter="url(#glow)" opacity="0.5"/>
+  <!-- Olive branch -->
+  <path d="M75,100 Q60,110 50,120 Q42,125 35,130" fill="none" stroke="url(#olive)" stroke-width="2" filter="url(#glow)" opacity="0.7"/>
+  <!-- Olive leaves -->
+  <ellipse cx="60" cy="115" rx="6" ry="3" transform="rotate(-30,60,115)" fill="none" stroke="#808000" stroke-width="1" filter="url(#glow)" opacity="0.5"/>
+  <ellipse cx="50" cy="122" rx="6" ry="3" transform="rotate(-30,50,122)" fill="none" stroke="#556b2f" stroke-width="1" filter="url(#glow)" opacity="0.5"/>
+  <ellipse cx="65" cy="108" rx="6" ry="3" transform="rotate(-60,65,108)" fill="none" stroke="#808000" stroke-width="1" filter="url(#glow)" opacity="0.5"/>
+  <!-- Olive berries -->
+  <circle cx="55" cy="118" r="2" fill="#1e90ff" filter="url(#glow)" opacity="0.5"/>
+  <circle cx="45" cy="125" r="2" fill="#1e90ff" filter="url(#glow)" opacity="0.4"/>
+  <!-- Peace glow -->
+  <circle cx="100" cy="90" r="60" fill="none" stroke="#00bfff" stroke-width="0.5" opacity="0.15" filter="url(#glow)"/>
+  <text x="100" y="155" text-anchor="middle" fill="#00bfff" font-size="11" font-family="Arial" filter="url(#glow)">和平使者</text>
+</svg>

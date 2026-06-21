@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1a0a05"/>
+      <stop offset="100%" stop-color="#0a0502"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="rust" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#cc4400"/>
+      <stop offset="50%" stop-color="#ff6633"/>
+      <stop offset="100%" stop-color="#cc4400"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="95" fill="url(#bg)"/>
+  <circle cx="100" cy="100" r="92" fill="none" stroke="#4a2a10" stroke-width="6"/>
+  <!-- Outer gear ring -->
+  <path d="M100,40 L105,42 L108,35 L113,40 L112,48 L120,50 L118,56 L126,62 L120,66 L124,74 L116,74 L118,82 L110,80 L108,88 L102,84 L98,92 L94,85 L88,90 L88,82 L82,82 L84,74 L76,72 L80,66 L74,60 L82,58 L80,50 L88,50 L90,42 L96,46 Z" fill="none" stroke="url(#rust)" stroke-width="2" filter="url(#glow)"/>
+  <!-- Inner gear ring -->
+  <path d="M100,55 L103,56 L105,52 L108,55 L107,60 L112,61 L111,65 L116,68 L112,70 L114,76 L110,75 L111,80 L106,79 L105,83 L102,80 L99,84 L97,81 L93,83 L93,78 L89,78 L90,74 L86,73 L89,70 L85,67 L89,65 L88,61 L93,61 L94,56 L97,59 Z" fill="none" stroke="#ff6633" stroke-width="1.5" filter="url(#glow)" opacity="0.6"/>
+  <!-- Center circle -->
+  <circle cx="100" cy="100" r="20" fill="none" stroke="url(#rust)" stroke-width="2.5" filter="url(#glow)"/>
+  <circle cx="100" cy="100" r="20" fill="#cc4400" opacity="0.1"/>
+  <!-- Rust texture spots -->
+  <circle cx="108" cy="108" r="3" fill="#cc4400" opacity="0.3"/>
+  <circle cx="92" cy="95" r="2" fill="#ff6633" opacity="0.25"/>
+  <circle cx="105" cy="90" r="2.5" fill="#cc4400" opacity="0.2"/>
+  <!-- Rust text -->
+  <text x="100" y="106" text-anchor="middle" fill="#ff6633" font-size="14" font-weight="bold" font-family="Arial" filter="url(#glow)">Rust</text>
+  <!-- Outer ring connecting to gear -->
+  <circle cx="100" cy="100" r="55" fill="none" stroke="#cc4400" stroke-width="1" filter="url(#glow)" opacity="0.3"/>
+  <text x="100" y="145" text-anchor="middle" fill="#ff6633" font-size="11" font-family="Arial" filter="url(#glow)">Rust铁锈</text>
+</svg>

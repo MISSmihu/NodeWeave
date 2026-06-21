@@ -1,0 +1,168 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>徽章商城 // NEXUS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="js/badge-image-map.js"></script>
+<style>
+.shop-page{max-width:900px;margin:0 auto;padding:80px 24px 100px}
+.shop-page h2{font-family:var(--font-display);font-size:20px;color:var(--cyan);margin-bottom:6px}
+.shop-page .subtitle{font-size:13px;color:var(--text-mute);margin-bottom:24px}
+.balance-bar{display:flex;align-items:center;gap:16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 24px;margin-bottom:24px}
+.balance-bar .coin{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#ffd700,#ff8c00);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.balance-bar .coin-amount{font-family:var(--font-display);font-size:22px;color:#ffd700}
+.balance-bar .coin-label{font-size:12px;color:var(--text-mute)}
+.cat-tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--border)}
+.cat-tabs button{padding:8px 16px;background:none;border:none;color:var(--text-dim);font-family:var(--font-mono);font-size:12px;cursor:pointer;border-bottom:2px solid transparent}
+.cat-tabs button.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.badge-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
+.badge-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px 18px;text-align:center;position:relative;overflow:hidden;transition:all .2s}
+.badge-card:hover{border-color:var(--cyan);transform:translateY(-3px)}
+.badge-card .rarity-bar{position:absolute;top:0;left:0;right:0;height:3px}
+.badge-card .badge-shape{width:64px;height:64px;margin:8px auto 12px;display:flex;align-items:center;justify-content:center;position:relative;background:transparent!important;box-shadow:none!important}
+.badge-card .badge-shape::after{display:none}
+.badge-card .badge-name{font-family:var(--font-display);font-size:14px;color:var(--text);margin-bottom:6px}
+.badge-card .badge-desc{font-size:12px;color:var(--text-dim);margin-bottom:14px;line-height:1.4;min-height:32px}
+.badge-card .badge-price{font-family:var(--font-mono);font-size:14px;margin-bottom:12px}
+.badge-card .btn-buy{padding:7px 22px;border:none;border-radius:4px;font-family:var(--font-display);font-size:12px;cursor:pointer;font-weight:700;letter-spacing:.5px}
+.badge-card .btn-buy.owned{background:var(--surface-2)!important;color:var(--text-mute)!important;cursor:default}
+.badge-card .stock{font-size:10px;color:var(--text-mute);margin-top:6px}
+.rarity-legendary .rarity-bar{background:linear-gradient(90deg,#ffd700,#ff8c00,#ffd700)}
+.rarity-legendary{border-color:rgba(255,215,0,.25)}
+.rarity-legendary .badge-shape{filter:drop-shadow(0 0 12px rgba(255,215,0,.4))}
+.rarity-legendary .badge-shape::after{display:none}
+.rarity-legendary .badge-price{color:#ffd700}
+.rarity-legendary .btn-buy{background:linear-gradient(135deg,#ffd700,#ff8c00);color:#1a1a00}
+.rarity-epic .rarity-bar{background:linear-gradient(90deg,#9d00ff,#ff003c)}
+.rarity-epic{border-color:rgba(157,0,255,.25)}
+.rarity-epic .badge-shape{filter:drop-shadow(0 0 12px rgba(157,0,255,.4))}
+.rarity-epic .badge-shape::after{display:none}
+.rarity-epic .btn-buy{background:var(--purple);color:#fff}
+.rarity-rare .rarity-bar{background:linear-gradient(90deg,#00f0ff,#0088cc)}
+.rarity-rare{border-color:rgba(0,240,255,.25)}
+.rarity-rare .badge-shape{filter:drop-shadow(0 0 10px rgba(0,240,255,.3))}
+.rarity-rare .badge-shape::after{display:none}
+.rarity-rare .btn-buy{background:var(--cyan);color:var(--bg)}
+.rarity-uncommon .rarity-bar{background:var(--green)}
+.rarity-uncommon{border-color:rgba(127,255,0,.25)}
+.rarity-uncommon .badge-shape{filter:drop-shadow(0 0 8px rgba(127,255,0,.25))}
+.rarity-uncommon .badge-shape::after{display:none}
+.rarity-uncommon .btn-buy{background:var(--green);color:var(--bg)}
+.rarity-common .rarity-bar{background:var(--text-mute)}
+.rarity-common .badge-shape{filter:drop-shadow(0 0 6px rgba(255,255,255,.15))}
+.rarity-common .badge-shape::after{border-color:var(--text-mute)}
+.rarity-common .btn-buy{background:var(--text-mute);color:var(--bg)}
+.msg{display:none;padding:8px 12px;border-radius:4px;font-size:13px;margin-top:8px}
+.msg.show{display:block}
+.msg-ok{background:rgba(127,255,0,.1);color:var(--green)}
+.msg-err{background:rgba(255,0,60,.1);color:var(--magenta)}
+.badge-img{width:64px;height:64px;object-fit:contain}.badge-emoji{font-size:28px}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div><div class="bg-scanlines"></div><div class="bg-glow"></div>
+<header class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo"><span class="logo-mark">◈</span><span class="logo-text">NE<span class="x">X</span>US</span><span class="logo-sub">// BADGE SHOP</span></a>
+    <div class="nav-actions"><a href="index.html" class="btn-ghost" style="border:1px solid var(--border);padding:8px 16px">← 返回</a></div>
+  </div>
+</header>
+<main class="shop-page">
+  <h2>徽章商城</h2>
+  <p class="subtitle">用论坛币购买徽章，装扮你的个人主页</p>
+  <div class="balance-bar">
+    <div class="coin">◈</div>
+    <div>
+      <div class="coin-amount" id="balance">--</div>
+      <div class="coin-label">论坛币</div>
+    </div>
+  </div>
+
+  <div class="cat-tabs">
+    <button class="active" data-cat="">全部</button>
+    <button data-cat="general">基础</button>
+    <button data-cat="tech">技术</button>
+    <button data-cat="social">社交</button>
+    <button data-cat="special">限定</button>
+  </div>
+
+  <div class="badge-grid" id="badgeGrid">加载中...</div>
+  <div class="msg" id="msg"></div>
+</main>
+<script>
+var myBadgeIds = new Set();
+
+async function loadBalance() {
+  try {
+    var r = await fetch('/api/coins'); var j = await r.json();
+    if (j.code===0) { document.getElementById('balance').textContent = (j.data.balance||0).toLocaleString(); return; }
+  } catch(e) {}
+  document.getElementById('balance').textContent = '0';
+}
+
+async function loadMyBadges() {
+  try {
+    var r = await fetch('/api/badges/mine'); var j = await r.json();
+    if (j.code===0 && j.data.badges) j.data.badges.forEach(function(b){myBadgeIds.add(b.id)});
+  } catch(e) {}
+}
+
+async function loadBadges(cat) {
+  try {
+    var url = '/api/badges'; if (cat) url += '?category=' + cat;
+    var r = await fetch(url); var j = await r.json();
+    if (j.code!==0 || !j.data.badges) throw new Error();
+    var grid = document.getElementById('badgeGrid');
+    if (!j.data.badges.length) { grid.innerHTML = '<p style="color:var(--text-mute);text-align:center;padding:40px">暂无徽章</p>'; return; }
+    grid.innerHTML = j.data.badges.map(function(b){
+      var owned = myBadgeIds.has(b.id);
+      return '<div class="badge-card rarity-'+b.rarity+'">'+
+        '<div class="rarity-bar"></div>'+
+        '<div class="badge-shape">'+badgeImg(b.id,'')+'</div>'+
+        '<div class="badge-name">'+h(b.name)+'</div>'+
+        '<div class="badge-desc">'+h(b.description||'')+'</div>'+
+        '<div class="badge-price">'+(b.price>0?'Ⓝ '+b.price:'免费')+'</div>'+
+        (owned
+          ?'<button class="btn-buy owned" disabled>已拥有</button>'
+          :'<button class="btn-buy" onclick="buyBadge(\''+b.id+'\','+b.price+')">购 买</button>')+
+        (b.quantity>=0?'<div class="stock">库存: '+b.quantity+'</div>':'<div class="stock">无限量</div>')+
+      '</div>';
+    }).join('');
+  } catch(e) {
+    document.getElementById('badgeGrid').innerHTML = '<p style="color:var(--text-mute);text-align:center;padding:40px">请先启动后端服务</p>';
+  }
+}
+
+async function buyBadge(id, price) {
+  var msg = document.getElementById('msg');
+  try {
+    var r = await fetch('/api/badges/purchase', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({badge_id:id})});
+    var j = await r.json();
+    if (j.code!==0) { msg.textContent=j.msg; msg.className='msg show msg-err'; return; }
+    msg.textContent='购买成功！'; msg.className='msg show msg-ok';
+    setTimeout(function(){msg.classList.remove('show')},1800);
+    myBadgeIds.add(id);
+    loadBalance();
+    loadBadges(document.querySelector('.cat-tabs button.active').dataset.cat);
+  } catch(e) { msg.textContent='操作失败'; msg.className='msg show msg-err'; }
+}
+
+document.querySelectorAll('.cat-tabs button').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('.cat-tabs button').forEach(function(b){b.classList.remove('active')});
+    btn.classList.add('active');
+    loadBadges(btn.dataset.cat);
+  });
+});
+
+function h(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+
+async function init(){ await loadBalance(); await loadMyBadges(); loadBadges(''); }
+init();
+</script>
+</body>
+</html>

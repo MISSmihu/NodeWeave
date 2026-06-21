@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1a1005"/>
+      <stop offset="100%" stop-color="#0a0802"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="sunrise" x1="0.5" y1="1" x2="0.5" y2="0">
+      <stop offset="0%" stop-color="#ff4500"/>
+      <stop offset="40%" stop-color="#ff6a00"/>
+      <stop offset="100%" stop-color="#ffaa00"/>
+    </linearGradient>
+    <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffd700"/>
+      <stop offset="100%" stop-color="#ff6a00"/>
+    </radialGradient>
+  </defs>
+  <circle cx="100" cy="100" r="95" fill="url(#bg)"/>
+  <circle cx="100" cy="100" r="92" fill="none" stroke="#4a3a1a" stroke-width="6"/>
+  <!-- Horizon line -->
+  <line x1="30" y1="120" x2="170" y2="120" stroke="#ff6a00" stroke-width="0.8" opacity="0.3"/>
+  <!-- Sun rising -->
+  <circle cx="100" cy="120" r="35" fill="none" stroke="url(#sunrise)" stroke-width="2.5" filter="url(#glow)"/>
+  <circle cx="100" cy="120" r="35" fill="url(#sunGlow)" opacity="0.1"/>
+  <!-- Sun visible top half -->
+  <path d="M65,120 A35,35 0 0,1 135,120" fill="url(#sunrise)" opacity="0.2" filter="url(#glow)"/>
+  <!-- Sun rays -->
+  <line x1="100" y1="78" x2="100" y2="60" stroke="#ffaa00" stroke-width="2" filter="url(#glow)" opacity="0.7"/>
+  <line x1="75" y1="85" x2="65" y2="70" stroke="#ff6a00" stroke-width="1.5" filter="url(#glow)" opacity="0.5"/>
+  <line x1="125" y1="85" x2="135" y2="70" stroke="#ff6a00" stroke-width="1.5" filter="url(#glow)" opacity="0.5"/>
+  <line x1="60" y1="100" x2="45" y2="92" stroke="#ff4500" stroke-width="1" filter="url(#glow)" opacity="0.4"/>
+  <line x1="140" y1="100" x2="155" y2="92" stroke="#ff4500" stroke-width="1" filter="url(#glow)" opacity="0.4"/>
+  <!-- Bird silhouette -->
+  <path d="M80,55 Q85,48 90,52 Q95,48 100,52" fill="none" stroke="#ffaa00" stroke-width="1.5" filter="url(#glow)" opacity="0.6"/>
+  <path d="M110,48 Q115,42 120,46 Q125,42 130,46" fill="none" stroke="#ff6a00" stroke-width="1.2" filter="url(#glow)" opacity="0.5"/>
+  <!-- Number 30 -->
+  <text x="100" y="118" text-anchor="middle" fill="#fff8dc" font-size="24" font-weight="bold" font-family="Arial" filter="url(#glow)">30</text>
+  <text x="100" y="170" text-anchor="middle" fill="#ff6a00" font-size="11" font-family="Arial" filter="url(#glow)">早起鸟儿</text>
+</svg>

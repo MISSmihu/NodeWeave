@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1a0a15"/>
+      <stop offset="100%" stop-color="#0a0510"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="pinkGold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff69b4"/>
+      <stop offset="50%" stop-color="#ff1493"/>
+      <stop offset="100%" stop-color="#b76e79"/>
+    </linearGradient>
+    <linearGradient id="roseGold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#e8a0a0"/>
+      <stop offset="50%" stop-color="#d4837a"/>
+      <stop offset="100%" stop-color="#e8a0a0"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="95" fill="url(#bg)"/>
+  <circle cx="100" cy="100" r="92" fill="none" stroke="url(#roseGold)" stroke-width="6"/>
+  <!-- Heart shape -->
+  <path d="M100,135 Q60,105 60,75 Q60,50 80,50 Q95,50 100,65 Q105,50 120,50 Q140,50 140,75 Q140,105 100,135 Z" fill="none" stroke="url(#pinkGold)" stroke-width="2.5" filter="url(#glow)"/>
+  <path d="M100,135 Q60,105 60,75 Q60,50 80,50 Q95,50 100,65 Q105,50 120,50 Q140,50 140,75 Q140,105 100,135 Z" fill="#ff69b4" opacity="0.1"/>
+  <!-- Number 10000 -->
+  <text x="100" y="100" text-anchor="middle" fill="#ff69b4" font-size="20" font-weight="bold" font-family="Arial" filter="url(#glow)">10000</text>
+  <!-- Floating heart particles -->
+  <path d="M45,40 Q40,35 45,30 Q50,35 45,40" fill="#ff69b4" opacity="0.5" filter="url(#glow)"/>
+  <path d="M155,45 Q150,40 155,35 Q160,40 155,45" fill="#ff1493" opacity="0.4" filter="url(#glow)"/>
+  <path d="M50,145 Q45,140 50,135 Q55,140 50,145" fill="#ff69b4" opacity="0.3" filter="url(#glow)"/>
+  <path d="M150,140 Q145,135 150,130 Q155,135 150,140" fill="#ff1493" opacity="0.4" filter="url(#glow)"/>
+  <path d="M35,80 Q30,75 35,70 Q40,75 35,80" fill="#ff69b4" opacity="0.3" filter="url(#glow)"/>
+  <path d="M165,90 Q160,85 165,80 Q170,85 165,90" fill="#ff69b4" opacity="0.3" filter="url(#glow)"/>
+  <text x="100" y="170" text-anchor="middle" fill="#ff69b4" font-size="11" font-family="Arial" filter="url(#glow)">万人迷</text>
+</svg>

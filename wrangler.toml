@@ -1,0 +1,14 @@
+﻿name = "nexus-api"
+main = "api/index.js"
+compatibility_date = "2024-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "nexus-db"
+database_id = ""
+
+[vars]
+ENV = "development"
+TURNSTILE_SITE_KEY = "1x00000000000000000000AA"
+SITE_URL = "http://localhost:8080"

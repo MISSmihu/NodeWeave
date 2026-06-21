@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1a1505"/>
+      <stop offset="100%" stop-color="#0a0a02"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffd700"/>
+      <stop offset="50%" stop-color="#ffec8b"/>
+      <stop offset="100%" stop-color="#daa520"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="95" fill="url(#bg)"/>
+  <circle cx="100" cy="100" r="92" fill="none" stroke="#5a4a1a" stroke-width="6"/>
+  <!-- Five stars in arc -->
+  <polygon points="60,55 64,66 76,66 66,73 70,84 60,77 50,84 54,73 44,66 56,66" fill="url(#gold)" filter="url(#glow)" opacity="0.9"/>
+  <polygon points="80,42 84,53 96,53 86,60 90,71 80,64 70,71 74,60 64,53 76,53" fill="url(#gold)" filter="url(#glow)"/>
+  <polygon points="100,38 104,49 116,49 106,56 110,67 100,60 90,67 94,56 84,49 96,49" fill="url(#gold)" filter="url(#glow)"/>
+  <polygon points="120,42 124,53 136,53 126,60 130,71 120,64 110,71 114,60 104,53 116,53" fill="url(#gold)" filter="url(#glow)"/>
+  <polygon points="140,55 144,66 156,66 146,73 150,84 140,77 130,84 134,73 124,66 136,66" fill="url(#gold)" filter="url(#glow)" opacity="0.9"/>
+  <!-- Star sparkle effects -->
+  <line x1="100" y1="25" x2="100" y2="18" stroke="#ffd700" stroke-width="1.5" filter="url(#glow)" opacity="0.7"/>
+  <line x1="95" y1="26" x2="92" y2="20" stroke="#ffec8b" stroke-width="1" filter="url(#glow)" opacity="0.5"/>
+  <line x1="105" y1="26" x2="108" y2="20" stroke="#ffec8b" stroke-width="1" filter="url(#glow)" opacity="0.5"/>
+  <!-- 满分 text -->
+  <text x="100" y="120" text-anchor="middle" fill="url(#gold)" font-size="22" font-weight="bold" font-family="Arial" filter="url(#glow)">满分</text>
+  <!-- Decorative sparkles -->
+  <circle cx="40" cy="60" r="1.5" fill="#ffd700" filter="url(#glow)" opacity="0.5"/>
+  <circle cx="160" cy="60" r="1.5" fill="#ffd700" filter="url(#glow)" opacity="0.5"/>
+  <circle cx="50" cy="90" r="1" fill="#ffec8b" filter="url(#glow)" opacity="0.4"/>
+  <circle cx="150" cy="90" r="1" fill="#ffec8b" filter="url(#glow)" opacity="0.4"/>
+  <text x="100" y="150" text-anchor="middle" fill="#ffd700" font-size="11" font-family="Arial" filter="url(#glow)">五星好评</text>
+</svg>

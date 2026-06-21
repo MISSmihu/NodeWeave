@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1a0a15"/>
+      <stop offset="100%" stop-color="#0a0510"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="pinkRed" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff69b4"/>
+      <stop offset="100%" stop-color="#ff4444"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="95" fill="url(#bg)"/>
+  <circle cx="100" cy="100" r="92" fill="none" stroke="#4a1a2a" stroke-width="6"/>
+  <!-- Three overlapping chat bubbles -->
+  <path d="M75,45 Q70,42 70,47 L70,95 Q70,100 75,100 L130,100 Q135,100 135,95 L135,47 Q135,42 130,47 L130,47 L75,47" fill="none" stroke="#ff69b4" stroke-width="2" filter="url(#glow)" opacity="0.5"/>
+  <path d="M85,55 Q80,52 80,57 L80,105 Q80,110 85,110 L140,110 Q145,110 145,105 L145,57 Q145,52 140,57 L140,57 L85,57" fill="none" stroke="url(#pinkRed)" stroke-width="2.5" filter="url(#glow)"/>
+  <path d="M95,65 Q90,62 90,67 L90,115 Q90,120 95,120 L150,120 Q155,120 155,115 L155,67 Q155,62 150,67 L150,67 L95,67" fill="url(#pinkRed)" opacity="0.1"/>
+  <!-- Sound wave lines -->
+  <path d="M50,70 Q45,80 50,90" fill="none" stroke="#ff69b4" stroke-width="1.5" filter="url(#glow)" opacity="0.5"/>
+  <path d="M42,65 Q35,80 42,95" fill="none" stroke="#ff4444" stroke-width="1" filter="url(#glow)" opacity="0.4"/>
+  <path d="M35,60 Q25,80 35,100" fill="none" stroke="#ff69b4" stroke-width="0.8" filter="url(#glow)" opacity="0.3"/>
+  <!-- Number 500 -->
+  <text x="115" y="95" text-anchor="middle" fill="#ff69b4" font-size="24" font-weight="bold" font-family="Arial" filter="url(#glow)">500</text>
+  <text x="100" y="170" text-anchor="middle" fill="#ff69b4" font-size="11" font-family="Arial" filter="url(#glow)">话唠附体</text>
+</svg>

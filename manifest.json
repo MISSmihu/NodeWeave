@@ -1,0 +1,10 @@
+﻿{
+  "name": "NEXUS 赛博社区",
+  "short_name": "NEXUS",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
+  "theme_color": "#00f0ff",
+  "description": "赛博朋克技术社区",
+  "icons": []
+}

@@ -1,0 +1,137 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>板块 // NEXUS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+.board-page{max-width:860px;margin:0 auto;padding:80px 24px 100px}
+.board-header{margin-bottom:28px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.board-header .back{font-family:var(--font-mono);font-size:13px;color:var(--text-mute);text-decoration:none;display:inline-block;margin-bottom:8px}
+.board-header .back:hover{color:var(--cyan)}
+.board-header h2{font-family:var(--font-display);font-size:22px;color:var(--cyan);margin-bottom:6px}
+.board-header .desc{font-size:14px;color:var(--text-dim)}
+.board-stats{display:flex;gap:20px;margin-top:10px}
+.board-stats span{font-family:var(--font-mono);font-size:12px;color:var(--text-mute)}
+.tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--border)}
+.tabs button{padding:8px 16px;background:none;border:none;color:var(--text-dim);font-family:var(--font-mono);font-size:12px;cursor:pointer;border-bottom:2px solid transparent}
+.tabs button.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.post-list .post-item{padding:16px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:all .15s}
+.post-list .post-item:hover{background:rgba(0,240,255,.02)}
+.post-list .post-title{font-size:16px;color:var(--text);text-decoration:none;display:block;margin-bottom:6px}
+.post-list .post-title:hover{color:var(--cyan)}
+.post-list .post-excerpt{font-size:13px;color:var(--text-dim);line-height:1.6;margin-bottom:8px}
+.post-list .post-meta{font-size:11px;color:var(--text-mute);font-family:var(--font-mono);display:flex;gap:16px;flex-wrap:wrap}
+.post-list .post-tag{display:inline-block;padding:2px 8px;background:rgba(0,240,255,.08);border-radius:3px;font-size:10px;color:var(--cyan);margin-right:6px}
+.empty{padding:60px 0;text-align:center;color:var(--text-mute)}
+.empty .icon{font-size:48px;margin-bottom:12px}
+.btn-post{display:inline-block;padding:8px 20px;background:var(--cyan);color:var(--bg);border:none;border-radius:4px;font-family:var(--font-display);font-size:13px;cursor:pointer;text-decoration:none;float:right}
+.btn-post:hover{box-shadow:var(--glow-cyan)}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div><div class="bg-scanlines"></div><div class="bg-glow"></div>
+<header class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo"><span class="logo-mark">◈</span><span class="logo-text">NE<span class="x">X</span>US</span></a>
+    <div class="nav-actions"><a href="index.html" class="btn-ghost" style="border:1px solid var(--border);padding:8px 16px">← 返回</a></div>
+  </div>
+</header>
+
+<main class="board-page">
+  <div class="board-header" id="boardHeader">
+    <a href="boards.html" class="back">← 板块广场</a>
+    <a href="editor.html" class="btn-post">+ 发帖</a>
+    <h2 id="boardName">加载中...</h2>
+    <div class="desc" id="boardDesc"></div>
+    <div class="board-stats">
+      <span id="boardPostCount">-- 帖子</span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="active" data-sort="latest">最新</button>
+    <button data-sort="hot">最热</button>
+  </div>
+
+  <div class="post-list" id="postList">加载中...</div>
+</main>
+
+<script>
+var slug = new URLSearchParams(window.location.search).get('board') || 'general';
+var currentSort = 'latest';
+
+var SEED_BOARDS = {
+  general:{name:'综合讨论',desc:'自由讨论，不限话题',icon:'💬'},
+  qa:{name:'问答',desc:'技术问答与悬赏，采纳打赏论坛币',icon:'❓'},
+  tech:{name:'技术交流',desc:'技术分享与心得',icon:'💻'},
+  dev:{name:'开发',desc:'编程语言与框架',icon:'⚡'},
+  design:{name:'设计',desc:'UI/UX与视觉设计',icon:'🎨'},
+  ai:{name:'人工智能',desc:'AI/ML 技术讨论',icon:'🤖'},
+  blog:{name:'博客',desc:'原创技术博客',icon:'📝'},
+  chat:{name:'娱乐闲聊',desc:'灌水摸鱼，轻松闲聊，分享日常',icon:'💬'},
+  promo:{name:'推广',desc:'产品推广与商务合作',icon:'📢'},
+  share:{name:'福利分享',desc:'资源分享与优惠信息',icon:'🎁'},
+  transfer:{name:'中转站',desc:'文件中转与资源交换',icon:'📦'}
+};
+
+async function loadBoard() {
+  var info = null;
+  try {
+    var r = await fetch('/api/boards/' + slug); var j = await r.json();
+    if (j.code===0) { info = j.data; }
+  } catch(e) {}
+  if (!info) info = SEED_BOARDS[slug] || {name:slug,desc:'',icon:'📋'};
+
+  document.getElementById('boardName').textContent = (info.icon||'') + ' ' + info.name;
+  document.getElementById('boardDesc').textContent = info.description || info.desc || '';
+  document.getElementById('boardPostCount').textContent = (info.post_count||0) + ' 帖子';
+  document.title = info.name + ' // NEXUS';
+
+  loadPosts();
+}
+
+async function loadPosts() {
+  var list = document.getElementById('postList');
+  try {
+    var url = '/api/posts?board=' + slug + '&sort=' + currentSort;
+    var r = await fetch(url); var j = await r.json();
+    if (j.code!==0 || !j.data.posts) throw new Error();
+    if (!j.data.posts.length) {
+      list.innerHTML = '<div class="empty"><div class="icon">📭</div><p>暂无帖子</p><p style="font-size:12px;margin-top:4px">成为第一个发帖的人吧</p></div>';
+      return;
+    }
+    list.innerHTML = j.data.posts.map(function(p){
+      return '<div class="post-item" onclick="location.href=\'post.html?id='+p.id+'\'">'+
+        '<div class="post-title">'+h(p.title)+'</div>'+
+        (p.content?'<div class="post-excerpt">'+h(p.content.substring(0,120))+'...</div>':'')+
+        '<div class="post-meta">'+
+          '<span>@'+h(p.username||p.display_name)+'</span>'+
+          '<span>👁 '+(p.view_count||0)+'</span>'+
+          '<span>💬 '+(p.comment_count||0)+'</span>'+
+          '<span>⭐ '+(p.like_count||0)+'</span>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+  } catch(e) {
+    list.innerHTML = '<p style="color:var(--text-mute);text-align:center;padding:40px">请先启动后端服务</p>';
+  }
+}
+
+document.querySelectorAll('.tabs button').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('.tabs button').forEach(function(b){b.classList.remove('active')});
+    btn.classList.add('active');
+    currentSort = btn.dataset.sort;
+    loadPosts();
+  });
+});
+
+function h(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+loadBoard();
+</script>
+</body>
+</html>

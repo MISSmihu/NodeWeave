@@ -1,0 +1,64 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>通知 // NEXUS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+.notif-page{max-width:600px;margin:0 auto;padding:80px 24px 100px}
+.notif-page h2{font-family:var(--font-display);font-size:20px;color:var(--cyan);margin-bottom:16px}
+.notif-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.notif-bar .btn-sm{padding:6px 14px;background:var(--surface-2);border:1px solid var(--border);border-radius:4px;color:var(--text-dim);font-family:var(--font-mono);font-size:11px;cursor:pointer}
+.notif-item{padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start}
+.notif-item.unread{border-left:3px solid var(--cyan)}
+.notif-item .icon{font-size:20px;flex-shrink:0}
+.notif-item .body{flex:1;font-size:13px;color:var(--text-dim);line-height:1.5}
+.notif-item .time{font-size:10px;color:var(--text-mute);margin-top:4px}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div><div class="bg-scanlines"></div><div class="bg-glow"></div>
+<header class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo"><span class="logo-mark">◈</span><span class="logo-text">NE<span class="x">X</span>US</span></a>
+    <div class="nav-actions"><a href="index.html" class="btn-ghost" style="border:1px solid var(--border);padding:8px 16px">← 返回</a></div>
+  </div>
+</header>
+<main class="notif-page">
+  <div class="notif-bar">
+    <h2>🔔 通知</h2>
+    <button class="btn-sm" onclick="readAll()">全部已读</button>
+  </div>
+  <div id="notifList">加载中...</div>
+</main>
+<script>
+async function load() {
+  var list = document.getElementById('notifList');
+  try {
+    var r = await fetch('/api/notifications');
+    var j = await r.json();
+    if (j.code!==0) { list.innerHTML='<p style="color:var(--text-mute);text-align:center;padding:40px">请先登录</p>'; return; }
+    if (!j.data.notifications.length) { list.innerHTML='<p style="color:var(--text-mute);text-align:center;padding:40px">暂无通知</p>'; return; }
+    var icons = {comment:'💬',reply:'💬',follow:'👤',tip:'💰',system:'📢',achievement:'🏆'};
+    list.innerHTML = j.data.notifications.map(function(n){
+      return '<div class="notif-item'+(n.is_read?'':' unread')+'">'+
+        '<div class="icon">'+(icons[n.type]||'📌')+'</div>'+
+        '<div class="body">'+h(n.message)+'<div class="time">'+new Date(n.created_at).toLocaleString('zh-CN')+'</div></div>'+
+      '</div>';
+    }).join('');
+  } catch(e) {
+    list.innerHTML='<p style="color:var(--text-mute);text-align:center;padding:40px">请先启动后端服务</p>';
+  }
+}
+async function readAll() {
+  try { await fetch('/api/notifications/read-all',{method:'POST'}); } catch(e) {}
+  load();
+}
+function h(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+load();
+</script>
+</body>
+</html>

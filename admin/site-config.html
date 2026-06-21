@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>站点配置 // NEXUS ADMIN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+<style>
+.admin-layout{display:flex;min-height:100vh;padding-top:60px}
+.admin-sidebar{width:200px;background:var(--surface);border-right:1px solid var(--border);padding:20px 0;position:fixed;top:60px;bottom:0;left:0;overflow-y:auto}
+.admin-sidebar a{display:block;padding:10px 20px;color:var(--text-dim);font-family:var(--font-mono);font-size:13px;text-decoration:none;transition:all .2s}
+.admin-sidebar a:hover,.admin-sidebar a.active{color:var(--cyan);background:rgba(0,240,255,.05)}
+.admin-main{margin-left:200px;flex:1;padding:24px 24px 100px;max-width:1000px}
+.admin-main h2{font-family:var(--font-display);font-size:20px;color:var(--cyan);margin-bottom:20px}
+.page-section{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:24px;margin-bottom:20px}
+.page-section h3{font-family:var(--font-display);font-size:15px;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.page-section h3 .icon{font-size:18px}
+.toggle-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--border)}
+.toggle-row:last-child{border-bottom:none}
+.toggle-row .info{flex:1}
+.toggle-row .info .name{font-size:14px;color:var(--text)}
+.toggle-row .info .desc{font-size:12px;color:var(--text-mute);margin-top:2px}
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0}
+.toggle input{display:none}
+.toggle .slider{position:absolute;inset:0;background:var(--bg);border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:all .2s}
+.toggle .slider::after{content:'';position:absolute;width:18px;height:18px;left:2px;top:2px;background:var(--text-dim);border-radius:50%;transition:all .2s}
+.toggle input:checked+.slider{background:var(--cyan);border-color:var(--cyan)}
+.toggle input:checked+.slider::after{left:22px;background:var(--bg)}
+.toggle.readonly .slider{opacity:.4;cursor:not-allowed}
+.select-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--border)}
+.select-row .info{flex:1}
+.select-row .info .name{font-size:14px;color:var(--text)}
+.select-row .info .desc{font-size:12px;color:var(--text-mute);margin-top:2px}
+.select-row select{padding:6px 12px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--font-mono);font-size:13px;outline:none}
+.select-row select:focus{border-color:var(--cyan)}
+.input-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--border)}
+.input-row .info{flex:1}
+.input-row .info .name{font-size:14px;color:var(--text)}
+.input-row .info .desc{font-size:12px;color:var(--text-mute);margin-top:2px}
+.input-row input{padding:6px 12px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--font-mono);font-size:13px;outline:none;width:180px;text-align:right}
+.input-row input:focus{border-color:var(--cyan)}
+.save-bar{position:fixed;bottom:0;left:200px;right:0;background:var(--surface);border-top:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:16px;z-index:50}
+.save-bar .changes-count{font-family:var(--font-mono);font-size:12px;color:var(--text-mute)}
+.save-bar button{padding:10px 24px;border-radius:4px;font-family:var(--font-display);font-size:14px;cursor:pointer;font-weight:700;border:none}
+.btn-primary{background:var(--cyan);color:var(--bg)}
+.btn-primary:hover{box-shadow:var(--glow-cyan)}
+.btn-ghost{padding:10px 24px;background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:var(--font-display);font-size:14px;cursor:pointer;border-radius:4px}
+.btn-ghost:hover{border-color:var(--cyan);color:var(--cyan)}
+.msg{display:none;padding:8px 12px;border-radius:4px;font-size:13px}
+.msg.show{display:block}
+.msg-ok{background:rgba(127,255,0,.1);color:var(--green);border:1px solid rgba(127,255,0,.2)}
+.msg-err{background:rgba(255,0,60,.1);color:var(--magenta);border:1px solid rgba(255,0,60,.2)}
+.highlight-changed{animation:highlightPulse .6s ease}
+@keyframes highlightPulse{50%{background:rgba(0,240,255,.06)}}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div><div class="bg-scanlines"></div><div class="bg-glow"></div>
+<header class="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="logo"><span class="logo-mark">◈</span><span class="logo-text">NE<span class="x">X</span>US</span><span class="logo-sub">// ADMIN PANEL</span></a>
+    <div class="nav-actions"><a href="../index.html" class="btn-ghost" style="border-color:var(--border);padding:8px 16px">返回首页</a></div>
+  </div>
+</header>
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <a href="site-config.html" class="active">站点配置</a>
+    <a href="invite-codes.html">邀请码管理</a>
+    <a href="moderation.html">内容审核</a>
+    <a href="users.html">用户管理</a>
+    <a href="ai-config.html">AI审核配置</a>
+  </aside>
+  <main class="admin-main">
+    <h2>站点配置中心</h2>
+    <div class="page-section">
+      <h3><span class="icon">🔐</span> 注册与登录</h3>
+      <div class="toggle-row"><div class="info"><div class="name">开放注册</div><div class="desc">关闭后任何人无法注册新账号</div></div><label class="toggle"><input type="checkbox" id="cfg_registration_enabled" onchange="markChanged()"><span class="slider"></span></label></div>
+      <div class="toggle-row"><div class="info"><div class="name">邀请码注册</div><div class="desc">开启后邮箱注册必须填写有效邀请码（OAuth 注册按 GitHub 年限规则豁免）</div></div><label class="toggle"><input type="checkbox" id="cfg_invite_code_required" onchange="markChanged()"><span class="slider"></span></label></div>
+      <div class="toggle-row"><div class="info"><div class="name">邮箱验证强制</div><div class="desc">开启后未验证邮箱的用户无法登录</div></div><label class="toggle"><input type="checkbox" id="cfg_email_verification_required" onchange="markChanged()"><span class="slider"></span></label></div>
+    </div>
+
+    <div class="page-section">
+      <h3><span class="icon">🪪</span> 实名制</h3>
+      <div class="select-row"><div class="info"><div class="name">实名认证模式</div><div class="desc"><strong>关闭</strong>：不要求实名 · <strong>可选</strong>：引导但不强制 · <strong>强制</strong>：必须实名才能发帖/评论</div></div>
+        <select id="cfg_real_name_mode" onchange="markChanged()">
+          <option value="off">关闭</option>
+          <option value="optional">可选</option>
+          <option value="required">强制</option>
+        </select>
+      </div>
+      <div class="select-row"><div class="info"><div class="name">手机验证</div><div class="desc">用户绑定手机号的验证方式。关闭后无需绑定手机。</div></div>
+        <select id="cfg_phone_bind_mode" onchange="markChanged()">
+          <option value="off">关闭</option>
+          <option value="optional">可选</option>
+          <option value="required">注册时必绑</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="page-section">
+      <h3><span class="icon">🔗</span> OAuth 三方登录</h3>
+      <div class="toggle-row"><div class="info"><div class="name">GitHub 登录</div><div class="desc">需配置 GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET</div></div><label class="toggle"><input type="checkbox" id="cfg_oauth_github_enabled" onchange="markChanged()"><span class="slider"></span></label></div>
+      <div class="toggle-row"><div class="info"><div class="name">QQ 登录</div><div class="desc">需配置 QQ_APP_ID / QQ_CLIENT_ID / QQ_CLIENT_SECRET</div></div><label class="toggle"><input type="checkbox" id="cfg_oauth_qq_enabled" onchange="markChanged()"><span class="slider"></span></label></div>
+      <div class="toggle-row"><div class="info"><div class="name">Google 登录</div><div class="desc">需配置 GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET（注意数据出境合规）</div></div><label class="toggle"><input type="checkbox" id="cfg_oauth_google_enabled" onchange="markChanged()"><span class="slider"></span></label></div>
+      <div class="toggle-row"><div class="info"><div class="name">GitHub 老号免邀请码</div><div class="desc">GitHub 账号注册年限超过阈值可跳过邀请码</div></div><label class="toggle"><input type="checkbox" id="cfg_github_age_bypass_invite" onchange="markChanged()"><span class="slider"></span></label></div>
+      <div class="input-row"><div class="info"><div class="name">GitHub 年限阈值（天）</div><div class="desc">GitHub 账号创建超过此天数可免邀请码</div></div><input type="number" id="cfg_github_age_threshold_days" value="365" onchange="markChanged()"></div>
+    </div>
+
+    <div class="page-section">
+      <h3><span class="icon">🤖</span> 内容审核</h3>
+      <div class="select-row"><div class="info"><div class="name">审核策略</div><div class="desc"><strong>先发后审</strong>：发布后进入审核队列 · <strong>先审后发</strong>：全部内容需审核通过才公开</div></div>
+        <select id="cfg_post_moderation_strategy" onchange="markChanged()">
+          <option value="post_first">先发后审</option>
+          <option value="pre_first">先审后发</option>
+        </select>
+      </div>
+      <div class="input-row"><div class="info"><div class="name">新用户先审后发条数</div><div class="desc">新用户前N条内容强制先审后发</div></div><input type="number" id="cfg_new_user_pre_moderation_count" value="3" onchange="markChanged()"></div>
+    </div>
+
+    <div class="page-section">
+      <h3><span class="icon">💰</span> 社区经济</h3>
+      <div class="toggle-row"><div class="info"><div class="name">签到奖励</div><div class="desc">每日签到获得论坛币</div></div><label class="toggle"><input type="checkbox" id="cfg_signin_reward_enabled" onchange="markChanged()"><span class="slider"></span></label></div>
+      <div class="toggle-row"><div class="info"><div class="name">论坛币系统</div><div class="desc">关闭后所有论坛币功能禁用</div></div><label class="toggle"><input type="checkbox" id="cfg_coin_enabled" onchange="markChanged()"><span class="slider"></span></label></div>
+      <div class="toggle-row"><div class="info"><div class="name">用户等级组</div><div class="desc">关闭后所有用户平等权限</div></div><label class="toggle"><input type="checkbox" id="cfg_user_level_enabled" onchange="markChanged()"><span class="slider"></span></label></div>
+    </div>
+
+    <div class="page-section">
+      <h3><span class="icon">🛡️</span> 未成年人保护</h3>
+      <div class="toggle-row"><div class="info"><div class="name">青少年模式</div><div class="desc">开启后限制时长/时段/内容过滤</div></div><label class="toggle"><input type="checkbox" id="cfg_teen_mode_enabled" onchange="markChanged()"><span class="slider"></span></label></div>
+    </div>
+  </main>
+</div>
+<div class="save-bar">
+  <span class="changes-count" id="changesInfo">没有未保存的更改</span>
+  <button class="btn-ghost" onclick="resetAll()">取消</button>
+  <button class="btn-primary" onclick="saveAll()">保存全部</button>
+  <div class="msg" id="saveMsg"></div>
+</div>
+<script>
+let changedKeys = new Set();
+let originalConfig = {};
+
+async function loadConfig() {
+  try {
+    const res = await fetch('/api/admin/site-config');
+    const json = await res.json();
+    if (json.code !== 0) return;
+    const c = json.data;
+    originalConfig = { ...c };
+
+    // 注册
+    setToggle('cfg_registration_enabled', c.registration_enabled);
+    setToggle('cfg_invite_code_required', c.invite_code_required);
+    setToggle('cfg_email_verification_required', c.email_verification_required);
+
+    // 实名
+    document.getElementById('cfg_real_name_mode').value = c.real_name_mode || 'off';
+    document.getElementById('cfg_phone_bind_mode').value = c.phone_bind_mode || 'off';
+
+    // OAuth
+    setToggle('cfg_oauth_github_enabled', c.oauth_github_enabled);
+    setToggle('cfg_oauth_qq_enabled', c.oauth_qq_enabled);
+    setToggle('cfg_oauth_google_enabled', c.oauth_google_enabled);
+    setToggle('cfg_github_age_bypass_invite', c.github_age_bypass_invite);
+    document.getElementById('cfg_github_age_threshold_days').value = c.github_age_threshold_days || 365;
+
+    // 审核
+    document.getElementById('cfg_post_moderation_strategy').value = c.post_moderation_strategy || 'post_first';
+    document.getElementById('cfg_new_user_pre_moderation_count').value = c.new_user_pre_moderation_count || 3;
+
+    // 经济
+    setToggle('cfg_signin_reward_enabled', c.signin_reward_enabled);
+    setToggle('cfg_coin_enabled', c.coin_enabled);
+    setToggle('cfg_user_level_enabled', c.user_level_enabled);
+
+    // 未成年
+    setToggle('cfg_teen_mode_enabled', c.teen_mode_enabled);
+
+    changedKeys.clear(); updateChangesInfo();
+  } catch(e) { console.error(e); }
+}
+
+function setToggle(id, val) {
+  document.getElementById(id).checked = !!val;
+}
+
+function markChanged() { changedKeys.add(event.target.id); updateChangesInfo(); }
+
+function updateChangesInfo() {
+  document.getElementById('changesInfo').textContent = changedKeys.size ? changedKeys.size + ' 项已更改' : '没有未保存的更改';
+}
+
+function getValue(id) {
+  const el = document.getElementById(id);
+  return el.type === 'checkbox' ? (el.checked ? 1 : 0) : el.value;
+}
+
+async function saveAll() {
+  const changed = {};
+  for (const id of changedKeys) {
+    const key = id.replace('cfg_', '');
+    changed[key] = getValue(id);
+  }
+  if (!Object.keys(changed).length) return;
+
+  try {
+    const res = await fetch('/api/admin/site-config', {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(changed),
+    });
+    const json = await res.json();
+    const msg = document.getElementById('saveMsg');
+    if (json.code !== 0) { msg.textContent = json.msg; msg.className = 'msg show msg-err'; }
+    else {
+      msg.textContent = '配置已保存，立即生效'; msg.className = 'msg show msg-ok';
+      changedKeys.clear(); updateChangesInfo();
+      await loadConfig();
+    }
+    setTimeout(() => msg.classList.remove('show'), 2000);
+  } catch(e) { alert('保存失败'); }
+}
+
+function resetAll() { loadConfig(); }
+
+loadConfig();
+</script>
+</body>
+</html>

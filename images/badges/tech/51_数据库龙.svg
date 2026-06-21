@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#150520"/>
+      <stop offset="100%" stop-color="#080210"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="purpleGold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#9b59b6"/>
+      <stop offset="50%" stop-color="#ffd700"/>
+      <stop offset="100%" stop-color="#9b59b6"/>
+    </linearGradient>
+    <linearGradient id="purple" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#bf55ec"/>
+      <stop offset="100%" stop-color="#8e44ad"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="95" fill="url(#bg)"/>
+  <circle cx="100" cy="100" r="92" fill="none" stroke="#3a1a4a" stroke-width="6"/>
+  <!-- Dragon head -->
+  <path d="M75,55 Q80,45 95,42 Q110,45 115,55 Q120,60 118,70 Q115,75 100,75 Q85,75 82,70 Q80,60 75,55 Z" fill="none" stroke="url(#purpleGold)" stroke-width="2.5" filter="url(#glow)"/>
+  <path d="M75,55 Q80,45 95,42 Q110,45 115,55 Q120,60 118,70 Q115,75 100,75 Q85,75 82,70 Q80,60 75,55 Z" fill="#bf55ec" opacity="0.08"/>
+  <!-- Dragon horns -->
+  <path d="M80,48 Q70,35 65,28" fill="none" stroke="#ffd700" stroke-width="1.5" filter="url(#glow)" opacity="0.6"/>
+  <path d="M110,48 Q120,35 125,28" fill="none" stroke="#ffd700" stroke-width="1.5" filter="url(#glow)" opacity="0.6"/>
+  <!-- Dragon eyes -->
+  <circle cx="90" cy="58" r="3" fill="#ffd700" filter="url(#glow)" opacity="0.7"/>
+  <circle cx="105" cy="58" r="3" fill="#ffd700" filter="url(#glow)" opacity="0.7"/>
+  <!-- Dragon snout -->
+  <path d="M88,70 Q95,73 100,72 Q105,73 112,70" fill="none" stroke="url(#purple)" stroke-width="1" filter="url(#glow)" opacity="0.5"/>
+  <!-- Data cylinder stack (body) -->
+  <!-- Top cylinder -->
+  <ellipse cx="100" cy="90" rx="32" ry="8" fill="none" stroke="url(#purpleGold)" stroke-width="2" filter="url(#glow)"/>
+  <path d="M68,90 L68,98 Q68,106 100,106 Q132,106 132,98 L132,90" fill="none" stroke="url(#purple)" stroke-width="1.5" filter="url(#glow)" opacity="0.7"/>
+  <!-- Middle cylinder -->
+  <ellipse cx="100" cy="115" rx="32" ry="8" fill="none" stroke="url(#purpleGold)" stroke-width="2" filter="url(#glow)"/>
+  <path d="M68,115 L68,123 Q68,131 100,131 Q132,131 132,123 L132,115" fill="none" stroke="url(#purple)" stroke-width="1.5" filter="url(#glow)" opacity="0.7"/>
+  <!-- Bottom cylinder -->
+  <ellipse cx="100" cy="140" rx="32" ry="8" fill="none" stroke="url(#purpleGold)" stroke-width="2" filter="url(#glow)"/>
+  <path d="M68,140 L68,148 Q68,156 100,156 Q132,156 132,148 L132,140" fill="none" stroke="url(#purple)" stroke-width="1.5" filter="url(#glow)" opacity="0.7"/>
+  <!-- Data dots -->
+  <circle cx="85" cy="98" r="1.5" fill="#ffd700" opacity="0.5"/>
+  <circle cx="115" cy="98" r="1.5" fill="#ffd700" opacity="0.5"/>
+  <circle cx="85" cy="123" r="1.5" fill="#ffd700" opacity="0.4"/>
+  <circle cx="115" cy="123" r="1.5" fill="#ffd700" opacity="0.4"/>
+  <text x="100" y="175" text-anchor="middle" fill="#bf55ec" font-size="11" font-family="Arial" filter="url(#glow)">数据库龙</text>
+</svg>

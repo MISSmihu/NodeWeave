@@ -1,0 +1,103 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>板块广场 // NEXUS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+.boards-page{max-width:900px;margin:0 auto;padding:80px 24px 100px}
+.boards-page h2{font-family:var(--font-display);font-size:20px;color:var(--cyan);margin-bottom:6px}
+.boards-page .sub{font-size:13px;color:var(--text-mute);margin-bottom:20px}
+.board-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.board-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px 20px;cursor:pointer;transition:all .2s;text-decoration:none;display:block}
+.board-card:hover{border-color:var(--cyan);transform:translateY(-2px);box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.board-card .icon{font-size:32px;margin-bottom:10px}
+.board-card .name{font-family:var(--font-display);font-size:16px;color:var(--text);margin-bottom:6px}
+.board-card .desc{font-size:13px;color:var(--text-dim);line-height:1.5;margin-bottom:10px}
+.board-card .stats{font-family:var(--font-mono);font-size:11px;color:var(--text-mute)}
+.apply-section{margin-top:32px;padding:24px;background:var(--surface);border:1px dashed var(--border);border-radius:10px;text-align:center}
+.apply-section h3{font-family:var(--font-display);font-size:15px;color:var(--text);margin-bottom:8px}
+.apply-section p{font-size:13px;color:var(--text-dim);margin-bottom:16px}
+.msg{display:none;padding:8px;border-radius:4px;font-size:13px;margin-top:8px}
+.msg.show{display:block}
+.msg-ok{background:rgba(127,255,0,.1);color:var(--green)}
+.msg-err{background:rgba(255,0,60,.1);color:var(--magenta)}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div><div class="bg-scanlines"></div><div class="bg-glow"></div>
+<header class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo"><span class="logo-mark">◈</span><span class="logo-text">NE<span class="x">X</span>US</span><span class="logo-sub">// BOARDS</span></a>
+    <div class="nav-actions"><a href="index.html" class="btn-ghost" style="border:1px solid var(--border);padding:8px 16px">← 返回</a></div>
+  </div>
+</header>
+<main class="boards-page">
+  <h2>📋 板块广场</h2>
+  <p class="sub">选择你感兴趣的板块，加入讨论</p>
+  <div class="board-grid" id="boardGrid">加载中...</div>
+  <div class="apply-section">
+    <h3>想创建自己的板块？</h3>
+    <p>声望达到 Lv4 (1500) 即可申请建版，成为版主</p>
+    <button class="btn-primary" onclick="applyBoard()" style="padding:10px 24px;font-family:var(--font-display);font-size:14px;background:var(--cyan);color:var(--bg);border:none;border-radius:4px;cursor:pointer">申请建版</button>
+    <div class="msg" id="applyMsg"></div>
+  </div>
+</main>
+<script>
+// 与 0013_boards.sql 迁移数据一致
+var SEED_BOARDS = [
+  {slug:'general',icon:'💬',name:'综合讨论',desc:'自由讨论，不限话题'},
+  {slug:'qa',icon:'❓',name:'问答',desc:'技术问答与悬赏，采纳打赏论坛币'},
+  {slug:'tech',icon:'💻',name:'技术交流',desc:'技术分享与心得'},
+  {slug:'dev',icon:'⚡',name:'开发',desc:'编程语言与框架'},
+  {slug:'design',icon:'🎨',name:'设计',desc:'UI/UX与视觉设计'},
+  {slug:'ai',icon:'🤖',name:'人工智能',desc:'AI/ML 技术讨论'},
+  {slug:'blog',icon:'📝',name:'博客',desc:'原创技术博客'},
+  {slug:'chat',icon:'💬',name:'娱乐闲聊',desc:'灌水摸鱼，轻松闲聊，分享日常'},
+  {slug:'promo',icon:'📢',name:'推广',desc:'产品推广与商务合作'},
+  {slug:'share',icon:'🎁',name:'福利分享',desc:'资源分享与优惠信息'},
+  {slug:'transfer',icon:'📦',name:'中转站',desc:'文件中转与资源交换'}
+];
+
+async function init() {
+  var grid = document.getElementById('boardGrid');
+  try {
+    var r = await fetch('/api/boards'); var j = await r.json();
+    if (j.code===0 && j.data && j.data.length) {
+      grid.innerHTML = j.data.map(function(b){
+        return '<a href="board.html?board='+b.slug+'" class="board-card">'+
+          '<div class="icon">'+(b.icon||'📋')+'</div>'+
+          '<div class="name">'+h(b.name)+'</div>'+
+          '<div class="desc">'+h(b.description||'')+'</div>'+
+          '<div class="stats">'+(b.post_count||0).toLocaleString()+' 篇帖子</div>'+
+        '</a>';
+      }).join('');
+      return;
+    }
+  } catch(e) {}
+  // 后端不可用时显示种子数据
+  grid.innerHTML = SEED_BOARDS.map(function(b){
+    return '<a href="board.html?board='+b.slug+'" class="board-card">'+
+      '<div class="icon">'+b.icon+'</div>'+
+      '<div class="name">'+b.name+'</div>'+
+      '<div class="desc">'+b.desc+'</div>'+
+      '<div class="stats">0 篇帖子</div>'+
+    '</a>';
+  }).join('');
+}
+
+function applyBoard() {
+  var msg = document.getElementById('applyMsg');
+  msg.textContent = '请先登录后再申请建版';
+  msg.className = 'msg show msg-ok';
+  setTimeout(function(){msg.classList.remove('show')},3000);
+}
+
+function h(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+init();
+</script>
+</body>
+</html>

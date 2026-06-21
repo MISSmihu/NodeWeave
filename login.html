@@ -1,0 +1,263 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登录 / 注册 // NEXUS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<style>
+.auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.auth-card{width:100%;max-width:420px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:32px 28px;position:relative;z-index:1}
+.auth-card::before{content:'';position:absolute;inset:-1px;border-radius:9px;background:linear-gradient(135deg,var(--cyan),var(--purple));z-index:-1;opacity:.15}
+.auth-logo{text-align:center;margin-bottom:24px}
+.auth-logo .logo-mark{font-size:28px;color:var(--cyan);text-shadow:var(--glow-cyan)}
+.auth-logo .logo-text{font-family:var(--font-display);font-size:22px;color:var(--text);display:block;margin-top:4px}
+.auth-logo .logo-sub{font-family:var(--font-mono);font-size:11px;color:var(--text-mute)}
+.auth-tabs{display:flex;margin-bottom:24px;border:1px solid var(--border);border-radius:4px;overflow:hidden}
+.auth-tabs button{flex:1;padding:10px;background:transparent;border:none;color:var(--text-dim);font-family:var(--font-display);font-size:14px;cursor:pointer;transition:all .2s}
+.auth-tabs button.active{background:var(--cyan);color:var(--bg);font-weight:700}
+.auth-tabs button:not(.active):hover{color:var(--text);background:var(--surface-2)}
+.auth-form{display:none}
+.auth-form.active{display:block}
+.auth-form .form-group{margin-bottom:16px}
+.auth-form label{display:block;font-family:var(--font-mono);font-size:12px;color:var(--text-dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.auth-form input[type="text"],
+.auth-form input[type="email"],
+.auth-form input[type="password"]{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--font-body);font-size:14px;outline:none;transition:border .2s}
+.auth-form input:focus{border-color:var(--cyan);box-shadow:0 0 0 2px rgba(0,240,255,.08)}
+.auth-form .hint{font-size:12px;color:var(--text-mute);margin-top:4px}
+.auth-form .error-msg{font-size:12px;color:var(--magenta);margin-top:4px;display:none}
+.auth-form .error-msg.show{display:block}
+.auth-form .checkbox-group{display:flex;align-items:flex-start;gap:8px;margin:16px 0}
+.auth-form .checkbox-group input[type="checkbox"]{appearance:none;width:16px;height:16px;min-width:16px;border:1px solid var(--border);border-radius:2px;background:var(--bg);cursor:pointer;position:relative;top:2px}
+.auth-form .checkbox-group input[type="checkbox"]:checked{background:var(--cyan);border-color:var(--cyan)}
+.auth-form .checkbox-group input[type="checkbox"]:checked::after{content:'';position:absolute;left:4px;top:1px;width:5px;height:9px;border:solid var(--bg);border-width:0 2px 2px 0;transform:rotate(45deg)}
+.auth-form .checkbox-group label{font-size:13px;color:var(--text-dim);line-height:1.5;cursor:pointer}
+.auth-form .checkbox-group a{color:var(--cyan);text-decoration:none}
+.auth-form .checkbox-group a:hover{text-shadow:var(--glow-cyan)}
+.auth-form .btn-primary.btn-block{width:100%;padding:12px;font-family:var(--font-display);font-size:15px}
+.auth-form .turnstile-wrap{margin-bottom:16px;min-height:65px}
+.auth-divider{display:flex;align-items:center;margin:20px 0;gap:12px}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.auth-divider span{font-family:var(--font-mono);font-size:11px;color:var(--text-mute)}
+.oauth-btns{display:flex;gap:10px}
+.oauth-btns button{flex:1;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text-dim);font-family:var(--font-mono);font-size:12px;cursor:pointer;transition:all .2s}
+.oauth-btns button:hover{background:var(--surface-2);border-color:var(--cyan);color:var(--text)}
+.auth-footer{text-align:center;margin-top:24px;font-size:12px;color:var(--text-mute)}
+.auth-footer a{color:var(--cyan);text-decoration:none}
+.auth-success{display:none;text-align:center;padding:20px 0}
+.auth-success .success-icon{font-size:48px;margin-bottom:12px}
+.auth-success h3{font-family:var(--font-display);color:var(--green);margin-bottom:8px}
+.auth-success p{color:var(--text-dim);font-size:14px}
+</style>
+</head>
+<body>
+<a href="index.html" style="position:fixed;top:16px;left:16px;z-index:100;font-family:var(--font-mono);font-size:13px;color:var(--text-mute);text-decoration:none">← 返回</a>
+<div class="bg-grid"></div>
+<div class="bg-scanlines"></div>
+<div class="bg-glow"></div>
+
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <a href="index.html" style="text-decoration:none;color:inherit">
+        <span class="logo-mark">◈</span>
+        <span class="logo-text">NE<span style="color:var(--magenta)">X</span>US</span>
+      </a>
+      <span class="logo-sub">// JOIN THE NETWORK</span>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="tab-btn active" data-tab="login">LOGIN</button>
+      <button class="tab-btn" data-tab="register">REGISTER</button>
+    </div>
+
+    <!-- Login Form -->
+    <form class="auth-form active" id="loginForm">
+      <div class="form-group">
+        <label>用户名或邮箱</label>
+        <input type="text" id="loginId" placeholder="username / email" required>
+      </div>
+      <div class="form-group">
+        <label>密码</label>
+        <input type="password" id="loginPassword" placeholder="········" required>
+      </div>
+      <div class="turnstile-wrap"><div class="cf-turnstile" data-sitekey="" id="loginTurnstile"></div></div>
+      <p class="error-msg" id="loginError"></p>
+      <button type="submit" class="btn-primary btn-block">连接节点</button>
+      <div class="auth-footer">
+        <a href="forgot-password.html">忘记密码？</a>
+      </div>
+    </form>
+
+    <!-- Register Form -->
+    <form class="auth-form" id="registerForm">
+      <div class="form-group">
+        <label>用户名</label>
+        <input type="text" id="regUsername" placeholder="3-20位字母/数字/下划线" maxlength="20" required>
+      </div>
+      <div class="form-group">
+        <label>邮箱</label>
+        <input type="email" id="regEmail" placeholder="your@email.com" required>
+      </div>
+      <div class="form-group" id="inviteCodeGroup" style="display:none">
+        <label>邀请码</label>
+        <input type="text" id="regInviteCode" placeholder="NX-XXXXX-XXXXX">
+      </div>
+      <div class="form-group">
+        <label>密码</label>
+        <input type="password" id="regPassword" placeholder="8-72位密码" minlength="8" maxlength="72" required>
+      </div>
+      <div class="checkbox-group">
+        <input type="checkbox" id="agreeTerms" required>
+        <label>我已阅读并同意 <a href="legal/terms.html" target="_blank">《用户协议》</a>、<a href="legal/privacy.html" target="_blank">《隐私政策》</a>、<a href="legal/rules.html" target="_blank">《社区规则》</a></label>
+      </div>
+      <div class="turnstile-wrap"><div class="cf-turnstile" data-sitekey="" id="regTurnstile"></div></div>
+      <p class="error-msg" id="registerError"></p>
+      <button type="submit" class="btn-primary btn-block">创建账号</button>
+    </form>
+
+    <!-- Success Message -->
+    <div class="auth-success" id="registerSuccess">
+      <div class="success-icon">📬</div>
+      <h3>验证邮件已发送</h3>
+      <p>请查收邮箱中的验证链接，完成注册。</p>
+      <p style="font-size:12px;color:var(--text-mute);margin-top:8px">未收到？请检查垃圾邮件文件夹。</p>
+    </div>
+
+    <div class="auth-divider"><span>OR</span></div>
+
+    <div class="oauth-btns">
+      <button id="oauthGithub" style="display:none">GitHub</button>
+      <button id="oauthQQ" style="display:none">QQ</button>
+      <button id="oauthGoogle" style="display:none">Google</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+<script>
+const API = '/api';
+
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab + 'Form').classList.add('active');
+  });
+});
+
+// Load site config for OAuth buttons / invite code
+async function loadConfig() {
+  try {
+    const res = await fetch(API + '/site-config/public');
+    const json = await res.json();
+    if (json.code !== 0) return;
+    const cfg = json.data;
+    if (cfg.oauth_github_enabled) document.getElementById('oauthGithub').style.display = '';
+    if (cfg.oauth_qq_enabled) document.getElementById('oauthQQ').style.display = '';
+    if (cfg.oauth_google_enabled) document.getElementById('oauthGoogle').style.display = '';
+    if (cfg.invite_code_required) document.getElementById('inviteCodeGroup').style.display = '';
+    if (!cfg.registration_enabled) {
+      document.querySelector('.tab-btn[data-tab="register"]').style.display = 'none';
+    }
+  } catch(e) { /* offline: hide everything gracefully */ }
+}
+loadConfig();
+
+// Turnstile site key
+fetch(API + '/site-config/public').then(r => r.json()).then(json => {
+  if (json.code === 0 && json.data.turnstile_site_key) {
+    document.querySelectorAll('.cf-turnstile').forEach(el => el.dataset.sitekey = json.data.turnstile_site_key);
+  }
+}).catch(() => {});
+
+// Login
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById('loginError');
+  errEl.classList.remove('show');
+  const token = turnstile.getResponse(document.getElementById('loginTurnstile'));
+  if (!token) { errEl.textContent = '请完成人机验证'; errEl.classList.add('show'); return; }
+
+  try {
+    const res = await fetch(API + '/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: document.getElementById('loginId').value.trim(),
+        password: document.getElementById('loginPassword').value,
+        turnstile_token: token,
+      }),
+    });
+    const json = await res.json();
+    if (json.code !== 0) {
+      errEl.textContent = json.msg; errEl.classList.add('show');
+      turnstile.reset(document.getElementById('loginTurnstile'));
+      return;
+    }
+    const redirect = new URLSearchParams(location.search).get('redirect') || 'index.html';
+    location.href = redirect;
+  } catch(ex) {
+    errEl.textContent = '网络错误，请稍后重试'; errEl.classList.add('show');
+  }
+});
+
+// Register
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById('registerError');
+  errEl.classList.remove('show');
+  const token = turnstile.getResponse(document.getElementById('regTurnstile'));
+  if (!token) { errEl.textContent = '请完成人机验证'; errEl.classList.add('show'); return; }
+  if (!document.getElementById('agreeTerms').checked) {
+    errEl.textContent = '请先同意用户协议和隐私政策'; errEl.classList.add('show'); return;
+  }
+
+  try {
+    const body = {
+      username: document.getElementById('regUsername').value.trim(),
+      email: document.getElementById('regEmail').value.trim(),
+      password: document.getElementById('regPassword').value,
+      turnstile_token: token,
+      agreed_to_terms: true,
+    };
+    const code = document.getElementById('regInviteCode').value.trim();
+    if (code) body.invite_code = code;
+
+    const res = await fetch(API + '/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const json = await res.json();
+    if (json.code !== 0) {
+      errEl.textContent = json.msg; errEl.classList.add('show');
+      turnstile.reset(document.getElementById('regTurnstile'));
+      return;
+    }
+    document.getElementById('registerForm').style.display = 'none';
+    document.getElementById('registerSuccess').style.display = 'block';
+  } catch(ex) {
+    errEl.textContent = '网络错误，请稍后重试'; errEl.classList.add('show');
+  }
+});
+
+// OAuth buttons placeholder
+document.getElementById('oauthGithub').addEventListener('click', () => {
+  location.href = API + '/oauth/github/authorize';
+});
+document.getElementById('oauthQQ').addEventListener('click', () => {
+  location.href = API + '/oauth/qq/authorize';
+});
+document.getElementById('oauthGoogle').addEventListener('click', () => {
+  location.href = API + '/oauth/google/authorize';
+});
+</script>
+</body>
+</html>

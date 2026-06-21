@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>账号注销 // NEXUS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+<style>
+.auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.delete-card{width:100%;max-width:420px;background:var(--surface);border:1px solid var(--magenta);border-radius:8px;padding:32px 28px;text-align:center;position:relative;z-index:1}
+.delete-card .warn-icon{font-size:56px;margin-bottom:16px}
+.delete-card h2{font-family:var(--font-display);font-size:20px;color:var(--magenta);margin-bottom:8px}
+.delete-card p{color:var(--text-dim);font-size:14px;line-height:1.7;margin-bottom:20px}
+.delete-card ul{text-align:left;color:var(--text-dim);font-size:13px;line-height:1.8;margin-bottom:20px;padding-left:20px}
+.delete-card .btn-danger{width:100%;padding:12px;background:transparent;border:1px solid var(--magenta);border-radius:4px;color:var(--magenta);font-family:var(--font-display);font-size:14px;cursor:pointer;transition:all .2s}
+.delete-card .btn-danger:hover{background:var(--magenta);color:#fff}
+.delete-card .btn-back{display:inline-block;margin-top:16px;font-family:var(--font-mono);font-size:12px;color:var(--text-mute);text-decoration:none}
+.delete-card .btn-back:hover{color:var(--cyan)}
+.msg{display:none;padding:8px 12px;border-radius:4px;font-size:13px;margin-top:12px}
+.msg.show{display:block}
+.msg-ok{background:rgba(127,255,0,.1);color:var(--green)}
+.msg-err{background:rgba(255,0,60,.1);color:var(--magenta)}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div><div class="bg-scanlines"></div><div class="bg-glow"></div>
+<div class="auth-page">
+  <div class="delete-card">
+    <!-- Step 1: Request -->
+    <div id="stepRequest">
+      <div class="warn-icon">⚠️</div>
+      <h2>账号注销</h2>
+      <p>注销账号是一个不可逆的操作。请在操作前确认以下事项：</p>
+      <ul>
+        <li>您发布的内容将被隐藏</li>
+        <li>数据在90天软删除后可彻底清除</li>
+        <li>90天内您可以联系管理员撤销注销</li>
+        <li>论坛币不可退还</li>
+      </ul>
+      <button class="btn-danger" id="requestBtn">申请注销</button>
+      <p class="msg" id="requestMsg"></p>
+    </div>
+    <!-- Step 2: Confirm (from email link) -->
+    <div id="stepConfirm" style="display:none">
+      <div class="warn-icon">🗑️</div>
+      <h2>确认注销</h2>
+      <p>即将注销您的 NEXUS 账号。此操作无法撤销。</p>
+      <button class="btn-danger" id="confirmBtn">确认注销</button>
+      <p class="msg" id="confirmMsg"></p>
+    </div>
+    <a href="../index.html" class="btn-back">← 返回首页</a>
+  </div>
+</div>
+<script>
+const token = new URLSearchParams(location.search).get('token');
+if (token) {
+  document.getElementById('stepRequest').style.display = 'none';
+  document.getElementById('stepConfirm').style.display = '';
+}
+
+document.getElementById('requestBtn').addEventListener('click', async () => {
+  const msg = document.getElementById('requestMsg');
+  try {
+    const res = await fetch('/api/account/request-delete', { method:'POST' });
+    const json = await res.json();
+    msg.className = json.code===0 ? 'msg show msg-ok' : 'msg show msg-err';
+    msg.textContent = json.msg || '操作成功';
+  } catch(e) { msg.className='msg show msg-err';msg.textContent='网络错误'; }
+});
+
+document.getElementById('confirmBtn').addEventListener('click', async () => {
+  const msg = document.getElementById('confirmMsg');
+  try {
+    const res = await fetch('/api/account/confirm-delete', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({token}),
+    });
+    const json = await res.json();
+    msg.className = json.code===0 ? 'msg show msg-ok' : 'msg show msg-err';
+    msg.textContent = json.msg || '操作成功';
+    if (json.code === 0) {
+      document.getElementById('confirmBtn').style.display = 'none';
+      setTimeout(() => { location.href = '../index.html'; }, 3000);
+    }
+  } catch(e) { msg.className='msg show msg-err';msg.textContent='网络错误'; }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#050f08"/>
+      <stop offset="100%" stop-color="#020805"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <circle cx="100" cy="100" r="95" fill="url(#bg)"/>
+  <circle cx="100" cy="100" r="92" fill="none" stroke="#0a2a0a" stroke-width="6"/>
+  <!-- Matrix rain columns -->
+  <!-- Column 1 -->
+  <text x="30" y="45" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.8">0</text>
+  <text x="30" y="58" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.6">1</text>
+  <text x="30" y="71" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.5">1</text>
+  <text x="30" y="84" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.4">0</text>
+  <text x="30" y="97" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.3">1</text>
+  <text x="30" y="110" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.2">0</text>
+  <!-- Column 2 -->
+  <text x="45" y="35" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.6">1</text>
+  <text x="45" y="48" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.7">0</text>
+  <text x="45" y="61" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.5">0</text>
+  <text x="45" y="74" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.4">1</text>
+  <text x="45" y="87" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.3">1</text>
+  <!-- Column 3 -->
+  <text x="60" y="55" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.7">0</text>
+  <text x="60" y="68" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.6">1</text>
+  <text x="60" y="81" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.5">1</text>
+  <text x="60" y="94" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.3">0</text>
+  <!-- Column 4 -->
+  <text x="75" y="40" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.8">1</text>
+  <text x="75" y="53" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.6">0</text>
+  <text x="75" y="66" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.5">1</text>
+  <text x="75" y="79" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.4">0</text>
+  <text x="75" y="92" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.2">1</text>
+  <!-- Column 5 -->
+  <text x="90" y="48" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.7">0</text>
+  <text x="90" y="61" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.6">1</text>
+  <text x="90" y="74" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.4">0</text>
+  <text x="90" y="87" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.3">1</text>
+  <!-- Column 6 -->
+  <text x="105" y="38" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.8">1</text>
+  <text x="105" y="51" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.6">1</text>
+  <text x="105" y="64" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.5">0</text>
+  <text x="105" y="77" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.4">1</text>
+  <text x="105" y="90" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.2">0</text>
+  <!-- Column 7 -->
+  <text x="120" y="50" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.7">0</text>
+  <text x="120" y="63" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.5">1</text>
+  <text x="120" y="76" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.4">0</text>
+  <text x="120" y="89" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.3">1</text>
+  <!-- Column 8 -->
+  <text x="135" y="42" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.6">1</text>
+  <text x="135" y="55" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.7">0</text>
+  <text x="135" y="68" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.5">1</text>
+  <text x="135" y="81" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.3">0</text>
+  <!-- Column 9 -->
+  <text x="150" y="35" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.8">0</text>
+  <text x="150" y="48" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.6">1</text>
+  <text x="150" y="61" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.4">0</text>
+  <text x="150" y="74" fill="#00ff41" font-size="10" font-family="monospace" filter="url(#glow)" opacity="0.3">1</text>
+  <!-- Rain drop shape at center -->
+  <path d="M100,95 Q95,105 100,125 Q105,140 100,155 Q95,145 100,125 Q105,105 100,95" fill="#00ff41" opacity="0.2" filter="url(#glow)"/>
+  <!-- Glowing horizontal lines -->
+  <line x1="25" y1="120" x2="175" y2="120" stroke="#00ff41" stroke-width="0.5" opacity="0.15" filter="url(#glow)"/>
+  <line x1="25" y1="135" x2="175" y2="135" stroke="#00ff41" stroke-width="0.5" opacity="0.1" filter="url(#glow)"/>
+  <text x="100" y="170" text-anchor="middle" fill="#00ff41" font-size="11" font-family="Arial" filter="url(#glow)">矩阵雨滴</text>
+</svg>

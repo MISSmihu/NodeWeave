@@ -1,0 +1,527 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>撰写帖子 // NEXUS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+.editor-page{max-width:860px;margin:0 auto;padding:80px 24px 100px}
+.editor-page .back-link{display:inline-block;margin-bottom:24px;font-family:var(--font-mono);font-size:13px;color:var(--text-mute);text-decoration:none}
+.editor-page .back-link:hover{color:var(--cyan)}
+.editor-page h2{font-family:var(--font-display);font-size:18px;color:var(--cyan);margin-bottom:20px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--font-body);font-size:14px;outline:none}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--cyan)}
+.form-group textarea{min-height:300px;resize:vertical;font-family:var(--font-mono);font-size:13px;line-height:1.7}
+.form-row{display:flex;gap:12px}
+.form-row .form-group{flex:1}
+.form-group .hint{font-size:11px;color:var(--text-mute);margin-top:4px}
+.tag-input{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.tag-input .tag-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:rgba(0,240,255,.08);border:1px solid rgba(0,240,255,.15);border-radius:3px;font-family:var(--font-mono);font-size:11px;color:var(--cyan)}
+.tag-input .tag-chip .remove{color:var(--magenta);cursor:pointer;font-size:14px}
+.tag-input input{flex:1;min-width:100px;padding:4px 8px;background:transparent;border:none;color:var(--text);font-family:var(--font-mono);font-size:12px;outline:none}
+.btn-primary{font-family:var(--font-display);font-size:14px;padding:10px 32px;margin-top:8px;background:var(--cyan);color:var(--bg);border:none;border-radius:4px;cursor:pointer}
+.btn-primary:hover{box-shadow:var(--glow-cyan)}
+.btn-ghost{padding:10px 20px;background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--text-dim);font-family:var(--font-mono);font-size:13px;cursor:pointer;transition:all .2s;margin-left:8px}
+.btn-ghost:hover{border-color:var(--cyan);color:var(--cyan)}
+.error-msg{display:none;color:var(--magenta);font-size:13px;margin-top:8px}
+.error-msg.show{display:block}
+.success-msg{display:none;color:var(--green);font-size:14px;margin-top:8px}
+.success-msg.show{display:block}
+.checkbox-group{display:flex;align-items:center;gap:10px;margin-top:8px}
+.checkbox-group label{font-size:13px;color:var(--text-dim);font-family:var(--font-body);text-transform:none}
+.checkbox-group input[type=checkbox]{width:auto;accent-color:var(--cyan)}
+/* 文件上传 */
+.upload-zone{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.upload-zone input[type=file]{display:none}
+.upload-zone .btn-file{padding:10px 20px;background:var(--surface);border:1px dashed var(--border);border-radius:6px;color:var(--cyan);font-family:var(--font-mono);font-size:13px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.upload-zone .btn-file:hover{border-color:var(--cyan);background:rgba(0,240,255,.05);box-shadow:0 0 12px rgba(0,240,255,.1)}
+.upload-zone .file-info{flex:1;min-width:180px;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:6px;display:none;align-items:center;gap:10px}
+.upload-zone .file-info.show{display:flex}
+.upload-zone .file-info .fi-icon{font-size:20px;flex-shrink:0}
+.upload-zone .file-info .fi-detail{flex:1;min-width:0}
+.upload-zone .file-info .fi-name{font-family:var(--font-mono);font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.upload-zone .file-info .fi-size{font-size:10px;color:var(--text-mute);margin-top:2px}
+.upload-zone .file-info .fi-remove{color:var(--magenta);cursor:pointer;font-size:18px;flex-shrink:0;line-height:1}
+.upload-zone .fi-or{font-size:11px;color:var(--text-mute);font-family:var(--font-mono)}
+/* 赛博朋克时间选择器 */
+.datetime-picker{display:none;margin-top:8px}
+.datetime-picker.show{display:block}
+.dt-presets{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.dt-preset{padding:7px 14px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text-dim);font-family:var(--font-mono);font-size:12px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.dt-preset:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(0,240,255,.05)}
+.dt-preset.active{border-color:var(--cyan);color:var(--cyan);background:rgba(0,240,255,.08);box-shadow:0 0 8px rgba(0,240,255,.12)}
+.dt-custom-row{display:none;margin-top:10px}
+.dt-custom-row.show{display:block}
+/* 自定义日历 */
+.cyber-calendar{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;max-width:300px}
+.cyber-calendar .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cyber-calendar .cal-header button{background:none;border:1px solid var(--border);border-radius:4px;color:var(--cyan);font-family:var(--font-mono);font-size:16px;cursor:pointer;width:30px;height:30px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.cyber-calendar .cal-header button:hover{background:rgba(0,240,255,.1);border-color:var(--cyan)}
+.cyber-calendar .cal-month{font-family:var(--font-display);font-size:14px;color:var(--cyan)}
+.cyber-calendar .cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;margin-bottom:6px}
+.cyber-calendar .cal-weekdays span{font-family:var(--font-mono);font-size:10px;color:var(--text-mute);padding:4px 0}
+.cyber-calendar .cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cyber-calendar .cal-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:12px;color:var(--text-dim);border-radius:4px;cursor:pointer;transition:all .12s;border:1px solid transparent}
+.cyber-calendar .cal-day:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(0,240,255,.06)}
+.cyber-calendar .cal-day.today{color:var(--green);border-color:rgba(127,255,0,.3)}
+.cyber-calendar .cal-day.selected{background:var(--cyan);color:var(--bg);font-weight:700;border-color:var(--cyan)}
+.cyber-calendar .cal-day.other{color:var(--text-mute);opacity:.3;cursor:default}
+.cyber-calendar .cal-day.other:hover{border-color:transparent;color:var(--text-mute);background:none}
+.cal-time-row{display:flex;gap:8px;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.cal-time-row input{padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--cyan);font-family:var(--font-mono);font-size:13px;outline:none;width:80px;text-align:center}
+.cal-time-row input:focus{border-color:var(--cyan);box-shadow:0 0 8px rgba(0,240,255,.2)}
+.cal-time-row .dt-sep{color:var(--text-mute);font-family:var(--font-mono);font-size:13px}
+.dt-selected{font-family:var(--font-mono);font-size:11px;color:var(--green);margin-top:6px;display:none}
+.dt-selected.show{display:block}
+.hidden-content-section{border:1px solid var(--border);border-radius:6px;padding:16px;margin-top:12px;background:var(--surface)}
+.hidden-content-section .section-title{font-family:var(--font-display);font-size:12px;color:var(--cyan);margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-scanlines"></div>
+<div class="bg-glow"></div>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo">
+      <span class="logo-mark">◈</span><span class="logo-text">NE<span class="x">X</span>US</span>
+      <span class="logo-sub">// CYBER COMMUNITY</span>
+    </a>
+    <div class="nav-actions">
+      <button class="btn-ghost" onclick="location.href='login.html'">登录</button>
+    </div>
+  </div>
+</header>
+
+<div class="editor-page">
+  <a href="index.html" class="back-link">← 返回社区</a>
+  <h2 id="editorTitle">撰写帖子</h2>
+
+  <div id="errorMsg" class="error-msg"></div>
+  <div id="successMsg" class="success-msg"></div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label>类型</label>
+      <select id="postType">
+        <option value="post">帖子</option>
+        <option value="blog">博客</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>板块</label>
+      <select id="postBoard">
+        <option value="general">综合讨论</option>
+        <option value="qa">问答 (悬赏)</option>
+        <option value="tech">技术交流</option>
+        <option value="design">设计创意</option>
+        <option value="chat">娱乐闲聊</option>
+      </select>
+    </div>
+    <div class="form-group" id="bountyGroup" style="display:none">
+      <label>悬赏 (Ⓝ)</label>
+      <input type="number" id="bountyAmount" placeholder="设置悬赏金额，采纳后自动打赏" min="0" value="0">
+      <div class="hint">论坛币将从你的账户扣除，采纳回答后转给回答者</div>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>标题</label>
+    <input type="text" id="postTitle" maxlength="200" placeholder="给你的帖子起个标题...">
+    <div class="hint">最多200字符</div>
+  </div>
+
+  <div class="form-group">
+    <label>标签</label>
+    <div class="tag-input" id="tagContainer">
+      <input type="text" id="tagInput" placeholder="输入标签后回车添加（最多5个）">
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>内容 <span style="font-weight:400;text-transform:none;color:var(--text-mute)">（支持 Markdown）</span>
+      <input type="file" id="imgUpload" accept="image/*" onchange="uploadImage(this)" style="display:none">
+      <button type="button" onclick="document.getElementById('imgUpload').click()" style="margin-left:12px;padding:3px 10px;background:var(--surface);border:1px solid var(--border);border-radius:3px;color:var(--cyan);font-family:var(--font-mono);font-size:10px;cursor:pointer">📷 插入图片</button>
+    </label>
+    <textarea id="postContent" placeholder="撰写你的内容..."></textarea>
+  </div>
+
+  <!-- 隐藏内容设置 -->
+  <div class="hidden-content-section">
+    <div class="section-title">🔒 隐藏内容设置</div>
+    <div class="checkbox-group">
+      <input type="checkbox" id="hiddenReplyOnly">
+      <label for="hiddenReplyOnly">回复可见（回复后才可见）</label>
+    </div>
+    <div class="checkbox-group">
+      <input type="checkbox" id="hiddenTimed">
+      <label for="hiddenTimed">定时可见</label>
+      <div class="datetime-picker" id="hiddenTimeWrap">
+  <div class="dt-presets" id="dtPresets">
+    <button type="button" class="dt-preset" data-offset="3600000">1 小时后</button>
+    <button type="button" class="dt-preset" data-offset="7200000">2 小时后</button>
+    <button type="button" class="dt-preset" data-offset="21600000">6 小时后</button>
+    <button type="button" class="dt-preset" data-target="tonight">今晚 20:00</button>
+    <button type="button" class="dt-preset" data-target="tomorrow">明天 12:00</button>
+    <button type="button" class="dt-preset" data-target="custom">自定义 ▾</button>
+  </div>
+  <div class="dt-custom-row" id="dtCustomRow">
+    <div class="cyber-calendar" id="cyberCal"></div>
+    <div class="cal-time-row">
+      <input type="number" id="hiddenHour" placeholder="时" min="0" max="23" style="width:60px">
+      <span class="dt-sep">:</span>
+      <input type="number" id="hiddenMinute" placeholder="分" min="0" max="59" style="width:60px">
+      <span class="dt-sep">// 之后可见</span>
+    </div>
+  </div>
+  <div class="dt-selected" id="dtSelected"></div>
+</div>
+    </div>
+    <div class="form-group" style="margin-top:8px">
+      <textarea id="hiddenContent" placeholder="回复后或定时后才可见的内容..." style="min-height:80px"></textarea>
+      <div class="hint">这段内容将被隐藏，仅对满足条件的用户可见</div>
+    </div>
+  </div>
+
+  <!-- 附件 -->
+  <div class="form-group">
+    <label>附件</label>
+    <div class="upload-zone">
+      <input type="file" id="attachFile" onchange="handleFileSelect(this)">
+      <button type="button" class="btn-file" onclick="document.getElementById('attachFile').click()">⬆ 选择文件</button>
+      <div class="file-info" id="fileInfo">
+        <span class="fi-icon">📎</span>
+        <div class="fi-detail">
+          <div class="fi-name" id="fileName"></div>
+          <div class="fi-size" id="fileSize"></div>
+        </div>
+        <span class="fi-remove" onclick="clearFile()" title="移除">×</span>
+      </div>
+      <span class="fi-or">或</span>
+      <input type="text" id="attachUrl" placeholder="输入外链URL..." style="flex:1;min-width:180px">
+    </div>
+    <div class="hint">支持本地上传或外链，外链优先级更高</div>
+  </div>
+
+  <div class="checkbox-group">
+    <input type="checkbox" id="aiGenerated">
+    <label for="aiGenerated">内容由 AI 辅助生成</label>
+  </div>
+
+  <div style="margin-top:24px">
+    <button class="btn-primary" id="btnPublish">发布</button>
+    <button class="btn-ghost" id="btnDraft">保存草稿</button>
+  </div>
+</div>
+
+<script>
+// 标签功能
+const tagInput = document.getElementById('tagInput');
+const tagContainer = document.getElementById('tagContainer');
+const tags = [];
+
+tagInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const val = tagInput.value.trim();
+    if (val && tags.length < 5 && !tags.includes(val)) {
+      tags.push(val);
+      renderTags();
+    }
+    tagInput.value = '';
+  }
+});
+
+function renderTags() {
+  const existingChips = tagContainer.querySelectorAll('.tag-chip');
+  existingChips.forEach(c => c.remove());
+  tags.forEach((t, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'tag-chip';
+    chip.innerHTML = t + ' <span class="remove" onclick="removeTag(' + i + ')">×</span>';
+    tagContainer.insertBefore(chip, tagInput);
+  });
+}
+
+function removeTag(i) { tags.splice(i, 1); renderTags(); }
+
+// 隐藏内容开关
+document.getElementById('hiddenReplyOnly').addEventListener('change', function() {
+  document.getElementById('hiddenContent').style.display = this.checked || document.getElementById('hiddenTimed').checked ? '' : 'none';
+});
+document.getElementById('hiddenTimed').addEventListener('change', function() {
+  var wrap = document.getElementById('hiddenTimeWrap');
+  wrap.classList.toggle('show', this.checked);
+  if (!this.checked) { resetDtPicker(); }
+  
+  document.getElementById('hiddenContent').style.display = this.checked || document.getElementById('hiddenReplyOnly').checked ? '' : 'none';
+});
+
+// 错误/成功提示
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 4000);
+}
+function showSuccess(msg) {
+  const el = document.getElementById('successMsg');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+// 获取 URL 参数判断是否编辑模式
+const params = new URLSearchParams(window.location.search);
+const editId = params.get('edit');
+
+if (editId) {
+  document.getElementById('editorTitle').textContent = '编辑帖子';
+  document.getElementById('btnPublish').textContent = '保存修改';
+  document.getElementById('btnDraft').style.display = 'none';
+  // 加载已有帖子数据
+  fetch('/api/posts/' + editId)
+    .then(r => r.json())
+    .then(d => {
+      if (d.code === 0 && d.data) {
+        const p = d.data;
+        document.getElementById('postTitle').value = p.title || '';
+        document.getElementById('postContent').value = p.content || '';
+        // 悬赏字段切换
+document.getElementById('postBoard').addEventListener('change', function(){
+  document.getElementById('bountyGroup').style.display = this.value==='qa' ? '' : 'none';
+});
+document.getElementById('postType').value = p.type || 'post';
+        document.getElementById('postBoard').value = p.board_id || 'general';
+        if (p.tags) p.tags.forEach(t => { tags.push(t); renderTags(); });
+      }
+    }).catch(() => {});
+}
+
+// 文件上传处理
+var selectedFile = null;
+function handleFileSelect(input) {
+  var file = input.files[0];
+  if (!file) return;
+  selectedFile = file;
+  var info = document.getElementById('fileInfo');
+  document.getElementById('fileName').textContent = file.name;
+  var size = file.size < 1024*1024 ? (file.size/1024).toFixed(1)+' KB' : (file.size/(1024*1024)).toFixed(1)+' MB';
+  document.getElementById('fileSize').textContent = size;
+  info.classList.add('show');
+  document.getElementById('attachUrl').value = '';
+}
+// 时间选择器逻辑
+var selectedDt = null;
+// 自定义日历渲染
+var calYear, calMonth;
+var calSelected = null;
+
+function renderCalendar(){
+  var today = new Date();
+  var el = document.getElementById('cyberCal');
+  if (!calYear) { calYear = today.getFullYear(); calMonth = today.getMonth(); }
+
+  var firstDay = new Date(calYear, calMonth, 1).getDay();
+  var daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  var monthNames = ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
+  var weekDays = ['日','一','二','三','四','五','六'];
+
+  var html = '<div class="cal-header">'+
+    '<button onclick="calYear--;renderCalendar()">◂</button>'+
+    '<button onclick="calMonth--;if(calMonth<0){calMonth=11;calYear--}renderCalendar()">◀</button>'+
+    '<span class="cal-month">'+calYear+' '+monthNames[calMonth]+'</span>'+
+    '<button onclick="calMonth++;if(calMonth>11){calMonth=0;calYear++}renderCalendar()">▶</button>'+
+    '<button onclick="calYear++;renderCalendar()">▸</button>'+
+    '</div><div class="cal-weekdays">';
+  weekDays.forEach(function(d){html+='<span>'+d+'</span>'});
+  html+='</div><div class="cal-days">';
+
+  for (var i=0;i<firstDay;i++) html+='<div class="cal-day other"></div>';
+  for (var d=1;d<=daysInMonth;d++){
+    var cls = 'cal-day';
+    if (calYear===today.getFullYear() && calMonth===today.getMonth() && d===today.getDate()) cls+=' today';
+    if (calSelected && calSelected.getFullYear()===calYear && calSelected.getMonth()===calMonth && calSelected.getDate()===d) cls+=' selected';
+    html+='<div class="'+cls+'" onclick="pickDay('+d+')">'+d+'</div>';
+  }
+  html+='</div>';
+  el.innerHTML = html;
+}
+
+function pickDay(d){
+  calSelected = new Date(calYear, calMonth, d);
+  renderCalendar();
+  updateCustomDt();
+}
+
+document.getElementById('hiddenHour').addEventListener('input', updateCustomDt);
+document.getElementById('hiddenMinute').addEventListener('input', updateCustomDt);
+
+function updateCustomDt(){
+  var h = parseInt(document.getElementById('hiddenHour').value) || 0;
+  var m = parseInt(document.getElementById('hiddenMinute').value) || 0;
+  if (calSelected) {
+    selectedDt = new Date(calSelected);
+    selectedDt.setHours(h, m, 0, 0);
+    var sel = document.getElementById('dtSelected');
+    sel.textContent = '▸ 将于 '+selectedDt.toLocaleString('zh-CN',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})+' 后可见';
+    sel.classList.add('show');
+  }
+}
+
+function resetDtPicker(){
+  selectedDt = null; calSelected = null;
+  document.querySelectorAll('.dt-preset').forEach(function(b){b.classList.remove('active')});
+  document.getElementById('dtCustomRow').classList.remove('show');
+  document.getElementById('dtSelected').classList.remove('show');
+}
+
+document.getElementById('dtPresets').addEventListener('click', function(e){
+  var btn = e.target.closest('.dt-preset');
+  if (!btn) return;
+  document.querySelectorAll('.dt-preset').forEach(function(b){b.classList.remove('active')});
+  btn.classList.add('active');
+
+  var customRow = document.getElementById('dtCustomRow');
+  var sel = document.getElementById('dtSelected');
+
+  if (btn.dataset.target === 'custom') {
+    customRow.classList.add('show');
+    sel.classList.remove('show');
+    renderCalendar();
+    return;
+  }
+  customRow.classList.remove('show');
+
+  var d;
+  if (btn.dataset.offset) {
+    d = new Date(Date.now() + parseInt(btn.dataset.offset));
+  } else if (btn.dataset.target === 'tonight') {
+    d = new Date(); d.setHours(20,0,0,0);
+  } else if (btn.dataset.target === 'tomorrow') {
+    d = new Date(); d.setDate(d.getDate()+1); d.setHours(12,0,0,0);
+  }
+  selectedDt = d;
+  sel.textContent = '▸ 将于 '+d.toLocaleString('zh-CN',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})+' 后可见';
+  sel.classList.add('show');
+});
+
+function uploadImage(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var ta = document.getElementById('postContent');
+  var placeholder = '[上传中...]';
+  var cursor = ta.selectionStart;
+  ta.value = ta.value.substring(0, cursor) + placeholder + ta.value.substring(cursor);
+
+  var form = new FormData();
+  form.append('file', file);
+  form.append('upload_preset', uploadPreset);
+
+  fetch('https://api.cloudinary.com/v1_1/'+cloudName+'/image/upload', {
+    method: 'POST', body: form
+  }).then(function(r){return r.json()}).then(function(d){
+    if (d.secure_url) {
+      var md = '\n![图片]('+d.secure_url+')\n';
+      ta.value = ta.value.replace(placeholder, md);
+    } else {
+      ta.value = ta.value.replace(placeholder, '[上传失败]');
+    }
+  }).catch(function(){
+    ta.value = ta.value.replace(placeholder, '[上传失败]');
+  });
+  input.value = '';
+}
+
+function clearFile() {
+  selectedFile = null;
+  document.getElementById('fileInfo').classList.remove('show');
+  document.getElementById('attachFile').value = '';
+}
+
+// 发布按钮
+document.getElementById('btnPublish').addEventListener('click', async function() {
+  const title = document.getElementById('postTitle').value.trim();
+  const content = document.getElementById('postContent').value.trim();
+  const type = // 悬赏字段切换
+document.getElementById('postBoard').addEventListener('change', function(){
+  document.getElementById('bountyGroup').style.display = this.value==='qa' ? '' : 'none';
+});
+document.getElementById('postType').value;
+  const board_id = document.getElementById('postBoard').value;
+  const is_ai_generated = document.getElementById('aiGenerated').checked;
+  const hiddenReply = document.getElementById('hiddenReplyOnly').checked;
+  const hiddenTimed = document.getElementById('hiddenTimed').checked;
+  const hiddenContent = document.getElementById('hiddenContent').value.trim();
+  const attachUrl = document.getElementById('attachUrl').value.trim();
+  const attachName = document.getElementById('attachName').value.trim();
+
+  if (!title) { showError('请输入标题'); return; }
+  if (!content) { showError('请输入内容'); return; }
+
+  const body = {
+    title, content, type, board_id,
+    tags: tags,
+    is_ai_generated: is_ai_generated,
+    attachment_url: finalAttachUrl,
+    attachment_name: finalAttachName,
+    hidden_content: hiddenContent,
+    bounty: parseInt(document.getElementById('bountyAmount').value) || 0
+  };
+
+  // 可见性设置
+  if (hiddenTimed) {
+    var visibleAfter = selectedDt ? selectedDt.getTime() : null;
+    if (selectedDt) body.visible_after = selectedDt.getTime();
+    body.visibility = 'timed';
+  } else if (hiddenReply) {
+    body.visibility = 'reply';
+  }
+
+  const url = editId ? '/api/posts/' + editId : '/api/posts';
+  const method = editId ? 'PUT' : 'POST';
+
+  try {
+    const resp = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(body)
+    });
+    const data = await resp.json();
+    if (data.code === 0) {
+      showSuccess(editId ? '已保存' : '发布成功！即将跳转...');
+      if (!editId) setTimeout(() => { location.href = 'index.html'; }, 1500);
+    } else {
+      showError(data.msg || '网络错误');
+    }
+  } catch(e) {
+    showError('网络错误，请重试');
+  }
+});
+
+// 保存草稿（暂存到 localStorage）
+document.getElementById('btnDraft').addEventListener('click', function() {
+  const draft = {
+    title: document.getElementById('postTitle').value,
+    content: document.getElementById('postContent').value,
+    type: // 悬赏字段切换
+document.getElementById('postBoard').addEventListener('change', function(){
+  document.getElementById('bountyGroup').style.display = this.value==='qa' ? '' : 'none';
+});
+document.getElementById('postType').value,
+    tags: tags,
+    savedAt: new Date().toISOString()
+  };
+  localStorage.setItem('nexus_draft', JSON.stringify(draft));
+  showSuccess('草稿已保存');
+});
+</script>
+</body>
+</html>

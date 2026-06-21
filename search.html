@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>搜索 // NEXUS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+.search-page{max-width:700px;margin:0 auto;padding:80px 24px 100px}
+.search-bar{display:flex;gap:10px;margin-bottom:24px}
+.search-bar input{flex:1;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:15px;outline:none}
+.search-bar input:focus{border-color:var(--cyan)}
+.search-bar button{padding:12px 24px;background:var(--cyan);color:var(--bg);border:none;border-radius:6px;font-family:var(--font-display);font-size:14px;cursor:pointer}
+.result-item{padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:10px;text-decoration:none;display:block;transition:all .2s}
+.result-item:hover{border-color:var(--cyan)}
+.result-item .title{font-size:15px;color:var(--text);margin-bottom:4px}
+.result-item .excerpt{font-size:13px;color:var(--text-dim)}
+.result-item .meta{font-size:11px;color:var(--text-mute);margin-top:6px}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div><div class="bg-scanlines"></div><div class="bg-glow"></div>
+<header class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo"><span class="logo-mark">◈</span><span class="logo-text">NE<span class="x">X</span>US</span></a>
+    <div class="nav-actions"><a href="index.html" class="btn-ghost" style="border:1px solid var(--border);padding:8px 16px">返回</a></div>
+  </div>
+</header>
+<main class="search-page">
+  <div class="search-bar">
+    <input type="text" id="searchQuery" placeholder="搜索帖子 / 用户 / 标签..." onkeydown="if(event.key==='Enter')search()">
+    <button onclick="search()">搜索</button>
+  </div>
+  <div id="searchResults"></div>
+</main>
+<script>
+var q = new URLSearchParams(location.search).get('q');
+if (q) { document.getElementById('searchQuery').value = q; search(); }
+
+async function search() {
+  var query = document.getElementById('searchQuery').value.trim();
+  if (!query) return;
+  var results = document.getElementById('searchResults');
+  results.innerHTML = '<p style="color:var(--text-mute)">搜索中...</p>';
+
+  // 并行搜索帖子和用户
+  try {
+    var postRes = await fetch('/api/posts?search=' + encodeURIComponent(query) + '&pageSize=10');
+    var postJson = await postRes.json();
+    var html = '';
+    if (postJson.code === 0 && postJson.data.posts.length) {
+      html += '<h3 style="font-family:var(--font-display);font-size:14px;color:var(--cyan);margin-bottom:12px">帖子</h3>';
+      postJson.data.posts.forEach(function(p){
+        html += '<a href="post.html?id=' + p.id + '" class="result-item"><div class="title">' + h(p.title||'无标题') + '</div><div class="meta">' + h(p.username||'') + ' · ' + new Date(p.created_at).toLocaleDateString('zh-CN') + '</div></a>';
+      });
+    }
+    // 也尝试搜用户
+    try {
+      var userRes = await fetch('/api/users/search?q=' + encodeURIComponent(query));
+      var userJson = await userRes.json();
+      if (userJson.code === 0 && userJson.data && userJson.data.length) {
+        html += '<h3 style="font-family:var(--font-display);font-size:14px;color:var(--cyan);margin:16px 0 12px">用户</h3>';
+        userJson.data.forEach(function(u){
+          html += '<a href="profile.html?id=' + u.id + '" class="result-item"><div class="title">@' + h(u.username) + '</div><div class="meta">' + h(u.display_name||'') + ' · 声望 ' + u.reputation + '</div></a>';
+        });
+      }
+    } catch(e) {}
+    results.innerHTML = html || '<p style="color:var(--text-mute);text-align:center;padding:40px">未找到结果</p>';
+  } catch(e) { results.innerHTML = '<p style="color:var(--text-mute)">搜索失败</p>'; }
+}
+function h(s) { var d=document.createElement('div');d.textContent=s||'';return d.innerHTML; }
+</script>
+</body>
+</html>
