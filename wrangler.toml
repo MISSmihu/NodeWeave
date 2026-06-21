@@ -15,6 +15,3 @@ ENV = "production"
 TURNSTILE_SITE_KEY = "1x00000000000000000000AA"
 SITE_URL = "https://nodeweave.pages.dev"
 
-[assets]
-directory = "./"
-ignore = ["node_modules/**", ".git/**", ".wrangler/**", "api/**", "nexus-badges/**", "badges_prompts/**", "_rename.py", ".agents/**"]
