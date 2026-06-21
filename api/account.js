@@ -23,6 +23,7 @@ account.post('/send-sms', requireLogin, async (c) => {
   if (!(await verifyTurnstile(turnstile_token, c.env))) return err(c, CODE.TURNSTILE_FAIL, '人机验证失败');
 
   // 检查60秒内是否已发送
+  const recent = await c.env.DB.prepare(
     'SELECT COUNT(*) as cnt FROM verification_tokens WHERE user_id=? AND type=? AND created_at > ?'
   ).bind(userId, 'phone_verify', Date.now() - 60000).first();
   if (recent && recent.cnt > 0) return err(c, CODE.RATE_LIMIT, '请等待60秒后再发送');
