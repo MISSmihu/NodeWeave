@@ -9,6 +9,6 @@ database_name = "nodeweave-db"
 database_id = "9fb68337-7fd3-4ac7-895b-05c1aa3950d9"
 
 [vars]
-ENV = "development"
+ENV = "production"
 TURNSTILE_SITE_KEY = "1x00000000000000000000AA"
-SITE_URL = "http://localhost:8080"
+SITE_URL = "https://nodeweave.pages.dev"
