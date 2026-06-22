@@ -206,7 +206,7 @@ auth.post('/reset-password', async (c) => {
 
 // ====== 邮件发送辅助 ======
 async function sendVerificationEmail(to, token, env) {
-  const siteUrl = env.SITE_URL || 'https://nodeweave.pages.dev';
+  const siteUrl = env.SITE_URL || 'https://nodeweave.wiltonmaggiojb.workers.dev';
   const link = `${siteUrl}/verify-email.html?token=${token}`;
   await sendEmail(to, 'NodeWeave 邮箱验证', `
     <h2>欢迎加入 NodeWeave 赛博社区</h2>
@@ -218,7 +218,7 @@ async function sendVerificationEmail(to, token, env) {
 }
 
 async function sendPasswordResetEmail(to, token, env) {
-  const siteUrl = env.SITE_URL || 'https://nodeweave.pages.dev';
+  const siteUrl = env.SITE_URL || 'https://nodeweave.wiltonmaggiojb.workers.dev';
   const link = `${siteUrl}/forgot-password.html?token=${token}`;
   await sendEmail(to, 'NodeWeave 密码重置', `
     <h2>密码重置请求</h2>

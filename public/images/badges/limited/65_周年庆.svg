@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1a1505"/>
+      <stop offset="100%" stop-color="#0a0a02"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffd700"/>
+      <stop offset="50%" stop-color="#ffec8b"/>
+      <stop offset="100%" stop-color="#daa520"/>
+    </linearGradient>
+    <linearGradient id="cake" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff69b4"/>
+      <stop offset="100%" stop-color="#ff1493"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="95" fill="url(#bg)"/>
+  <circle cx="100" cy="100" r="92" fill="none" stroke="#4a3a1a" stroke-width="6"/>
+  <!-- Plate -->
+  <ellipse cx="100" cy="150" rx="55" ry="8" fill="none" stroke="#ffd700" stroke-width="1.5" filter="url(#glow)" opacity="0.5"/>
+  <!-- Cake bottom layer -->
+  <rect x="55" y="115" width="90" height="35" rx="3" fill="none" stroke="url(#cake)" stroke-width="2.5" filter="url(#glow)"/>
+  <rect x="55" y="115" width="90" height="35" rx="3" fill="#ff69b4" opacity="0.08"/>
+  <!-- Cake icing drips -->
+  <path d="M60,118 Q65,125 70,118 Q75,128 80,118 Q85,125 90,118 Q95,128 100,118 Q105,125 110,118 Q115,128 120,118 Q125,125 130,118 Q135,128 140,118" fill="none" stroke="url(#cake)" stroke-width="1.5" filter="url(#glow)" opacity="0.5"/>
+  <!-- Cake top layer -->
+  <rect x="70" y="85" width="60" height="30" rx="3" fill="none" stroke="url(#cake)" stroke-width="2" filter="url(#glow)"/>
+  <rect x="70" y="85" width="60" height="30" rx="3" fill="#ff1493" opacity="0.08"/>
+  <!-- Number 1 on cake -->
+  <text x="100" y="108" text-anchor="middle" fill="url(#gold)" font-size="22" font-weight="bold" font-family="Arial" filter="url(#glow)">1</text>
+  <!-- Candle -->
+  <rect x="97" y="65" width="6" height="20" fill="none" stroke="url(#gold)" stroke-width="1.5" filter="url(#glow)"/>
+  <rect x="97" y="65" width="6" height="20" fill="#ffd700" opacity="0.1"/>
+  <!-- Candle stripes -->
+  <line x1="97" y1="72" x2="103" y2="72" stroke="#ffd700" stroke-width="0.5" opacity="0.3"/>
+  <line x1="97" y1="78" x2="103" y2="78" stroke="#ffd700" stroke-width="0.5" opacity="0.3"/>
+  <!-- Flame -->
+  <path d="M100,65 Q96,55 100,45 Q104,55 100,65 Z" fill="url(#gold)" opacity="0.4" filter="url(#glow)"/>
+  <path d="M100,65 Q96,55 100,45 Q104,55 100,65 Z" fill="none" stroke="#ffd700" stroke-width="1" filter="url(#glow)"/>
+  <circle cx="100" cy="52" r="3" fill="#fff8dc" opacity="0.5" filter="url(#glow)"/>
+  <!-- Sparkles -->
+  <circle cx="80" cy="50" r="1.5" fill="#ffd700" filter="url(#glow)" opacity="0.5"/>
+  <circle cx="120" cy="48" r="1.5" fill="#ffd700" filter="url(#glow)" opacity="0.5"/>
+  <circle cx="70" cy="70" r="1" fill="#ffec8b" filter="url(#glow)" opacity="0.4"/>
+  <circle cx="130" cy="70" r="1" fill="#ffec8b" filter="url(#glow)" opacity="0.4"/>
+  <!-- Confetti -->
+  <rect x="50" y="60" width="4" height="2" rx="1" fill="#ff69b4" transform="rotate(30,52,61)" filter="url(#glow)" opacity="0.5"/>
+  <rect x="146" y="60" width="4" height="2" rx="1" fill="#00bfff" transform="rotate(-30,148,61)" filter="url(#glow)" opacity="0.5"/>
+  <text x="100" y="175" text-anchor="middle" fill="#ffd700" font-size="11" font-family="Arial" filter="url(#glow)">周年庆</text>
+</svg>

@@ -1,348 +1,4 @@
-﻿﻿
-// 首页 - 内嵌静态内容
-app.get('/', (c) => c.html(`<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NodeWeave // 赛博社区</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0a0a0f">
-<style>.spinner{display:inline-block}</style>
-<style>
-/* IP/天气组件 */
-.widget-weather{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:18px;margin-bottom:16px;position:relative;overflow:hidden}
-.widget-weather::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--cyan),var(--purple),var(--magenta))}
-.weather-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.weather-header .title{font-family:var(--font-display);font-size:13px;color:var(--cyan)}
-.weather-header .location{font-family:var(--font-mono);font-size:10px;color:var(--text-mute)}
-.weather-main{display:flex;align-items:center;gap:14px}
-.weather-icon{font-size:42px;flex-shrink:0}
-.weather-info{flex:1}
-.weather-temp{font-family:var(--font-display);font-size:28px;color:var(--text);line-height:1}
-.weather-desc{font-size:12px;color:var(--text-dim);margin-top:2px}
-.weather-details{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)}
-.weather-detail{display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10px;color:var(--text-mute)}
-.weather-detail .val{color:var(--text-dim)}
-.weather-forecast{display:flex;gap:10px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);overflow-x:auto}
-.forecast-day{text-align:center;min-width:50px}
-.forecast-day .day{font-family:var(--font-mono);font-size:9px;color:var(--text-mute);margin-bottom:4px}
-.forecast-day .icon{font-size:22px}
-.forecast-day .temp{font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-top:2px}
-@keyframes weatherPulse{0%,100%{opacity:.06}50%{opacity:.12}}
-.widget-weather .bg-dot{position:absolute;width:60px;height:60px;border-radius:50%;background:var(--cyan);opacity:.06;animation:weatherPulse 4s ease-in-out infinite}
-.widget-weather .bg-dot:nth-child(2){top:10px;right:20px;width:30px;height:30px;animation-delay:2s}
-</style>
-</head>
-<body>
-
-<!-- 全局背景：网格 + 扫描线 -->
-<div class="bg-grid"></div>
-<div class="bg-scanlines"></div>
-<div class="bg-glow"></div>
-
-<!-- ===== 顶部导航 ===== -->
-<header class="nav">
-  <div class="nav-inner">
-    <a href="index.html" class="logo">
-      <span class="logo-mark">◈</span>
-      <span class="logo-text">NE<span class="x">X</span>US</span>
-      <span class="logo-sub">// CYBER COMMUNITY</span>
-    </a>
-    <nav class="nav-links">
-      <a href="index.html" class="active">动态</a>
-      <a href="boards.html">论坛</a>
-      <a href="#">博客</a>
-      <a href="shop.html">商城</a>
-      <a href="achievements.html">成就</a>
-    </nav>
-    <div class="nav-search">
-      <span class="search-ico">⌕</span>
-      <input type="text" placeholder="搜索帖子 / 用户 / 标签..." id="navSearch" onkeydown="if(event.key==='Enter')location.href='search.html?q='+encodeURIComponent(this.value)">
-      <kbd>/</kbd>
-    </div>
-    <div class="nav-actions">
-      <button class="btn-ghost" onclick="location.href='login.html'">登录</button>
-      <button class="btn-primary" onclick="location.href='editor.html'">+ 发帖</button>
-    </div>
-  </div>
-</header>
-
-<!-- ===== Hero 区 ===== -->
-<section class="hero">
-  <div class="hero-grid"></div>
-  <div class="hero-content">
-    <div class="hero-tag">
-      <span class="dot"></span> SYSTEM ONLINE · 已连接 1,247 个节点
-    </div>
-    <h1 class="hero-title">
-      <span class="glitch" data-text="未来已来">未来已来</span>
-      <span class="hero-title-sub">只是尚未均匀分布</span>
-    </h1>
-    <p class="hero-desc">
-      一个属于开发者、极客与创造者的赛博社区。在这里分享技术、记录思考、连接同频的灵魂。
-    </p>
-    <div class="hero-actions">
-      <button class="btn-primary btn-lg" onclick="location.href='boards.html'">开始探索 →</button>
-      <button class="btn-outline btn-lg" onclick="location.href='editor.html'">撰写文章</button>
-    </div>
-    <div class="hero-stats">
-      <div class="stat">
-        <div class="stat-num" id="statMembers">--</div>
-        <div class="stat-label">活跃成员</div>
-      </div>
-      <div class="stat-divider"></div>
-      <div class="stat">
-        <div class="stat-num" id="statPosts">--</div>
-        <div class="stat-label">技术讨论</div>
-      </div>
-      <div class="stat-divider"></div>
-      <div class="stat">
-        <div class="stat-num" id="statBlogs">--</div>
-        <div class="stat-label">原创博客</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ===== 主体布局 ===== -->
-<main class="layout">
-
-  <!-- 左侧：Feed 流 -->
-  <section class="feed">
-    <div class="feed-tabs">
-      <button class="tab active">推荐</button>
-      <button class="tab">最新</button>
-      <button class="tab">热榜</button>
-      <button class="tab">关注</button>
-      <div class="tab-filter">
-        <span>⚡ 实时更新</span>
-      </div>
-    </div>
-
-    <!-- Feed 动态加载 -->
-    <div id="feedContainer">
-      <div style="text-align:center;padding:40px;color:var(--text-mute)">
-        <div class="spinner" style="width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--cyan);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px"></div>
-        加载中...
-      </div>
-    </div>
-    <button class="btn-loadmore" id="btnLoadmore" onclick="loadMorePosts()" style="display:none">加载更多 ↓</button>
-  </section>
-
-  <!-- 右侧栏 -->
-  <aside class="sidebar">
-
-    <!-- IP归属 + 天气预报 -->
-    <div class="widget-weather" id="weatherWidget">
-      <div class="bg-dot"></div><div class="bg-dot"></div>
-      <div class="weather-header">
-        <span class="title">🌐 节点信息</span>
-        <span class="location" id="ipLocation">定位中...</span>
-      </div>
-      <div class="weather-main">
-        <div class="weather-icon" id="weatherIcon">--</div>
-        <div class="weather-info">
-          <div class="weather-temp" id="weatherTemp">--</div>
-          <div class="weather-desc" id="weatherDesc">加载中...</div>
-        </div>
-      </div>
-      <div class="weather-details">
-        <div class="weather-detail">💧 湿度 <span class="val" id="wHumidity">--</span></div>
-        <div class="weather-detail">🌬 风速 <span class="val" id="wWind">--</span></div>
-        <div class="weather-detail">👁 能见度 <span class="val" id="wVis">--</span></div>
-        <div class="weather-detail">🌡 体感 <span class="val" id="wFeels">--</span></div>
-      </div>
-      <div class="weather-forecast" id="weatherForecast"></div>
-    </div>
-
-    <!-- 个人卡片 / 登录引导 -->
-    <div class="widget widget-join">
-      <div class="widget-glow"></div>
-      <div class="join-avatar">◈</div>
-      <h3>加入赛博社区</h3>
-      <p>注册后即可发帖、关注作者、收藏文章，并解锁成就系统。</p>
-      <button class="btn-primary btn-block" onclick="location.href='login.html'">立即注册</button>
-    </div>
-
-    <!-- 热门话题 -->
-    <div class="widget">
-      <div class="widget-header">
-        <span class="widget-title">🔥 热门话题</span>
-        <span class="widget-sub">TRENDING</span>
-      </div>
-      <ul class="topic-list">
-        <li><span style="color:var(--text-mute);font-size:13px">启动后端后加载...</span></li>
-      </ul>
-    </div>
-
-    <!-- 活跃用户 -->
-    <div class="widget">
-      <div class="widget-header">
-        <span class="widget-title">⚡ 本周活跃</span>
-        <span class="widget-sub">LEADERBOARD</span>
-      </div>
-      <ul class="user-list">
-            <li><span style="color:var(--text-mute);font-size:13px">启动后端后加载...</span></li>
-          </ul>
-    </div>
-
-  </aside>
-</main>
-
-<!-- ===== 底部 ===== -->
-<footer class="footer">
-  <div class="footer-inner">
-    <div class="footer-brand">
-      <span class="logo-mark">◈</span> NE<span style="color:var(--magenta)">X</span>US
-      <span class="footer-copy">© 2026 · 赛博社区 · 一切均按开源协议发布</span>
-    </div>
-    <div class="footer-links">
-      <a href="#">关于</a>
-      <a href="legal/terms.html">条款</a>
-      <a href="legal/privacy.html">隐私</a>
-      <a href="#">API</a>
-      <a href="https://github.com" target="_blank">GitHub</a>
-    </div>
-    <div class="footer-tagline">// STAY CURIOUS · KEEP SHIPPING //</div>
-  </div>
-</footer>
-
-<script src="script.js"></script>
-<script>
-var feedPage=1,feedSort='latest';
-async function loadFeed(){
-  var c=document.getElementById('feedContainer');
-  try{
-    var r=await fetch('/api/posts?page='+feedPage+'&pageSize=10&sort='+feedSort);
-    var j=await r.json();
-    if(j.code!==0||!j.data.posts){c.innerHTML='<p style="color:var(--text-mute);text-align:center;padding:40px">请先启动后端服务</p>';return;}
-    if(!j.data.posts.length&&feedPage===1){c.innerHTML='<p style="color:var(--text-mute);text-align:center;padding:40px">暂无帖子，<a href="editor.html" style="color:var(--cyan)">发一篇</a>吧</p>';return;}
-    var h=j.data.posts.map(function(p){
-      var tags=(p.tags||[]).map(function(t){return'<span class="tag tag-cyan">#'+xh(t)+'</span>'}).join('');
-      return'<article class="card" onclick="location.href=\'post.html?id='+p.id+'\'"><div class="card-body"><div class="card-meta">'+tags+'<span class="card-type">'+(p.type==='blog'?'博客':'帖子')+'</span> . <span>@'+xh(p.username||p.display_name)+'</span> . <span>'+timeAgo(p.created_at)+'</span></div><h2 class="card-title">'+xh(p.title)+'</h2><div class="card-footer"><span class="card-stat">👁 '+(p.view_count||0)+'</span><span class="card-stat">💬 '+(p.comment_count||0)+'</span><span class="card-stat">⭐ '+(p.like_count||0)+'</span></div></div></article>';
-    }).join('');
-    if(feedPage===1)c.innerHTML=h;else c.innerHTML+=h;
-    document.getElementById('btnLoadmore').style.display=j.data.posts.length>=10?'':'none';
-  }catch(e){if(feedPage===1)c.innerHTML='<p style="color:var(--text-mute);text-align:center;padding:40px">请先启动后端服务</p>';}
-}
-function loadMorePosts(){feedPage++;loadFeed();}
-document.querySelectorAll('.feed-tabs .tab').forEach(function(t){
-  t.addEventListener('click',function(){
-    document.querySelectorAll('.feed-tabs .tab').forEach(function(x){x.classList.remove('active')});
-    t.classList.add('active');feedPage=1;
-    feedSort=t.textContent.trim()==='热榜'?'hot':'latest';
-    loadFeed();
-  });
-});
-function timeAgo(ts){var d=Date.now()-ts;if(d<3600000)return Math.floor(d/60000)+'分钟前';if(d<86400000)return Math.floor(d/3600000)+'小时前';return Math.floor(d/86400000)+'天前';}
-function xh(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
-loadFeed();
-</script>
-<script>
-async function loadWeather() {
-  var lat, lon, loc = '';
-  var locResults = [];
-
-  // 并发查询多个IP定位服务，投票决定
-  async function tryService(url, parser) {
-    try {
-      var r = await fetch(url); var d = await r.json();
-      var parsed = parser(d);
-      if (parsed.lat && parsed.lon) locResults.push(parsed);
-    } catch(e) {}
-  }
-
-  await Promise.all([
-    tryService('https://ipapi.co/json/', function(d){ return {lat:d.latitude,lon:d.longitude,loc:(d.city||'')+', '+(d.country_name||'')}; }),
-    tryService('http://ip-api.com/json/?lang=zh-CN', function(d){ return {lat:d.lat,lon:d.lon,loc:(d.city||'')+', '+(d.country||'')}; }),
-    tryService('https://api.ip.sb/geoip', function(d){ return {lat:d.latitude,lon:d.longitude,loc:(d.city||'')+', '+(d.country||'')}; })
-  ]);
-
-  if (locResults.length > 0) {
-    // 取出现最多的位置
-    var countMap = {};
-    locResults.forEach(function(r){ var k=r.loc; countMap[k]=(countMap[k]||0)+1; });
-    var best = Object.keys(countMap).sort(function(a,b){return countMap[b]-countMap[a]})[0];
-    var bestR = locResults.find(function(r){return r.loc===best});
-    lat = bestR.lat; lon = bestR.lon; loc = best;
-  } else {
-    loc = '定位失败';
-  }
-
-  document.getElementById('ipLocation').textContent = loc || '定位中...';
-  if (!lat || !lon) { document.getElementById('weatherDesc').textContent = '无法获取位置'; return; }
-
-  // 3. Open-Meteo 天气
-  try {
-    var wRes = await fetch('https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,visibility&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=4');
-    var wData = await wRes.json();
-    if (wData.current) {
-      var cur = wData.current; var wmo = cur.weather_code;
-      document.getElementById('weatherIcon').textContent = getWeatherIcon(wmo);
-      document.getElementById('weatherTemp').textContent = cur.temperature_2m + '°C';
-      document.getElementById('weatherDesc').textContent = getWeatherDesc(wmo);
-      document.getElementById('wHumidity').textContent = cur.relative_humidity_2m + '%';
-      document.getElementById('wWind').textContent = cur.wind_speed_10m + ' km/h';
-      document.getElementById('wVis').textContent = (cur.visibility/1000).toFixed(1) + ' km';
-      document.getElementById('wFeels').textContent = cur.apparent_temperature + '°C';
-    }
-    if (wData.daily) {
-      var days = ['日','一','二','三']; var fcHtml = '';
-      for (var i=0;i<Math.min(4,wData.daily.time.length);i++) {
-        fcHtml += '<div class="forecast-day"><div class="day">周'+days[new Date(wData.daily.time[i]).getDay()]+'</div>'+
-          '<div class="icon">'+getWeatherIcon(wData.daily.weather_code[i])+'</div>'+
-          '<div class="temp">'+Math.round(wData.daily.temperature_2m_max[i])+'°/'+Math.round(wData.daily.temperature_2m_min[i])+'°</div></div>';
-      }
-      document.getElementById('weatherForecast').innerHTML = fcHtml;
-    }
-  } catch(e) { document.getElementById('weatherDesc').textContent = '天气获取失败'; }
-}
-
-function getWeatherIcon(code) {
-  if (code===0) return '☀️';
-  if (code<=3) return '🌤️';
-  if (code<=48) return '☁️';
-  if (code<=57) return '🌧️';
-  if (code<=67) return '🌧️';
-  if (code<=77) return '❄️';
-  if (code<=82) return '🌧️';
-  if (code<=86) return '🌨️';
-  if (code<=99) return '⛈️';
-  return '🌡️';
-}
-
-function getWeatherDesc(code) {
-  if (code===0) return '晴朗';
-  if (code<=3) return '多云';
-  if (code<=48) return '阴天';
-  if (code<=57) return '小雨';
-  if (code<=67) return '中雨';
-  if (code<=77) return '小雪';
-  if (code<=82) return '阵雨';
-  if (code<=86) return '雨夹雪';
-  if (code<=99) return '雷暴';
-  return '未知';
-}
-
-loadWeather();
-</script>
-</body>
-</html>
-`));
-
-// 静态页面路由
-app.get('/:page.html', async (c) => {
-  const page = c.req.param('page');
-  const validPages = ['login','shop','achievements','profile','boards','board','post','editor','search','notifications','signin','forgot-password','verify-email'];
-  if (!validPages.includes(page)) return c.notFound();
-  // Return redirect to worker URL with full path
-  return c.redirect(`/${page}.html`);
-});
-// api/index.js - Worker 入口，挂载所有路由
+﻿// api/index.js - Worker 入口，挂载所有路由
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
@@ -580,6 +236,82 @@ async function runMigrations(db) {
   for (const sql of migrations) {
     await db.prepare(sql).run();
   }
+  const compatibilityStatements = [
+    `ALTER TABLE site_config ADD COLUMN id INTEGER DEFAULT 1`,
+    `ALTER TABLE site_config ADD COLUMN registration_enabled INTEGER DEFAULT 1`,
+    `ALTER TABLE site_config ADD COLUMN invite_code_required INTEGER DEFAULT 0`,
+    `ALTER TABLE site_config ADD COLUMN email_verification_required INTEGER DEFAULT 1`,
+    `ALTER TABLE site_config ADD COLUMN real_name_mode TEXT DEFAULT 'off'`,
+    `ALTER TABLE site_config ADD COLUMN phone_bind_mode TEXT DEFAULT 'off'`,
+    `ALTER TABLE site_config ADD COLUMN oauth_github_enabled INTEGER DEFAULT 0`,
+    `ALTER TABLE site_config ADD COLUMN oauth_qq_enabled INTEGER DEFAULT 0`,
+    `ALTER TABLE site_config ADD COLUMN oauth_google_enabled INTEGER DEFAULT 0`,
+    `ALTER TABLE site_config ADD COLUMN signin_reward_enabled INTEGER DEFAULT 1`,
+    `ALTER TABLE site_config ADD COLUMN coin_enabled INTEGER DEFAULT 1`,
+    `ALTER TABLE site_config ADD COLUMN user_level_enabled INTEGER DEFAULT 1`,
+    `ALTER TABLE site_config ADD COLUMN teen_mode_enabled INTEGER DEFAULT 0`,
+    `ALTER TABLE users ADD COLUMN phone_hash TEXT DEFAULT ''`,
+    `ALTER TABLE users ADD COLUMN id_card_hash TEXT DEFAULT ''`,
+    `ALTER TABLE users ADD COLUMN real_name_status TEXT DEFAULT 'unverified'`,
+    `ALTER TABLE posts ADD COLUMN author_id TEXT DEFAULT ''`,
+    `ALTER TABLE posts ADD COLUMN is_pinned INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN is_hidden INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN is_ai_generated INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN visibility TEXT DEFAULT 'public'`,
+    `ALTER TABLE posts ADD COLUMN visible_after INTEGER`,
+    `ALTER TABLE posts ADD COLUMN attachment_url TEXT DEFAULT ''`,
+    `ALTER TABLE posts ADD COLUMN attachment_name TEXT DEFAULT ''`,
+    `ALTER TABLE posts ADD COLUMN downvote_count INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN tip_total INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN rating_avg REAL DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN rating_count INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN accepted_answer_id TEXT DEFAULT ''`,
+    `ALTER TABLE comments ADD COLUMN author_id TEXT DEFAULT ''`,
+    `ALTER TABLE comments ADD COLUMN is_hidden INTEGER DEFAULT 0`,
+    `ALTER TABLE boards ADD COLUMN is_public INTEGER DEFAULT 1`,
+    `ALTER TABLE boards ADD COLUMN post_count INTEGER DEFAULT 0`,
+    `ALTER TABLE boards ADD COLUMN moderators TEXT DEFAULT ''`,
+    `ALTER TABLE user_badges ADD COLUMN id TEXT DEFAULT ''`,
+    `ALTER TABLE user_badges ADD COLUMN equipped INTEGER DEFAULT 0`,
+    `ALTER TABLE user_achievements ADD COLUMN id TEXT DEFAULT ''`,
+    `ALTER TABLE user_achievements ADD COLUMN created_at INTEGER DEFAULT 0`,
+    `ALTER TABLE coin_logs ADD COLUMN balance_after INTEGER DEFAULT 0`
+  ];
+  for (const sql of compatibilityStatements) {
+    try {
+      await db.prepare(sql).run();
+    } catch (error) {
+      const message = String(error.message || error);
+      if (!message.includes('duplicate column name') && !message.includes('no such table')) {
+        throw error;
+      }
+    }
+  }
+  await db.prepare(`CREATE TABLE IF NOT EXISTS post_tags (post_id TEXT NOT NULL, tag TEXT NOT NULL, PRIMARY KEY(post_id, tag))`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS board_applications (id TEXT PRIMARY KEY, applicant_id TEXT NOT NULL, board_name TEXT NOT NULL, description TEXT, status TEXT DEFAULT 'pending', reviewed_by TEXT, reviewed_at INTEGER, created_at INTEGER NOT NULL)`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS coin_logs (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, amount INTEGER NOT NULL, type TEXT NOT NULL, ref_id TEXT, balance_after INTEGER DEFAULT 0, created_at INTEGER NOT NULL)`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS signin_records (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, signin_date TEXT NOT NULL, streak INTEGER DEFAULT 1, reward INTEGER DEFAULT 0, created_at INTEGER NOT NULL, UNIQUE(user_id, signin_date))`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS post_likes (post_id TEXT NOT NULL, user_id TEXT NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY (post_id, user_id))`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS post_downvotes (post_id TEXT NOT NULL, user_id TEXT NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY (post_id, user_id))`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS post_tips (id TEXT PRIMARY KEY, post_id TEXT NOT NULL, from_user TEXT NOT NULL, to_user TEXT NOT NULL, amount INTEGER NOT NULL, message TEXT DEFAULT '', created_at INTEGER NOT NULL)`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS post_ratings (post_id TEXT NOT NULL, user_id TEXT NOT NULL, score INTEGER NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY (post_id, user_id))`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS bounty_logs (id TEXT PRIMARY KEY, post_id TEXT NOT NULL, from_user TEXT NOT NULL, to_user TEXT NOT NULL, amount INTEGER NOT NULL, created_at INTEGER NOT NULL)`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS user_bans (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, type TEXT NOT NULL, reason TEXT, banned_until INTEGER, banned_by TEXT NOT NULL, created_at INTEGER NOT NULL)`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS ai_review_config (id INTEGER PRIMARY KEY DEFAULT 1 CHECK(id=1), enabled INTEGER DEFAULT 0, provider TEXT DEFAULT 'glm', model TEXT DEFAULT 'glm-4-flash', threshold INTEGER DEFAULT 60, auto_block INTEGER DEFAULT 80, updated_at INTEGER, updated_by TEXT)`).run();
+  await db.prepare(`INSERT OR IGNORE INTO site_config (id) VALUES (1)`).run().catch(async () => {
+    await db.prepare(`INSERT INTO site_config (key,value,updated_at,id) SELECT 'defaults','{}',?,1 WHERE NOT EXISTS (SELECT 1 FROM site_config WHERE id=1)`).bind(Date.now()).run();
+  });
+  await db.prepare(`INSERT OR IGNORE INTO ai_review_config (id) VALUES (1)`).run();
+  await db.prepare(`INSERT OR IGNORE INTO boards(id,name,slug,description,icon,color,created_by,is_public,sort_order,created_at) VALUES
+    ('b_general','综合讨论','general','自由讨论，不限话题','💬','#00f0ff','system',1,1,0),
+    ('b_qa','问答','qa','技术问答与悬赏，采纳打赏论坛币','❓','#ffd700','system',1,2,0),
+    ('b_tech','技术交流','tech','技术分享与心得','💻','#7fff00','system',1,3,0),
+    ('b_dev','开发','dev','编程语言与框架','⚡','#9d00ff','system',1,4,0),
+    ('b_ai','人工智能','ai','AI/ML 技术讨论','🤖','#ffd700','system',1,6,0),
+    ('b_chat','娱乐闲聊','chat','灌水摸鱼，轻松闲聊，分享日常','💬','#ff69b4','system',1,8,0),
+    ('b_promo','推广','promo','产品推广、项目宣传与商务合作','📢','#ff8c00','system',1,9,0),
+    ('b_share','福利分享','share','资源分享、白嫖福利与优惠信息','🎁','#ff1493','system',1,10,0),
+    ('b_transfer','中转站','transfer','文件中转、网盘分享与资源交换','📦','#00ced1','system',1,11,0)`).run();
   console.log("Migrations checked - all tables exist");
 }
 
@@ -601,8 +333,25 @@ app.use('*', async (c, next) => {
   }
   await next();
 });;
+app.use('*', async (c, next) => {
+  await next();
+  const contentType = c.res.headers.get('content-type');
+  if (contentType && contentType.startsWith('application/json') && !contentType.includes('charset=')) {
+    c.res.headers.set('content-type', 'application/json; charset=utf-8');
+  }
+});
 app.use('*', logger());
-app.use('/api/*', cors({ origin: ['https://nodeweave.pages.dev', 'http://localhost:8080', 'http://127.0.0.1:8080'], credentials: true }));
+app.use('/api/*', cors({
+  origin: [
+    'https://nodeweave.wiltonmaggiojb.workers.dev',
+    'https://nodeweave.xyz',
+    'https://www.nodeweave.xyz',
+    'http://localhost:3000',
+    'http://localhost:8080',
+    'http://127.0.0.1:8080'
+  ],
+  credentials: true
+}));
 
 app.route('/api/auth', auth);
 app.route('/api/oauth', oauth);
@@ -626,5 +375,13 @@ app.route('/api/admin/ai-config', aiConfig);
 app.route('/api/admin/site-config', siteConfigAdmin);
 
 app.get('/api/health', (c) => c.json({ code: 0, data: { status: 'online', time: Date.now() }, msg: 'ok' }));
+
+app.get('*', async (c) => {
+  const url = new URL(c.req.url);
+  if (url.pathname.startsWith('/api/')) {
+    return c.json({ code: 404, data: null, msg: '接口不存在' }, 404);
+  }
+  return c.env.ASSETS.fetch(new Request(url, c.req.raw));
+});
 
 export default app;

@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0a0a20"/>
+      <stop offset="100%" stop-color="#050510"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="indigo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4169e1"/>
+      <stop offset="100%" stop-color="#1e3a8a"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8899aa"/>
+      <stop offset="50%" stop-color="#aabbcc"/>
+      <stop offset="100%" stop-color="#8899aa"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="95" fill="url(#bg)"/>
+  <circle cx="100" cy="100" r="92" fill="none" stroke="url(#metal)" stroke-width="6"/>
+  <!-- Shield shape -->
+  <path d="M100,35 L150,55 L150,110 Q150,145 100,160 Q50,145 50,110 L50,55 Z" fill="none" stroke="url(#metal)" stroke-width="3"/>
+  <path d="M100,42 L144,60 L144,108 Q144,140 100,153 Q56,140 56,108 L56,60 Z" fill="url(#indigo)" opacity="0.15"/>
+  <!-- V verification mark -->
+  <text x="100" y="115" text-anchor="middle" fill="url(#indigo)" font-size="52" font-weight="bold" font-family="Arial" filter="url(#glow)">V</text>
+  <!-- Shield border neon -->
+  <path d="M100,35 L150,55 L150,110 Q150,145 100,160 Q50,145 50,110 L50,55 Z" fill="none" stroke="#4169e1" stroke-width="1" filter="url(#glow)" opacity="0.4"/>
+  <!-- Metal texture lines -->
+  <line x1="80" y1="45" x2="85" y2="55" stroke="#aabbcc" stroke-width="0.5" opacity="0.3"/>
+  <line x1="120" y1="45" x2="115" y2="55" stroke="#aabbcc" stroke-width="0.5" opacity="0.3"/>
+  <text x="100" y="175" text-anchor="middle" fill="#4169e1" font-size="11" font-family="Arial" filter="url(#glow)">实名先锋</text>
+</svg>

@@ -6,7 +6,7 @@ import { ok, err, CODE } from './lib/response.js';
 
 const oauth = new Hono();
 
-const SITE_URL = (env) => env.SITE_URL || 'https://nodeweave.pages.dev';
+const SITE_URL = (env) => env.SITE_URL || 'https://nodeweave.wiltonmaggiojb.workers.dev';
 
 // ========== CSRF State 工具 ==========
 function setStateCookie(c, state) {

@@ -13,4 +13,9 @@ JWT_SECRET = "nw_95wq9amr0nrj0er2l75hhlgc0axvhqzm20brmssrjxq7vx7w"
 CLOUDINARY_URL = "cloudinary://473595321597911:PkeOohALwEeHtDuz40H_R2D3xLg@dqskgzuqi"
 ENV = "production"
 TURNSTILE_SITE_KEY = "1x00000000000000000000AA"
-SITE_URL = "https://nodeweave.pages.dev"
+SITE_URL = "https://nodeweave.wiltonmaggiojb.workers.dev"
+
+[assets]
+directory = "./public/"
+binding = "ASSETS"
+run_worker_first = true

@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#050a15"/>
+      <stop offset="100%" stop-color="#020510"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="aurora" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#00ff88"/>
+      <stop offset="50%" stop-color="#9b59b6"/>
+      <stop offset="100%" stop-color="#00bfff"/>
+    </linearGradient>
+    <linearGradient id="aurora2" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#00cc66"/>
+      <stop offset="50%" stop-color="#bf55ec"/>
+      <stop offset="100%" stop-color="#0099cc"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="95" fill="url(#bg)"/>
+  <circle cx="100" cy="100" r="92" fill="none" stroke="#0a1a2a" stroke-width="6"/>
+  <!-- Aurora waves -->
+  <path d="M30,70 Q50,50 70,65 Q90,80 110,60 Q130,40 150,55 Q170,70 175,65" fill="none" stroke="url(#aurora)" stroke-width="3" filter="url(#glow)" opacity="0.7"/>
+  <path d="M25,80 Q45,65 65,78 Q85,92 105,72 Q125,52 145,68 Q165,82 180,75" fill="none" stroke="url(#aurora2)" stroke-width="2" filter="url(#glow)" opacity="0.5"/>
+  <path d="M30,90 Q55,78 75,88 Q95,98 115,82 Q135,65 155,80 Q170,90 175,85" fill="none" stroke="url(#aurora)" stroke-width="2.5" filter="url(#glow)" opacity="0.6"/>
+  <path d="M25,100 Q50,92 70,100 Q90,108 110,95 Q130,82 150,95 Q165,102 180,98" fill="none" stroke="url(#aurora2)" stroke-width="1.5" filter="url(#glow)" opacity="0.4"/>
+  <!-- Aurora fill areas -->
+  <path d="M30,70 Q50,50 70,65 Q90,80 110,60 Q130,40 150,55 Q170,70 175,65 L175,85 Q170,90 150,80 Q130,65 110,82 Q90,98 70,88 Q50,78 30,80 Z" fill="url(#aurora)" opacity="0.08"/>
+  <!-- North star -->
+  <g transform="translate(100,130)">
+    <line x1="0" y1="-12" x2="0" y2="12" stroke="#fff" stroke-width="1" filter="url(#glow)" opacity="0.8"/>
+    <line x1="-12" y1="0" x2="12" y2="0" stroke="#fff" stroke-width="1" filter="url(#glow)" opacity="0.8"/>
+    <line x1="-8" y1="-8" x2="8" y2="8" stroke="#fff" stroke-width="0.6" filter="url(#glow)" opacity="0.5"/>
+    <line x1="8" y1="-8" x2="-8" y2="8" stroke="#fff" stroke-width="0.6" filter="url(#glow)" opacity="0.5"/>
+    <circle cx="0" cy="0" r="3" fill="#fff" filter="url(#glow)" opacity="0.9"/>
+  </g>
+  <!-- Background stars -->
+  <circle cx="45" cy="120" r="0.8" fill="#fff" opacity="0.4"/>
+  <circle cx="155" cy="115" r="0.6" fill="#fff" opacity="0.35"/>
+  <circle cx="60" cy="140" r="0.7" fill="#fff" opacity="0.3"/>
+  <circle cx="140" cy="140" r="0.8" fill="#fff" opacity="0.3"/>
+  <circle cx="40" cy="155" r="0.6" fill="#fff" opacity="0.25"/>
+  <circle cx="160" cy="150" r="0.7" fill="#fff" opacity="0.25"/>
+  <text x="100" y="165" text-anchor="middle" fill="#00ff88" font-size="11" font-family="Arial" filter="url(#glow)">极光之舞</text>
+</svg>

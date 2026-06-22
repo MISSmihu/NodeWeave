@@ -1,0 +1,95 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>邮箱验证 // NodeWeave</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+.auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.verify-card{width:100%;max-width:420px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:40px 28px;text-align:center;position:relative;z-index:1}
+.verify-card .status-icon{font-size:56px;margin-bottom:16px}
+.verify-card h2{font-family:var(--font-display);font-size:20px;color:var(--text);margin-bottom:8px}
+.verify-card p{color:var(--text-dim);font-size:14px;line-height:1.7;margin-bottom:20px}
+.verify-card .btn-primary{font-family:var(--font-display);font-size:14px;padding:10px 28px;margin:6px}
+.verify-card .error{color:var(--magenta)}
+.verify-card .success{color:var(--green)}
+.verify-card .spinner{display:inline-block;width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--cyan);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-scanlines"></div>
+<div class="bg-glow"></div>
+
+<div class="auth-page">
+  <div class="verify-card">
+    <div id="loadingState">
+      <div class="spinner"></div>
+      <h2>正在验证邮箱...</h2>
+      <p>请稍候，正在确认您的验证链接。</p>
+    </div>
+
+    <div id="successState" style="display:none">
+      <div class="status-icon">✅</div>
+      <h2 class="success">邮箱验证成功</h2>
+      <p>您的 NodeWeave 账号已激活。即将跳转至首页...</p>
+    </div>
+
+    <div id="errorState" style="display:none">
+      <div class="status-icon">⚠️</div>
+      <h2 class="error">验证失败</h2>
+      <p id="errorMsg">验证链接已过期或无效。</p>
+      <p style="font-size:12px;color:var(--text-mute)">
+        您可以登录后重新发送验证邮件。
+      </p>
+      <a href="login.html" class="btn-primary">前往登录</a>
+    </div>
+  </div>
+</div>
+
+<script>
+const token = new URLSearchParams(location.search).get('token');
+const API = '/api';
+
+async function verify() {
+  if (!token) {
+    showError('缺少验证令牌。');
+    return;
+  }
+  try {
+    const res = await fetch(API + '/auth/verify-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    const json = await res.json();
+    if (json.code === 0) {
+      showSuccess();
+      setTimeout(() => { location.href = 'index.html'; }, 2000);
+    } else {
+      showError(json.msg || '验证链接已过期或无效。');
+    }
+  } catch(e) {
+    showError('网络错误，请稍后重试。');
+  }
+}
+
+function showSuccess() {
+  document.getElementById('loadingState').style.display = 'none';
+  document.getElementById('successState').style.display = '';
+}
+
+function showError(msg) {
+  document.getElementById('loadingState').style.display = 'none';
+  document.getElementById('errorState').style.display = '';
+  document.getElementById('errorMsg').textContent = msg;
+}
+
+verify();
+</script>
+</body>
+</html>

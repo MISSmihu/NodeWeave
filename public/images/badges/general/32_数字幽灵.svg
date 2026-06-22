@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0a1518"/>
+      <stop offset="100%" stop-color="#050a0c"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="cyan" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00fff5"/>
+      <stop offset="100%" stop-color="#00b4d8"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="95" fill="url(#bg)"/>
+  <circle cx="100" cy="100" r="92" fill="none" stroke="#1a3a3a" stroke-width="6"/>
+  <!-- Ghost shape -->
+  <path d="M65,130 L65,70 Q65,42 100,42 Q135,42 135,70 L135,130 L125,120 L115,130 L105,120 L95,130 L85,120 L75,130 Z" fill="none" stroke="url(#cyan)" stroke-width="2.5" filter="url(#glow)"/>
+  <path d="M65,130 L65,70 Q65,42 100,42 Q135,42 135,70 L135,130 L125,120 L115,130 L105,120 L95,130 L85,120 L75,130 Z" fill="#00fff5" opacity="0.06"/>
+  <!-- Ghost eyes -->
+  <ellipse cx="85" cy="75" rx="10" ry="12" fill="#00fff5" opacity="0.3" filter="url(#glow)"/>
+  <ellipse cx="115" cy="75" rx="10" ry="12" fill="#00fff5" opacity="0.3" filter="url(#glow)"/>
+  <ellipse cx="85" cy="75" rx="5" ry="7" fill="#00fff5" opacity="0.6" filter="url(#glow)"/>
+  <ellipse cx="115" cy="75" rx="5" ry="7" fill="#00fff5" opacity="0.6" filter="url(#glow)"/>
+  <!-- Binary code floating -->
+  <text x="45" y="55" fill="#00fff5" font-size="8" font-family="monospace" opacity="0.4" filter="url(#glow)">01</text>
+  <text x="140" y="50" fill="#00b4d8" font-size="8" font-family="monospace" opacity="0.3" filter="url(#glow)">10</text>
+  <text x="38" y="80" fill="#00fff5" font-size="7" font-family="monospace" opacity="0.3" filter="url(#glow)">0110</text>
+  <text x="145" y="85" fill="#00b4d8" font-size="7" font-family="monospace" opacity="0.3" filter="url(#glow)">1001</text>
+  <text x="40" y="110" fill="#00fff5" font-size="8" font-family="monospace" opacity="0.25" filter="url(#glow)">01</text>
+  <text x="148" y="115" fill="#00b4d8" font-size="7" font-family="monospace" opacity="0.25" filter="url(#glow)">101</text>
+  <text x="50" y="140" fill="#00fff5" font-size="7" font-family="monospace" opacity="0.2" filter="url(#glow)">110</text>
+  <text x="138" y="140" fill="#00b4d8" font-size="7" font-family="monospace" opacity="0.2" filter="url(#glow)">010</text>
+  <!-- Ghost mouth -->
+  <ellipse cx="100" cy="98" rx="8" ry="5" fill="none" stroke="#00fff5" stroke-width="1" filter="url(#glow)" opacity="0.5"/>
+  <text x="100" y="170" text-anchor="middle" fill="#00fff5" font-size="11" font-family="Arial" filter="url(#glow)">数字幽灵</text>
+</svg>

@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1a1505"/>
+      <stop offset="100%" stop-color="#0a0a02"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="bigGlow">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <radialGradient id="gold" cx="35%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#fffacd"/>
+      <stop offset="40%" stop-color="#ffd700"/>
+      <stop offset="80%" stop-color="#daa520"/>
+      <stop offset="100%" stop-color="#8b6914"/>
+    </radialGradient>
+    <linearGradient id="goldRing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffd700"/>
+      <stop offset="50%" stop-color="#daa520"/>
+      <stop offset="100%" stop-color="#ffd700"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="95" fill="url(#bg)"/>
+  <circle cx="100" cy="100" r="92" fill="none" stroke="url(#goldRing)" stroke-width="6"/>
+  <!-- Star shape medal -->
+  <polygon points="100,28 115,75 165,75 125,105 140,152 100,122 60,152 75,105 35,75 85,75" fill="url(#gold)" opacity="0.5" filter="url(#bigGlow)"/>
+  <polygon points="100,28 115,75 165,75 125,105 140,152 100,122 60,152 75,105 35,75 85,75" fill="none" stroke="url(#goldRing)" stroke-width="3" filter="url(#glow)"/>
+  <!-- Inner star -->
+  <polygon points="100,45 110,78 145,78 117,98 127,132 100,112 73,132 83,98 55,78 90,78" fill="none" stroke="#ffec8b" stroke-width="1.5" filter="url(#glow)" opacity="0.5"/>
+  <polygon points="100,45 110,78 145,78 117,98 127,132 100,112 73,132 83,98 55,78 90,78" fill="#ffd700" opacity="0.1"/>
+  <!-- Star facet lines -->
+  <line x1="100" y1="28" x2="100" y2="45" stroke="#fffacd" stroke-width="0.8" opacity="0.4"/>
+  <line x1="165" y1="75" x2="145" y2="78" stroke="#fffacd" stroke-width="0.8" opacity="0.4"/>
+  <line x1="35" y1="75" x2="55" y2="78" stroke="#fffacd" stroke-width="0.8" opacity="0.4"/>
+  <line x1="140" y1="152" x2="127" y2="132" stroke="#fffacd" stroke-width="0.8" opacity="0.4"/>
+  <line x1="60" y1="152" x2="73" y2="132" stroke="#fffacd" stroke-width="0.8" opacity="0.4"/>
+  <!-- Laurel wreath left -->
+  <path d="M35,75 Q25,85 28,100 Q22,108 25,118 Q30,125 35,128" fill="none" stroke="#daa520" stroke-width="2" filter="url(#glow)" opacity="0.5"/>
+  <ellipse cx="28" cy="90" rx="5" ry="3" transform="rotate(-45,28,90)" fill="none" stroke="#daa520" stroke-width="1" filter="url(#glow)" opacity="0.4"/>
+  <ellipse cx="25" cy="105" rx="5" ry="3" transform="rotate(-60,25,105)" fill="none" stroke="#daa520" stroke-width="1" filter="url(#glow)" opacity="0.4"/>
+  <ellipse cx="28" cy="118" rx="5" ry="3" transform="rotate(-75,28,118)" fill="none" stroke="#daa520" stroke-width="1" filter="url(#glow)" opacity="0.4"/>
+  <!-- Laurel wreath right -->
+  <path d="M165,75 Q175,85 172,100 Q178,108 175,118 Q170,125 165,128" fill="none" stroke="#daa520" stroke-width="2" filter="url(#glow)" opacity="0.5"/>
+  <ellipse cx="172" cy="90" rx="5" ry="3" transform="rotate(45,172,90)" fill="none" stroke="#daa520" stroke-width="1" filter="url(#glow)" opacity="0.4"/>
+  <ellipse cx="175" cy="105" rx="5" ry="3" transform="rotate(60,175,105)" fill="none" stroke="#daa520" stroke-width="1" filter="url(#glow)" opacity="0.4"/>
+  <ellipse cx="172" cy="118" rx="5" ry="3" transform="rotate(75,172,118)" fill="none" stroke="#daa520" stroke-width="1" filter="url(#glow)" opacity="0.4"/>
+  <!-- Center shine -->
+  <circle cx="92" cy="92" r="8" fill="#fff" opacity="0.2" filter="url(#glow)"/>
+  <!-- Light rays -->
+  <line x1="100" y1="20" x2="100" y2="10" stroke="#ffd700" stroke-width="1.5" filter="url(#bigGlow)" opacity="0.6"/>
+  <line x1="170" y1="55" x2="180" y2="48" stroke="#ffd700" stroke-width="1" filter="url(#glow)" opacity="0.4"/>
+  <line x1="30" y1="55" x2="20" y2="48" stroke="#ffd700" stroke-width="1" filter="url(#glow)" opacity="0.4"/>
+  <line x1="175" y1="155" x2="185" y2="160" stroke="#ffd700" stroke-width="1" filter="url(#glow)" opacity="0.4"/>
+  <line x1="25" y1="155" x2="15" y2="160" stroke="#ffd700" stroke-width="1" filter="url(#glow)" opacity="0.4"/>
+  <!-- Sparkles -->
+  <circle cx="50" cy="40" r="1.5" fill="#ffd700" filter="url(#glow)" opacity="0.6"/>
+  <circle cx="150" cy="40" r="1.5" fill="#ffd700" filter="url(#glow)" opacity="0.6"/>
+  <circle cx="60" cy="160" r="1" fill="#ffec8b" filter="url(#glow)" opacity="0.4"/>
+  <circle cx="140" cy="160" r="1" fill="#ffec8b" filter="url(#glow)" opacity="0.4"/>
+  <text x="100" y="180" text-anchor="middle" fill="#ffd700" font-size="11" font-family="Arial" filter="url(#glow)">黄金勋章</text>
+</svg>

@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0a0a15"/>
+      <stop offset="100%" stop-color="#050510"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="rainbow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ff4444"/>
+      <stop offset="20%" stop-color="#ff8c00"/>
+      <stop offset="40%" stop-color="#ffd700"/>
+      <stop offset="60%" stop-color="#00ff88"/>
+      <stop offset="80%" stop-color="#00bfff"/>
+      <stop offset="100%" stop-color="#bf55ec"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="95" fill="url(#bg)"/>
+  <circle cx="100" cy="100" r="92" fill="none" stroke="#2a2a3a" stroke-width="6"/>
+  <!-- Unicorn body -->
+  <ellipse cx="100" cy="125" rx="38" ry="28" fill="none" stroke="url(#rainbow)" stroke-width="2.5" filter="url(#glow)"/>
+  <ellipse cx="100" cy="125" rx="38" ry="28" fill="#bf55ec" opacity="0.05"/>
+  <!-- Front/back split -->
+  <line x1="100" y1="97" x2="100" y2="153" stroke="#fff" stroke-width="0.5" opacity="0.15"/>
+  <!-- Front-end symbols (left) -->
+  <text x="85" y="130" text-anchor="middle" fill="#ff4444" font-size="12" font-weight="bold" font-family="Arial" filter="url(#glow)" opacity="0.6">&lt;/&gt;</text>
+  <!-- Back-end symbols (right) -->
+  <text x="115" y="130" text-anchor="middle" fill="#00bfff" font-size="14" font-weight="bold" font-family="Arial" filter="url(#glow)" opacity="0.6">{ }</text>
+  <!-- Unicorn head -->
+  <circle cx="100" cy="70" r="22" fill="none" stroke="url(#rainbow)" stroke-width="2" filter="url(#glow)"/>
+  <circle cx="100" cy="70" r="22" fill="#ffd700" opacity="0.05"/>
+  <!-- Unicorn horn -->
+  <polygon points="100,38 95,58 105,58" fill="none" stroke="#ffd700" stroke-width="2" filter="url(#glow)"/>
+  <polygon points="100,38 95,58 105,58" fill="#ffd700" opacity="0.15"/>
+  <!-- Horn spiral -->
+  <line x1="100" y1="42" x2="100" y2="56" stroke="#ffd700" stroke-width="0.5" opacity="0.4"/>
+  <line x1="98" y1="48" x2="102" y2="50" stroke="#ffd700" stroke-width="0.4" opacity="0.3"/>
+  <!-- Eye -->
+  <circle cx="93" cy="68" r="3" fill="#00bfff" opacity="0.6" filter="url(#glow)"/>
+  <!-- Mane rainbow -->
+  <path d="M78,60 Q65,55 55,60" fill="none" stroke="#ff4444" stroke-width="2" filter="url(#glow)" opacity="0.7"/>
+  <path d="M78,65 Q60,62 50,68" fill="none" stroke="#ff8c00" stroke-width="2" filter="url(#glow)" opacity="0.7"/>
+  <path d="M78,70 Q58,70 48,78" fill="none" stroke="#ffd700" stroke-width="2" filter="url(#glow)" opacity="0.7"/>
+  <!-- Tail rainbow -->
+  <path d="M62,125 Q48,120 40,128" fill="none" stroke="#00ff88" stroke-width="2" filter="url(#glow)" opacity="0.6"/>
+  <path d="M62,130 Q45,130 38,138" fill="none" stroke="#00bfff" stroke-width="2" filter="url(#glow)" opacity="0.6"/>
+  <path d="M62,135 Q48,140 42,148" fill="none" stroke="#bf55ec" stroke-width="2" filter="url(#glow)" opacity="0.6"/>
+  <!-- Legs -->
+  <line x1="80" y1="148" x2="78" y2="162" stroke="url(#rainbow)" stroke-width="2" filter="url(#glow)" opacity="0.5"/>
+  <line x1="120" y1="148" x2="122" y2="162" stroke="url(#rainbow)" stroke-width="2" filter="url(#glow)" opacity="0.5"/>
+  <text x="100" y="175" text-anchor="middle" fill="#bf55ec" font-size="11" font-family="Arial" filter="url(#glow)">全栈独角兽</text>
+</svg>
