@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 <style>
 .auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
 .auth-card{width:100%;max-width:420px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:32px 28px;position:relative;z-index:1}
@@ -40,6 +40,7 @@
 .auth-form .checkbox-group a:hover{text-shadow:var(--glow-cyan)}
 .auth-form .btn-primary.btn-block{width:100%;padding:12px;font-family:var(--font-display);font-size:15px}
 .auth-form .turnstile-wrap{margin-bottom:16px;min-height:65px}
+.auth-form .turnstile-wrap.is-disabled{display:none}
 .auth-divider{display:flex;align-items:center;margin:20px 0;gap:12px}
 .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border)}
 .auth-divider span{font-family:var(--font-mono);font-size:11px;color:var(--text-mute)}
@@ -141,6 +142,52 @@
 <script src="script.js"></script>
 <script>
 const API = '/api';
+let turnstileSiteKey = '';
+let turnstileWidgets = {};
+
+function waitForTurnstile() {
+  return new Promise((resolve, reject) => {
+    if (window.turnstile) return resolve(window.turnstile);
+    let attempts = 0;
+    const timer = setInterval(() => {
+      if (window.turnstile) {
+        clearInterval(timer);
+        resolve(window.turnstile);
+      } else if (++attempts > 80) {
+        clearInterval(timer);
+        reject(new Error('Turnstile load timeout'));
+      }
+    }, 100);
+  });
+}
+
+async function setupTurnstile(siteKey) {
+  turnstileSiteKey = siteKey || '';
+  if (!turnstileSiteKey) {
+    document.querySelectorAll('.turnstile-wrap').forEach(el => el.classList.add('is-disabled'));
+    return;
+  }
+  try {
+    const api = await waitForTurnstile();
+    ['loginTurnstile', 'regTurnstile'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el || turnstileWidgets[id]) return;
+      turnstileWidgets[id] = api.render(el, { sitekey: turnstileSiteKey });
+    });
+  } catch(e) {
+    console.warn('Turnstile unavailable, backend will decide verification:', e);
+  }
+}
+
+function getTurnstileToken(id) {
+  if (!turnstileSiteKey) return '';
+  if (!window.turnstile || !turnstileWidgets[id]) return '';
+  return window.turnstile.getResponse(turnstileWidgets[id]) || '';
+}
+
+function resetTurnstile(id) {
+  if (window.turnstile && turnstileWidgets[id]) window.turnstile.reset(turnstileWidgets[id]);
+}
 
 // Tab switching
 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -172,9 +219,7 @@ loadConfig();
 
 // Turnstile site key
 fetch(API + '/site-config/public').then(r => r.json()).then(json => {
-  if (json.code === 0 && json.data.turnstile_site_key) {
-    document.querySelectorAll('.cf-turnstile').forEach(el => el.dataset.sitekey = json.data.turnstile_site_key);
-  }
+  setupTurnstile(json.code === 0 ? json.data.turnstile_site_key : '');
 }).catch(() => {});
 
 // Login
@@ -182,8 +227,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const errEl = document.getElementById('loginError');
   errEl.classList.remove('show');
-  const token = turnstile.getResponse(document.getElementById('loginTurnstile'));
-  if (!token) { errEl.textContent = '请完成人机验证'; errEl.classList.add('show'); return; }
+  const token = getTurnstileToken('loginTurnstile');
 
   try {
     const res = await fetch(API + '/auth/login', {
@@ -198,7 +242,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     const json = await res.json();
     if (json.code !== 0) {
       errEl.textContent = json.msg; errEl.classList.add('show');
-      turnstile.reset(document.getElementById('loginTurnstile'));
+      resetTurnstile('loginTurnstile');
       return;
     }
     const redirect = new URLSearchParams(location.search).get('redirect') || 'index.html';
@@ -213,8 +257,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
   e.preventDefault();
   const errEl = document.getElementById('registerError');
   errEl.classList.remove('show');
-  const token = turnstile.getResponse(document.getElementById('regTurnstile'));
-  if (!token) { errEl.textContent = '请完成人机验证'; errEl.classList.add('show'); return; }
+  const token = getTurnstileToken('regTurnstile');
   if (!document.getElementById('agreeTerms').checked) {
     errEl.textContent = '请先同意用户协议和隐私政策'; errEl.classList.add('show'); return;
   }
@@ -238,7 +281,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     const json = await res.json();
     if (json.code !== 0) {
       errEl.textContent = json.msg; errEl.classList.add('show');
-      turnstile.reset(document.getElementById('regTurnstile'));
+      resetTurnstile('regTurnstile');
       return;
     }
     document.getElementById('registerForm').style.display = 'none';
