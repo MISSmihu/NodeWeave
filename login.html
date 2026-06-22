@@ -123,10 +123,11 @@
 
     <!-- Success Message -->
     <div class="auth-success" id="registerSuccess">
-      <div class="success-icon">📬</div>
-      <h3>验证邮件已发送</h3>
-      <p>请查收邮箱中的验证链接，完成注册。</p>
-      <p style="font-size:12px;color:var(--text-mute);margin-top:8px">未收到？请检查垃圾邮件文件夹。</p>
+      <div class="success-icon" id="registerSuccessIcon">✅</div>
+      <h3 id="registerSuccessTitle">注册成功</h3>
+      <p id="registerSuccessText">账号已创建，请返回登录。</p>
+      <p style="font-size:12px;color:var(--text-mute);margin-top:8px" id="registerSuccessHint">现在可以使用用户名或邮箱登录。</p>
+      <button class="btn-primary btn-block" type="button" style="margin-top:16px" onclick="showLoginAfterRegister()">去登录</button>
     </div>
 
     <div class="auth-divider"><span>OR</span></div>
@@ -187,6 +188,16 @@ function getTurnstileToken(id) {
 
 function resetTurnstile(id) {
   if (window.turnstile && turnstileWidgets[id]) window.turnstile.reset(turnstileWidgets[id]);
+}
+
+function showLoginAfterRegister() {
+  document.getElementById('registerSuccess').style.display = 'none';
+  document.getElementById('registerForm').style.display = '';
+  activateTab('login');
+  const username = document.getElementById('regUsername').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  document.getElementById('loginId').value = username || email;
+  document.getElementById('loginPassword').focus();
 }
 
 // Tab switching
@@ -302,6 +313,13 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
       resetTurnstile('regTurnstile');
       return;
     }
+    const message = json.data?.message || json.msg || '注册成功，请登录';
+    const isEmailVerification = message.includes('验证邮件');
+    document.getElementById('registerSuccessIcon').textContent = isEmailVerification ? '📬' : '✅';
+    document.getElementById('registerSuccessTitle').textContent = isEmailVerification ? '验证邮件已发送' : '注册成功';
+    document.getElementById('registerSuccessText').textContent = isEmailVerification ? '请查收邮箱中的验证链接，完成注册。' : message;
+    document.getElementById('registerSuccessHint').textContent = isEmailVerification ? '未收到？请检查垃圾邮件文件夹。' : '现在可以使用用户名或邮箱登录。';
+    document.getElementById('registerSuccess').querySelector('button').style.display = isEmailVerification ? 'none' : '';
     document.getElementById('registerForm').style.display = 'none';
     document.getElementById('registerSuccess').style.display = 'block';
   } catch(ex) {
