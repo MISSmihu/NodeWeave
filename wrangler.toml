@@ -6,7 +6,7 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "nodeweave-db"
-database_id = "9fb68337-7fd3-4ac7-895b-05c1aa3950d9"
+database_id = "9c7b4a51-db3e-45f3-b2fd-8b58be0dc236"
 
 [vars]
 JWT_SECRET = "nw_95wq9amr0nrj0er2l75hhlgc0axvhqzm20brmssrjxq7vx7w"
