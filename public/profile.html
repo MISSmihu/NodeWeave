@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -8,379 +8,289 @@
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script src="js/badge-image-map.js"></script>
-<style id="customStyles">
-.badge-wall{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px}.badge-wall .badge-item{width:56px;height:56px;transition:transform .2s}.badge-wall .badge-item:hover{transform:scale(1.2);z-index:2}.badge-wall .badge-item img{width:56px;height:56px;object-fit:contain}.badge-wall .empty{color:var(--text-mute);font-size:13px;padding:8px 0}
-</style>
+<style id="customStyles"></style>
 <style>
-.profile-page{max-width:860px;margin:0 auto;padding:80px 24px 100px;position:relative;z-index:1}
-.profile-header{display:flex;align-items:center;gap:20px;margin-bottom:32px;flex-wrap:wrap}
-.profile-avatar{width:80px;height:80px;border-radius:50%;border:3px solid var(--cyan);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:36px;flex-shrink:0}
-.profile-info h1{font-family:var(--font-display);font-size:24px;color:var(--text);margin-bottom:4px}
-.profile-info .username{font-family:var(--font-mono);font-size:13px;color:var(--text-mute);margin-bottom:8px}
-.profile-info .bio{font-size:14px;color:var(--text-dim);line-height:1.6;max-width:500px}
-.level-badge{display:inline-block;padding:4px 12px;border-radius:4px;font-family:var(--font-display);font-size:12px;font-weight:700;margin-left:8px}
-.stats-row{display:flex;gap:24px;margin-bottom:32px;flex-wrap:wrap}
-.stat-box{flex:1;min-width:100px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center}
+.canvas-bg{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
+.profile-page{max-width:920px;margin:0 auto;padding:84px 24px 110px;position:relative;z-index:1}
+.profile-card{background:rgba(18,18,30,.78);border:1px solid var(--border);border-radius:16px;padding:26px;box-shadow:0 22px 80px rgba(0,0,0,.24)}
+.profile-head{display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin-bottom:24px}
+.profile-avatar{width:86px;height:86px;border-radius:50%;border:3px solid var(--cyan);display:grid;place-items:center;font-family:var(--font-display);font-size:34px;color:var(--bg);box-shadow:var(--glow-cyan)}
+.profile-info h1{font-family:var(--font-display);font-size:26px;margin:0;color:var(--text)}
+.profile-info .username{font-family:var(--font-mono);font-size:13px;color:var(--text-mute);margin:4px 0 8px}
+.profile-info .bio{color:var(--text-dim);line-height:1.7;max-width:620px}
+.level-badge{display:inline-flex;margin-top:10px;padding:5px 11px;border-radius:999px;border:1px solid var(--border);font-family:var(--font-mono);font-size:12px}
+.stats-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:20px 0}
+.stat-box{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:15px;text-align:center}
 .stat-box .num{font-family:var(--font-display);font-size:22px;color:var(--cyan)}
-.stat-box .label{font-size:11px;color:var(--text-mute);margin-top:4px;text-transform:uppercase}
-.section-title{font-family:var(--font-display);font-size:16px;color:var(--cyan);margin-bottom:16px;padding-bottom:6px;border-bottom:1px solid var(--border)}
-.post-list .post-item{padding:14px 0;border-bottom:1px solid var(--border)}
-.post-list .post-item:last-child{border-bottom:none}
-.post-list .post-title{font-size:15px;color:var(--text);text-decoration:none;display:block;margin-bottom:4px}
-.post-list .post-title:hover{color:var(--cyan)}
-.post-list .post-meta{font-size:12px;color:var(--text-mute);font-family:var(--font-mono)}
-.btn-edit{display:inline-block;padding:8px 20px;font-family:var(--font-display);font-size:13px;background:var(--cyan);color:var(--bg);border:none;border-radius:4px;cursor:pointer;margin-top:12px}
-.btn-edit:hover{box-shadow:var(--glow-cyan)}
-.customize-panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;margin-top:24px;display:none}
-.customize-panel h3{font-family:var(--font-display);font-size:14px;color:var(--cyan);margin-bottom:16px}
-.customize-panel textarea{width:100%;min-height:120px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--font-mono);font-size:12px;padding:10px;resize:vertical}
-.customize-panel .bg-preview{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-.customize-panel .bg-preset{width:40px;height:40px;border-radius:4px;border:2px solid transparent;cursor:pointer}
-.customize-panel .bg-preset:hover,.customize-panel .bg-preset.active{border-color:var(--cyan)}
-.canvas-bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.stat-box .label{font-family:var(--font-mono);font-size:11px;color:var(--text-mute);margin-top:4px}
+.section-title{font-family:var(--font-display);font-size:16px;color:var(--cyan);margin:26px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.badge-wall{display:flex;flex-wrap:wrap;gap:12px}
+.badge-item{width:58px;height:58px;border-radius:12px;border:1px solid var(--border);background:var(--bg);display:grid;place-items:center}
+.badge-item img{width:52px;height:52px;object-fit:contain}
+.badge-fallback{font-size:26px}
+.post-list{display:grid;gap:10px}
+.post-item{display:block;text-decoration:none;color:inherit;padding:14px 15px;background:var(--bg);border:1px solid var(--border);border-radius:10px}
+.post-item:hover{border-color:var(--cyan)}
+.post-title{font-size:15px;color:var(--text);margin-bottom:5px}
+.post-meta{font-family:var(--font-mono);font-size:11px;color:var(--text-mute)}
+.customize-panel{display:none;margin-top:20px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:18px}
+.customize-panel.show{display:block}
+.customize-panel h3{font-family:var(--font-display);font-size:15px;color:var(--cyan);margin-bottom:12px}
+.customize-panel textarea{width:100%;min-height:120px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-mono);font-size:12px;padding:10px;resize:vertical}
+.bg-preview{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+.bg-preset{width:44px;height:44px;border-radius:10px;border:2px solid transparent;cursor:pointer}
+.bg-preset.active{border-color:var(--cyan);box-shadow:var(--glow-cyan)}
+.empty{color:var(--text-mute);font-size:13px;padding:14px;border:1px dashed var(--border);border-radius:10px}
+@media(max-width:720px){.stats-row{grid-template-columns:repeat(2,1fr)}.profile-card{padding:18px}}
 </style>
 </head>
 <body>
 <canvas class="canvas-bg" id="bgCanvas"></canvas>
-<div class="bg-grid"></div>
-<div class="bg-scanlines"></div>
-<div class="bg-glow"></div>
-
+<div class="bg-grid"></div><div class="bg-scanlines"></div><div class="bg-glow"></div>
 <header class="nav">
   <div class="nav-inner">
-    <a href="index.html" class="logo">
-      <span class="logo-mark">◈</span><span class="logo-text">Node<span class="x">Weave</span></span>
-      <span class="logo-sub">// CYBER COMMUNITY</span>
-    </a>
-    <div class="nav-actions">
-      <button class="btn-ghost" id="btnLogin" onclick="location.href='login.html'">登录</button>
-      <button class="btn-ghost" id="btnLogout" style="display:none" onclick="logout()">退出</button>
+    <a href="index.html" class="logo"><span class="logo-mark">◈</span><span class="logo-text">Node<span class="x">Weave</span></span><span class="logo-sub">// PROFILE</span></a>
+    <nav class="nav-links">
+      <a href="index.html">动态</a>
+      <a href="boards.html">论坛</a>
+      <a href="board.html?board=blog">博客</a>
+      <a href="board.html?board=qa">问答</a>
+    </nav>
+    <div class="nav-actions" data-auth-actions>
+      <a class="btn-ghost" href="login.html">登录</a>
+      <a class="btn-primary" href="editor.html">+ 发帖</a>
     </div>
   </div>
 </header>
 
-<div class="profile-page">
-  <!-- 头像和信息 -->
-  <div class="profile-header" id="profileHeader">
-    <div class="profile-avatar" id="profileAvatar" style="background:var(--cyan);color:var(--bg)">?</div>
-    <div class="profile-info">
-      <h1 id="displayName">加载中...</h1>
-      <div class="username" id="username">@loading</div>
-      <div class="bio" id="bio"></div>
-      <span class="level-badge" id="levelBadge" style="background:rgba(0,240,255,.1);color:var(--cyan)">Lv0</span>
-      <br>
-      <button class="btn-edit" id="btnEdit" style="display:none" onclick="toggleCustomize()">⚙ 装扮设置</button>
+<main class="profile-page">
+  <section class="profile-card">
+    <div class="profile-head">
+      <div class="profile-avatar" id="profileAvatar">?</div>
+      <div class="profile-info">
+        <h1 id="displayName">加载中...</h1>
+        <div class="username" id="username">@loading</div>
+        <div class="bio" id="bio"></div>
+        <span class="level-badge" id="levelBadge">Lv0 新人</span>
+        <div style="margin-top:12px">
+          <button class="btn-primary" id="btnEdit" type="button" style="display:none" onclick="toggleCustomize()">装扮设置</button>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <!-- 统计 -->
-  <div class="stats-row">
-    <div class="stat-box"><div class="num" id="statPosts">0</div><div class="label">帖子</div></div>
-    <div class="stat-box"><div class="num" id="statComments">0</div><div class="label">评论</div></div>
-    <div class="stat-box"><div class="num" id="statReputation">0</div><div class="label">声望</div></div>
-    <div class="stat-box"><div class="num" id="statCoins">0</div><div class="label">论坛币</div></div>
-  </div>
+    <div class="stats-row">
+      <div class="stat-box"><div class="num" id="statPosts">0</div><div class="label">帖子</div></div>
+      <div class="stat-box"><div class="num" id="statComments">0</div><div class="label">评论</div></div>
+      <div class="stat-box"><div class="num" id="statReputation">0</div><div class="label">声望</div></div>
+      <div class="stat-box"><div class="num" id="statCoins">0</div><div class="label">论坛币</div></div>
+    </div>
 
-  <!-- 装扮面板 -->
-  <div class="customize-panel" id="customizePanel">
-    <h3>个人装扮设置</h3>
-    <div style="margin-bottom:12px">
-      <label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:4px">自定义 CSS</label>
+    <div class="customize-panel" id="customizePanel">
+      <h3>个人装扮</h3>
       <textarea id="customCSS" placeholder="/* 自定义你的主页样式 */"></textarea>
-    </div>
-    <div style="margin-bottom:12px">
-      <label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:4px">动态背景</label>
       <div class="bg-preview" id="bgPresets">
-        <div class="bg-preset active" data-type="none" style="background:var(--bg);border-color:var(--cyan)" title="默认"></div>
+        <div class="bg-preset active" data-type="" style="background:#0a0a0f" title="默认"></div>
         <div class="bg-preset" data-type="matrix" style="background:#003300" title="矩阵雨"></div>
         <div class="bg-preset" data-type="particles" style="background:#1a0033" title="粒子"></div>
         <div class="bg-preset" data-type="stars" style="background:#000033" title="星空"></div>
-        <div class="bg-preset" data-type="hexgrid" style="background:#001a1a" title="六边形"></div>
       </div>
+      <button class="btn-primary" type="button" onclick="saveCustomize()">保存装扮</button>
+      <span id="customizeMsg" style="display:none;color:var(--green);margin-left:10px;font-size:13px">已保存</span>
     </div>
-    <button class="btn-edit" onclick="saveCustomize()">保存装扮</button>
-    <span id="customizeMsg" style="font-size:12px;margin-left:12px;color:var(--green);display:none">已保存</span>
-  </div>
 
-  <!-- 最近帖子 -->
-  <div class="section-title">最近帖子</div>
-  <div class="post-list" id="postList">
-    <div class="post-item"><span style="color:var(--text-mute)">加载中...</span></div>
-  </div>
-</div>
+    <div class="section-title">展示徽章</div>
+    <div class="badge-wall" id="badgeWall"><div class="empty">加载中...</div></div>
 
+    <div class="section-title">最近帖子</div>
+    <div class="post-list" id="postList"><div class="empty">加载中...</div></div>
+  </section>
+</main>
+
+<script src="script.js"></script>
 <script>
-const userId = new URLSearchParams(window.location.search).get('id');
+let userId = new URLSearchParams(location.search).get('id');
+let currentUser = null;
+let bgAnimationId = null;
+const esc = (value) => window.NodeWeave.escapeHtml(value);
 
-// 检查登录状态
-async function checkAuth() {
-  try {
-    const r = await fetch('/api/account/me', { credentials: 'include' });
-    const d = await r.json();
-    if (d.code === 0 && d.data) {
-      document.getElementById('btnLogin').style.display = 'none';
-      document.getElementById('btnLogout').style.display = '';
-      if (d.data.id === userId) {
-        document.getElementById('btnEdit').style.display = '';
-      }
-      return d.data;
-    }
-  } catch(e) {}
-  return null;
-}
-
-function logout() {
-  fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).then(() => location.reload());
-}
-
-// 加载用户信息
-
-async function loadMyBadges() {
-  try {
-    var wr = document.getElementById("badgeWall");
-    var r = await fetch("/api/badges/mine");
-    var j = await r.json();
-    if (j.code===0 && j.data.badges && j.data.badges.length>0) {
-      wr.innerHTML = j.data.badges.map(function(b){
-        return "<div class=\"badge-item\" title=\""+h(b.name)+"\">"+badgeImg(b.id,"")+"</div>";
-      }).join("");
-    } else {
-      wr.innerHTML = "<span class=\"empty\">还没有获得勋章，去商城看看吧</span>";
-    }
-  } catch(e) { document.getElementById("badgeWall").innerHTML = ""; }
+async function resolveUserId() {
+  currentUser = await window.NodeWeave.currentUser(true);
+  if (!userId && currentUser) userId = currentUser.id;
+  if (!userId) {
+    location.href = 'login.html?redirect=profile.html';
+    return false;
+  }
+  return true;
 }
 
 async function loadProfile() {
-  if (!userId) {
-    document.getElementById('displayName').textContent = '请指定用户ID';
+  if (!(await resolveUserId())) return;
+  const json = await window.NodeWeave.apiJson('/api/users/' + encodeURIComponent(userId)).catch(() => null);
+  if (!json || json.code !== 0) {
+    document.getElementById('displayName').textContent = '用户不存在';
     return;
   }
-  try {
-    const r = await fetch('/api/users/' + userId);
-    const d = await r.json();
-    if (d.code === 0 && d.data) {
-      const u = d.data;
-      document.getElementById('displayName').textContent = u.display_name || u.username;
-      document.getElementById('username').textContent = '@' + u.username;
-      document.getElementById('bio').textContent = u.bio || '';
-      document.getElementById('profileAvatar').textContent = (u.display_name || u.username).substring(0, 2).toUpperCase();
-      document.getElementById('profileAvatar').style.background = u.avatar_color || 'var(--cyan)';
-      document.title = (u.display_name || u.username) + ' // NodeWeave';
-
-      // 等级
-      if (u.level) {
-        const lb = document.getElementById('levelBadge');
-        lb.textContent = u.level.icon + ' ' + u.level.name;
-        lb.style.color = u.level.color;
-        lb.style.background = u.level.color.replace(')', ',.15)').replace('rgb', 'rgba');
-      }
-
-      // 统计
-      document.getElementById('statPosts').textContent = u.post_count || 0;
-      document.getElementById('statComments').textContent = u.comment_count || 0;
-      document.getElementById('statReputation').textContent = u.reputation || 0;
-      document.getElementById('statCoins').textContent = u.coins || 0;
-      loadMyBadges();
-
-      // 近期帖子
-      const postList = document.getElementById('postList');
-      postList.innerHTML = '';
-      if (u.recent_posts && u.recent_posts.length > 0) {
-        u.recent_posts.forEach(p => {
-          const item = document.createElement('div');
-          item.className = 'post-item';
-          item.innerHTML = '<a class="post-title" href="post.html?id=' + p.id + '">' + escapeHtml(p.title) + '</a>' +
-            '<div class="post-meta">' + (p.type === 'blog' ? '博客' : '帖子') + ' · ' + (p.like_count || 0) + ' 赞 · ' + (p.comment_count || 0) + ' 评论</div>';
-          postList.appendChild(item);
-        });
-      } else {
-        postList.innerHTML = '<div class="post-item"><span style="color:var(--text-mute)">暂无帖子</span></div>
-      <div style="margin-top:24px">
-        <h4 style="color:var(--text-dim);font-size:13px;margin-bottom:8px">🏅 我的勋章</h4>
-        <div class="badge-wall" id="badgeWall"><span class="empty">加载中...</span></div>
-      </div>';
-      }
-
-      // 应用装扮
-      if (u.profile_css) {
-        document.getElementById('customStyles').textContent = u.profile_css;
-      }
-      if (u.profile_bg_type && u.profile_bg_type !== 'none') {
-        initBgCanvas(u.profile_bg_type, u.profile_bg_value);
-      }
-
-      // 如果是自己的主页，填充装扮面板
-      const me = await checkAuth();
-      if (me && me.id === userId) {
-        document.getElementById('customCSS').value = u.profile_css || '';
-        if (u.profile_bg_type) {
-          document.querySelectorAll('.bg-preset').forEach(el => {
-            el.classList.toggle('active', el.dataset.type === u.profile_bg_type);
-          });
-        }
-      }
-    } else {
-      document.getElementById('displayName').textContent = '用户不存在';
-    }
-  } catch(e) {
-    document.getElementById('displayName').textContent = '加载失败';
-    console.error(e);
+  const user = json.data;
+  document.title = (user.display_name || user.username) + ' // NodeWeave';
+  document.getElementById('displayName').textContent = user.display_name || user.username;
+  document.getElementById('username').textContent = '@' + user.username;
+  document.getElementById('bio').textContent = user.bio || '这个用户还没有写简介。';
+  document.getElementById('profileAvatar').textContent = (user.display_name || user.username || '?').slice(0, 2).toUpperCase();
+  document.getElementById('profileAvatar').style.background = user.avatar_color || '#00f0ff';
+  document.getElementById('statPosts').textContent = user.post_count || 0;
+  document.getElementById('statComments').textContent = user.comment_count || 0;
+  document.getElementById('statReputation').textContent = user.reputation || 0;
+  document.getElementById('statCoins').textContent = user.coins || 0;
+  if (user.level) {
+    const level = document.getElementById('levelBadge');
+    level.textContent = `${user.level.icon || ''} Lv${user.level.level} ${user.level.name}`;
+    level.style.color = user.level.color || 'var(--cyan)';
   }
+  document.getElementById('customStyles').textContent = user.profile_css || '';
+  initBgCanvas(user.profile_bg_type || '');
+  if (currentUser && currentUser.id === user.id) {
+    document.getElementById('btnEdit').style.display = '';
+    document.getElementById('customCSS').value = user.profile_css || '';
+    document.querySelectorAll('.bg-preset').forEach(el => el.classList.toggle('active', el.dataset.type === (user.profile_bg_type || '')));
+  }
+  renderPosts(user.recent_posts || []);
+  loadBadges(user.id);
 }
 
-function escapeHtml(s) {
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
+function renderPosts(posts) {
+  const list = document.getElementById('postList');
+  if (!posts.length) {
+    list.innerHTML = '<div class="empty">暂无帖子</div>';
+    return;
+  }
+  list.innerHTML = posts.map(post => `<a class="post-item" href="post.html?id=${esc(post.id)}">
+    <div class="post-title">${esc(post.title)}</div>
+    <div class="post-meta">${post.type === 'blog' ? '博客' : '帖子'} · ${post.like_count || 0} 赞 · ${post.comment_count || 0} 评论</div>
+  </a>`).join('');
 }
 
-// 装扮面板
+async function loadBadges(id) {
+  const wall = document.getElementById('badgeWall');
+  const json = await window.NodeWeave.apiJson('/api/badges/user/' + encodeURIComponent(id)).catch(() => null);
+  const badges = json?.code === 0 ? (json.data.badges || []) : [];
+  if (!badges.length) {
+    wall.innerHTML = '<div class="empty">还没有展示徽章</div>';
+    return;
+  }
+  wall.innerHTML = badges.map(badge => {
+    const image = typeof badgeImg === 'function' ? badgeImg(badge.id, '') : '';
+    return `<div class="badge-item" title="${esc(badge.name)}">${image || `<span class="badge-fallback">${esc(badge.icon || '🏅')}</span>`}</div>`;
+  }).join('');
+}
+
 function toggleCustomize() {
-  const panel = document.getElementById('customizePanel');
-  panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+  document.getElementById('customizePanel').classList.toggle('show');
 }
 
-document.getElementById('bgPresets').addEventListener('click', function(e) {
-  const preset = e.target.closest('.bg-preset');
+async function saveCustomize() {
+  const active = document.querySelector('.bg-preset.active');
+  const profile_css = document.getElementById('customCSS').value;
+  const profile_bg_type = active ? active.dataset.type : '';
+  const json = await window.NodeWeave.apiJson('/api/account/customize', {
+    method: 'PUT',
+    body: JSON.stringify({ profile_css, profile_bg_type, profile_bg_value: '' }),
+  });
+  if (json.code !== 0) {
+    alert(json.msg || '保存失败');
+    return;
+  }
+  document.getElementById('customStyles').textContent = profile_css;
+  initBgCanvas(profile_bg_type);
+  document.getElementById('customizeMsg').style.display = 'inline';
+  setTimeout(() => document.getElementById('customizeMsg').style.display = 'none', 1800);
+}
+
+document.getElementById('bgPresets').addEventListener('click', event => {
+  const preset = event.target.closest('.bg-preset');
   if (!preset) return;
-  document.querySelectorAll('.bg-preset').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.bg-preset').forEach(item => item.classList.remove('active'));
   preset.classList.add('active');
 });
 
-async function saveCustomize() {
-  const profile_css = document.getElementById('customCSS').value;
-  const activeBg = document.querySelector('.bg-preset.active');
-  const bg_type = activeBg ? activeBg.dataset.type : 'none';
-
-  try {
-    const r = await fetch('/api/account/customize', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ profile_css, profile_bg_type: bg_type, profile_bg_value: '' })
-    });
-    const d = await r.json();
-    if (d.code === 0) {
-      document.getElementById('customizeMsg').style.display = 'inline';
-      setTimeout(() => { document.getElementById('customizeMsg').style.display = 'none'; }, 2000);
-      // 应用样式
-      document.getElementById('customStyles').textContent = profile_css;
-      initBgCanvas(bg_type);
-    }
-  } catch(e) {
-    console.error(e);
-  }
-}
-
-// Canvas 动态背景
-let bgAnimationId = null;
-function initBgCanvas(type, value) {
+function initBgCanvas(type) {
   const canvas = document.getElementById('bgCanvas');
-  if (bgAnimationId) { cancelAnimationFrame(bgAnimationId); bgAnimationId = null; }
   const ctx = canvas.getContext('2d');
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-
-  if (type === 'none' || !type) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    return;
-  }
-
-  if (type === 'matrix') {
-    const chars = 'アイウエオカキクケコサシスセソタチツテトABCDEF0123456789';
-    const drops = Array(Math.floor(canvas.width / 20)).fill(1);
-    function draw() {
-      ctx.fillStyle = 'rgba(0,0,0,.05)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#0f0';
-      ctx.font = '16px monospace';
-      for (let i = 0; i < drops.length; i++) {
-        const c = chars[Math.floor(Math.random() * chars.length)];
-        ctx.fillText(c, i * 20, drops[i] * 20);
-        if (drops[i] * 20 > canvas.height && Math.random() > .975) drops[i] = 0;
-        drops[i]++;
-      }
-      bgAnimationId = requestAnimationFrame(draw);
-    }
-    draw();
-  } else if (type === 'particles') {
-    const particles = Array(80).fill().map(() => ({
-      x: Math.random() * canvas.width, y: Math.random() * canvas.height,
-      vx: (Math.random() - .5) * 1.5, vy: (Math.random() - .5) * 1.5,
-      r: Math.random() * 2 + 1,
-      color: ['#00f0ff', '#9d00ff', '#ff003c'][Math.floor(Math.random() * 3)]
-    }));
-    function draw() {
-      ctx.fillStyle = 'rgba(10,10,15,.1)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      particles.forEach(p => {
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < 0) p.x = canvas.width;
-        if (p.x > canvas.width) p.x = 0;
-        if (p.y < 0) p.y = canvas.height;
-        if (p.y > canvas.height) p.y = 0;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = p.color;
-        ctx.fill();
-      });
-      bgAnimationId = requestAnimationFrame(draw);
-    }
-    draw();
-  } else if (type === 'stars') {
-    const stars = Array(150).fill().map(() => ({
-      x: Math.random() * canvas.width, y: Math.random() * canvas.height,
-      r: Math.random() * 1.5 + .5, a: Math.random(),
-      da: (Math.random() - .5) * .02
-    }));
-    function draw() {
-      ctx.fillStyle = 'rgba(5,5,20,.15)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      stars.forEach(s => {
-        s.a += s.da;
-        if (s.a > 1 || s.a < .2) s.da *= -1;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255,255,255,' + s.a + ')';
-        ctx.fill();
-      });
-      bgAnimationId = requestAnimationFrame(draw);
-    }
-    draw();
-  } else if (type === 'hexgrid') {
-    function draw() {
-      ctx.strokeStyle = 'rgba(0,240,255,.06)';
-      ctx.lineWidth = 1;
-      const size = 30;
-      const h = size * Math.sqrt(3);
-      for (let row = -1; row < canvas.height / h + 1; row++) {
-        for (let col = -1; col < canvas.width / (size * 1.5) + 1; col++) {
-          const x = col * size * 1.5;
-          const y = row * h + (col % 2) * h / 2;
-          ctx.beginPath();
-          for (let i = 0; i < 6; i++) {
-            const angle = Math.PI / 6 + i * Math.PI / 3;
-            ctx.lineTo(x + size * Math.cos(angle), y + size * Math.sin(angle));
-          }
-          ctx.closePath();
-          ctx.stroke();
-        }
-      }
-    }
-    draw();
-  }
+  if (bgAnimationId) cancelAnimationFrame(bgAnimationId);
+  bgAnimationId = null;
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (!type) return;
+  if (type === 'matrix') drawMatrix(ctx, canvas);
+  if (type === 'particles') drawParticles(ctx, canvas);
+  if (type === 'stars') drawStars(ctx, canvas);
 }
 
-window.addEventListener('resize', () => {
-  const canvas = document.getElementById('bgCanvas');
-  if (canvas.width !== window.innerWidth) {
-    const activeBg = document.querySelector('.bg-preset.active');
-    if (activeBg) initBgCanvas(activeBg.dataset.type);
+function drawMatrix(ctx, canvas) {
+  const chars = 'NODEWEAVE0123456789<>/{}[]';
+  const drops = Array(Math.ceil(canvas.width / 18)).fill(1);
+  function draw() {
+    ctx.fillStyle = 'rgba(10,10,15,.12)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#00f0ff';
+    ctx.font = '14px monospace';
+    drops.forEach((drop, index) => {
+      ctx.fillText(chars[Math.floor(Math.random() * chars.length)], index * 18, drop * 18);
+      if (drop * 18 > canvas.height && Math.random() > .975) drops[index] = 0;
+      drops[index]++;
+    });
+    bgAnimationId = requestAnimationFrame(draw);
   }
-});
+  draw();
+}
 
-loadProfile();
-checkAuth();
+function drawParticles(ctx, canvas) {
+  const particles = Array.from({ length: 80 }, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    vx: (Math.random() - .5) * 1.4,
+    vy: (Math.random() - .5) * 1.4,
+    r: Math.random() * 2 + 1,
+  }));
+  function draw() {
+    ctx.fillStyle = 'rgba(10,10,15,.16)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#9d00ff';
+    particles.forEach(p => {
+      p.x = (p.x + p.vx + canvas.width) % canvas.width;
+      p.y = (p.y + p.vy + canvas.height) % canvas.height;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    bgAnimationId = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+function drawStars(ctx, canvas) {
+  const stars = Array.from({ length: 150 }, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, r: Math.random() * 1.5 + .4, a: Math.random() }));
+  function draw() {
+    ctx.fillStyle = 'rgba(5,5,20,.18)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    stars.forEach(s => {
+      s.a += (Math.random() - .5) * .05;
+      s.a = Math.max(.2, Math.min(1, s.a));
+      ctx.fillStyle = `rgba(255,255,255,${s.a})`;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    bgAnimationId = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+addEventListener('resize', () => {
+  const active = document.querySelector('.bg-preset.active');
+  initBgCanvas(active ? active.dataset.type : '');
+});
+document.addEventListener('DOMContentLoaded', loadProfile);
 </script>
 </body>
 </html>

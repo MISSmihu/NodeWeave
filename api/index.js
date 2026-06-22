@@ -17,6 +17,7 @@ import { achievementsRouter } from './achievements.js';
 import { notificationsRouter } from './notifications.js';
 import { followRouter } from './follow.js';
 import { siteConfig } from './site-config.js';
+import { attachmentsRouter } from './attachments.js';
 import { inviteCodes } from './admin/invite-codes.js';
 import { moderation } from './admin/moderation.js';
 import { bans } from './admin/bans.js';
@@ -255,24 +256,73 @@ async function runMigrations(db) {
     `ALTER TABLE site_config ADD COLUMN user_level_enabled INTEGER DEFAULT 1`,
     `ALTER TABLE site_config ADD COLUMN teen_mode_enabled INTEGER DEFAULT 0`,
     `ALTER TABLE site_config ADD COLUMN updated_by TEXT DEFAULT ''`,
+    `ALTER TABLE users ADD COLUMN display_name TEXT DEFAULT ''`,
+    `ALTER TABLE users ADD COLUMN avatar_color TEXT DEFAULT '#00f0ff'`,
+    `ALTER TABLE users ADD COLUMN bio TEXT DEFAULT ''`,
+    `ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'member'`,
+    `ALTER TABLE users ADD COLUMN level INTEGER DEFAULT 0`,
+    `ALTER TABLE users ADD COLUMN reputation INTEGER DEFAULT 0`,
+    `ALTER TABLE users ADD COLUMN coins INTEGER DEFAULT 0`,
+    `ALTER TABLE users ADD COLUMN phone TEXT DEFAULT ''`,
+    `ALTER TABLE users ADD COLUMN phone_verified INTEGER DEFAULT 0`,
+    `ALTER TABLE users ADD COLUMN real_name TEXT DEFAULT ''`,
+    `ALTER TABLE users ADD COLUMN real_name_verified INTEGER DEFAULT 0`,
+    `ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0`,
+    `ALTER TABLE users ADD COLUMN invite_code TEXT DEFAULT ''`,
     `ALTER TABLE users ADD COLUMN phone_hash TEXT DEFAULT ''`,
     `ALTER TABLE users ADD COLUMN id_card_hash TEXT DEFAULT ''`,
     `ALTER TABLE users ADD COLUMN real_name_status TEXT DEFAULT 'unverified'`,
+    `ALTER TABLE users ADD COLUMN profile_css TEXT DEFAULT ''`,
+    `ALTER TABLE users ADD COLUMN profile_bg_type TEXT DEFAULT ''`,
+    `ALTER TABLE users ADD COLUMN profile_bg_value TEXT DEFAULT ''`,
+    `ALTER TABLE users ADD COLUMN blog_css TEXT DEFAULT ''`,
+    `ALTER TABLE users ADD COLUMN blog_bg_type TEXT DEFAULT ''`,
+    `ALTER TABLE users ADD COLUMN blog_bg_value TEXT DEFAULT ''`,
+    `ALTER TABLE users ADD COLUMN updated_at INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN user_id TEXT DEFAULT ''`,
     `ALTER TABLE posts ADD COLUMN author_id TEXT DEFAULT ''`,
+    `ALTER TABLE posts ADD COLUMN board_id TEXT DEFAULT 'general'`,
+    `ALTER TABLE posts ADD COLUMN type TEXT DEFAULT 'post'`,
+    `ALTER TABLE posts ADD COLUMN hidden_type TEXT DEFAULT 'none'`,
+    `ALTER TABLE posts ADD COLUMN hidden_until INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN like_count INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN comment_count INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN view_count INTEGER DEFAULT 0`,
     `ALTER TABLE posts ADD COLUMN is_pinned INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN is_locked INTEGER DEFAULT 0`,
     `ALTER TABLE posts ADD COLUMN is_hidden INTEGER DEFAULT 0`,
     `ALTER TABLE posts ADD COLUMN is_ai_generated INTEGER DEFAULT 0`,
     `ALTER TABLE posts ADD COLUMN visibility TEXT DEFAULT 'public'`,
     `ALTER TABLE posts ADD COLUMN visible_after INTEGER`,
     `ALTER TABLE posts ADD COLUMN attachment_url TEXT DEFAULT ''`,
     `ALTER TABLE posts ADD COLUMN attachment_name TEXT DEFAULT ''`,
+    `ALTER TABLE posts ADD COLUMN attachment_size INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN hidden_content TEXT DEFAULT ''`,
+    `ALTER TABLE posts ADD COLUMN custom_css TEXT DEFAULT ''`,
+    `ALTER TABLE posts ADD COLUMN custom_bg_type TEXT DEFAULT ''`,
+    `ALTER TABLE posts ADD COLUMN custom_bg_value TEXT DEFAULT ''`,
     `ALTER TABLE posts ADD COLUMN downvote_count INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN tip_count INTEGER DEFAULT 0`,
     `ALTER TABLE posts ADD COLUMN tip_total INTEGER DEFAULT 0`,
     `ALTER TABLE posts ADD COLUMN rating_avg REAL DEFAULT 0`,
     `ALTER TABLE posts ADD COLUMN rating_count INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN bounty INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN bounty_claimed INTEGER DEFAULT 0`,
     `ALTER TABLE posts ADD COLUMN accepted_answer_id TEXT DEFAULT ''`,
+    `ALTER TABLE posts ADD COLUMN updated_at INTEGER DEFAULT 0`,
+    `ALTER TABLE comments ADD COLUMN user_id TEXT DEFAULT ''`,
     `ALTER TABLE comments ADD COLUMN author_id TEXT DEFAULT ''`,
+    `ALTER TABLE comments ADD COLUMN parent_id TEXT`,
+    `ALTER TABLE comments ADD COLUMN like_count INTEGER DEFAULT 0`,
     `ALTER TABLE comments ADD COLUMN is_hidden INTEGER DEFAULT 0`,
+    `ALTER TABLE comments ADD COLUMN is_accepted INTEGER DEFAULT 0`,
+    `ALTER TABLE boards ADD COLUMN slug TEXT DEFAULT ''`,
+    `ALTER TABLE boards ADD COLUMN description TEXT DEFAULT ''`,
+    `ALTER TABLE boards ADD COLUMN icon TEXT DEFAULT ''`,
+    `ALTER TABLE boards ADD COLUMN color TEXT DEFAULT ''`,
+    `ALTER TABLE boards ADD COLUMN sort_order INTEGER DEFAULT 0`,
+    `ALTER TABLE boards ADD COLUMN created_by TEXT DEFAULT ''`,
+    `ALTER TABLE boards ADD COLUMN created_at INTEGER DEFAULT 0`,
     `ALTER TABLE boards ADD COLUMN is_public INTEGER DEFAULT 1`,
     `ALTER TABLE boards ADD COLUMN post_count INTEGER DEFAULT 0`,
     `ALTER TABLE boards ADD COLUMN moderators TEXT DEFAULT ''`,
@@ -399,6 +449,7 @@ app.route('/api/achievements', achievementsRouter);
 app.route('/api/notifications', notificationsRouter);
 app.route('/api/follow', followRouter);
 app.route('/api/site-config', siteConfig);
+app.route('/api/attachments', attachmentsRouter);
 app.route('/api/admin/invite-codes', inviteCodes);
 app.route('/api/admin/moderation', moderation);
 app.route('/api/admin/bans', bans);
@@ -411,6 +462,11 @@ app.get('*', async (c) => {
   const url = new URL(c.req.url);
   if (url.pathname.startsWith('/api/')) {
     return c.json({ code: 404, data: null, msg: '接口不存在' }, 404);
+  }
+  if (url.pathname === '/') {
+    url.pathname = '/index.html';
+  } else if (!url.pathname.includes('.') && !url.pathname.endsWith('/')) {
+    url.pathname = `${url.pathname}.html`;
   }
   return c.env.ASSETS.fetch(new Request(url, c.req.raw));
 });

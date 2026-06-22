@@ -64,14 +64,21 @@ async function authUser(c, env) {
   return await verify(match[1], env);
 }
 
+function cookieSecurityAttrs(c) {
+  const url = new URL(c.req.url);
+  const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(url.hostname);
+  if (url.protocol === 'https:' && !isLocalhost) return '; Secure; SameSite=Strict';
+  return '; SameSite=Lax';
+}
+
 // 设置 JWT Cookie
 function setTokenCookie(c, token) {
-  c.header('Set-Cookie', `nodeweave_token=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=604800`);
+  c.header('Set-Cookie', `nodeweave_token=${token}; HttpOnly${cookieSecurityAttrs(c)}; Path=/; Max-Age=604800`);
 }
 
 // 清除 JWT Cookie
 function clearTokenCookie(c) {
-  c.header('Set-Cookie', `nodeweave_token=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0`);
+  c.header('Set-Cookie', `nodeweave_token=; HttpOnly${cookieSecurityAttrs(c)}; Path=/; Max-Age=0`);
 }
 
 export { sign, verify, authUser, setTokenCookie, clearTokenCookie };

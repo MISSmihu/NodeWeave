@@ -190,14 +190,24 @@ function resetTurnstile(id) {
 }
 
 // Tab switching
+function activateTab(tab) {
+  const nextTab = tab === 'register' ? 'register' : 'login';
+  document.querySelectorAll('.tab-btn').forEach(button => {
+    button.classList.toggle('active', button.dataset.tab === nextTab);
+  });
+  document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
+  document.getElementById(nextTab + 'Form').classList.add('active');
+}
+
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById(btn.dataset.tab + 'Form').classList.add('active');
+    activateTab(btn.dataset.tab);
   });
 });
+
+if (new URLSearchParams(location.search).get('tab') === 'register') {
+  activateTab('register');
+}
 
 // Load site config for OAuth buttons / invite code
 async function loadConfig() {
@@ -232,6 +242,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   try {
     const res = await fetch(API + '/auth/login', {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         id: document.getElementById('loginId').value.trim(),
@@ -243,6 +254,12 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     if (json.code !== 0) {
       errEl.textContent = json.msg; errEl.classList.add('show');
       resetTurnstile('loginTurnstile');
+      return;
+    }
+    const me = await window.NodeWeave.currentUser(true);
+    if (!me) {
+      errEl.textContent = '登录成功但会话没有写入，请确认当前页面是 HTTPS 线上地址。';
+      errEl.classList.add('show');
       return;
     }
     const redirect = new URLSearchParams(location.search).get('redirect') || 'index.html';
@@ -275,6 +292,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
 
     const res = await fetch(API + '/auth/register', {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });

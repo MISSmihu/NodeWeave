@@ -1,94 +1,191 @@
-/* ===== NodeWeave // 赛博社区 交互脚本 ===== */
+/* ===== NodeWeave // shared frontend shell ===== */
+(function () {
+  const PUBLIC_ORIGIN = 'https://nodeweave.wiltonmaggiojb.workers.dev';
+  const state = { user: null, userLoaded: false };
 
-// 数字滚动动画（统计数据）
-function animateCount(el){
-  const target = +el.dataset.target;
-  const dur = 1800;
-  const start = performance.now();
-  function tick(now){
-    const p = Math.min((now - start)/dur, 1);
-    // easeOutCubic
-    const eased = 1 - Math.pow(1 - p, 3);
-    const val = Math.floor(eased * target);
-    el.textContent = val.toLocaleString();
-    if(p < 1) requestAnimationFrame(tick);
-    else el.textContent = target.toLocaleString();
+  function escapeHtml(value) {
+    const div = document.createElement('div');
+    div.textContent = value == null ? '' : String(value);
+    return div.innerHTML;
   }
-  requestAnimationFrame(tick);
-}
 
-// 元素进入视口时触发
-const io = new IntersectionObserver((entries)=>{
-  entries.forEach(e=>{
-    if(e.isIntersecting){
-      animateCount(e.target);
-      io.unobserve(e.target);
+  function api(path, options) {
+    if (location.protocol === 'file:' && typeof path === 'string' && path.startsWith('/api/')) {
+      path = PUBLIC_ORIGIN + path;
     }
-  });
-},{threshold:.4});
-
-document.querySelectorAll('.stat-num[data-target]').forEach(el=>io.observe(el));
-
-// 顶部导航 Tab 切换（Feed）
-document.querySelectorAll('.feed-tabs .tab').forEach(tab=>{
-  tab.addEventListener('click',()=>{
-    document.querySelectorAll('.feed-tabs .tab').forEach(t=>t.classList.remove('active'));
-    tab.classList.add('active');
-  });
-});
-
-// 顶部导航链接切换
-document.querySelectorAll('.nav-links a').forEach(a=>{
-  a.addEventListener('click',(e)=>{
-    document.querySelectorAll('.nav-links a').forEach(x=>x.classList.remove('active'));
-    a.classList.add('active');
-  });
-});
-
-// "/" 快捷键聚焦搜索
-document.addEventListener('keydown',(e)=>{
-  if(e.key === '/' && document.activeElement.tagName !== 'INPUT'){
-    e.preventDefault();
-    const inp = document.querySelector('.nav-search input');
-    if(inp) inp.focus();
+    const init = Object.assign({ credentials: 'include' }, options || {});
+    init.headers = Object.assign({}, init.headers || {});
+    if (init.body && !(init.body instanceof FormData) && !init.headers['Content-Type']) {
+      init.headers['Content-Type'] = 'application/json';
+    }
+    return fetch(path, init);
   }
-});
 
-// 卡片点击反馈（占位：实际可跳详情页）
-document.querySelectorAll('.card').forEach(card=>{
-  card.style.cursor = 'pointer';
-  card.addEventListener('click',(e)=>{
-    if(e.target.closest('a,button')) return;
-    // 预留：跳转到文章/帖子详情
-    card.style.transform = 'translateY(-4px) scale(.998)';
-    setTimeout(()=>card.style.transform = '',150);
+  async function apiJson(path, options) {
+    const response = await api(path, options);
+    const json = await response.json().catch(() => ({ code: response.status, msg: '响应解析失败', data: null }));
+    if ((json.code === 4011 || response.status === 401) && options?.redirectOnAuth) {
+      redirectLogin();
+    }
+    return json;
+  }
+
+  function timeAgo(ts) {
+    const time = Number(ts || 0);
+    if (!time) return '刚刚';
+    const diff = Date.now() - time;
+    if (diff < 60_000) return '刚刚';
+    if (diff < 3_600_000) return Math.floor(diff / 60_000) + ' 分钟前';
+    if (diff < 86_400_000) return Math.floor(diff / 3_600_000) + ' 小时前';
+    if (diff < 2_592_000_000) return Math.floor(diff / 86_400_000) + ' 天前';
+    return new Date(time).toLocaleDateString('zh-CN');
+  }
+
+  function samePathPublicUrl() {
+    const path = location.pathname.split('/public/').pop() || 'index.html';
+    const cleanPath = path.replace(/\\/g, '/').replace(/^\/+/, '');
+    return `${PUBLIC_ORIGIN}/${cleanPath}${location.search || ''}${location.hash || ''}`;
+  }
+
+  function showFileBanner() {
+    if (location.protocol !== 'file:') return;
+    const banner = document.createElement('div');
+    banner.style.cssText = [
+      'position:fixed',
+      'left:16px',
+      'right:16px',
+      'bottom:16px',
+      'z-index:9999',
+      'padding:14px 16px',
+      'border:1px solid rgba(0,240,255,.35)',
+      'border-radius:10px',
+      'background:rgba(10,10,15,.94)',
+      'box-shadow:0 0 30px rgba(0,240,255,.18)',
+      'color:#e8e8ff',
+      'font:13px Noto Sans SC, system-ui, sans-serif',
+    ].join(';');
+    banner.innerHTML = `你现在打开的是本地文件，登录 Cookie 不能在 <code>file://</code> 下生效。
+      <a href="${samePathPublicUrl()}" style="color:#00f0ff;margin-left:8px">打开线上页面</a>`;
+    document.body.appendChild(banner);
+  }
+
+  function redirectLogin() {
+    const target = location.protocol === 'file:' ? samePathPublicUrl() : `${location.pathname.split('/').pop() || 'index.html'}${location.search || ''}`;
+    const loginUrl = location.protocol === 'file:' ? `${PUBLIC_ORIGIN}/login.html` : 'login.html';
+    location.href = `${loginUrl}?redirect=${encodeURIComponent(target)}`;
+  }
+
+  async function currentUser(force) {
+    if (state.userLoaded && !force) return state.user;
+    state.userLoaded = true;
+    try {
+      const json = await apiJson('/api/account/me');
+      state.user = json.code === 0 ? json.data : null;
+    } catch (error) {
+      state.user = null;
+    }
+    renderAuth();
+    return state.user;
+  }
+
+  function renderAuth() {
+    const user = state.user;
+    document.querySelectorAll('[data-auth-guest]').forEach(el => {
+      el.style.display = user ? 'none' : '';
+    });
+    document.querySelectorAll('[data-auth-user]').forEach(el => {
+      el.style.display = user ? '' : 'none';
+    });
+    document.querySelectorAll('[data-user-name]').forEach(el => {
+      el.textContent = user ? (user.display_name || user.username || '已登录') : '';
+    });
+    document.querySelectorAll('[data-user-coins]').forEach(el => {
+      el.textContent = user ? String(user.coins || 0) : '0';
+    });
+    document.querySelectorAll('[data-user-role]').forEach(el => {
+      el.textContent = user ? (user.role || 'member') : '';
+    });
+    document.querySelectorAll('[data-auth-actions]').forEach(el => {
+      if (user) {
+        el.innerHTML = `
+          <a class="btn-ghost" href="account/settings.html" title="账号设置">${escapeHtml(user.display_name || user.username || '我的账号')}</a>
+          <button class="btn-ghost" type="button" data-logout>退出</button>
+          <a class="btn-primary" href="editor.html">+ 发帖</a>`;
+      } else {
+        el.innerHTML = `
+          <a class="btn-ghost" href="login.html">登录</a>
+          <a class="btn-primary" href="login.html?tab=register">注册</a>`;
+      }
+    });
+  }
+
+  async function logout() {
+    await apiJson('/api/auth/logout', { method: 'POST' }).catch(() => null);
+    state.user = null;
+    state.userLoaded = true;
+    renderAuth();
+    location.href = 'index.html';
+  }
+
+  function setupShortcuts() {
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== '/' || ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
+      const input = document.querySelector('.nav-search input');
+      if (!input) return;
+      event.preventDefault();
+      input.focus();
+    });
+  }
+
+  function setupDelegates() {
+    document.addEventListener('click', (event) => {
+      const logoutButton = event.target.closest('[data-logout]');
+      if (logoutButton) {
+        event.preventDefault();
+        logout();
+      }
+    });
+  }
+
+  function setupCounters() {
+    const counters = document.querySelectorAll('.stat-num[data-target]');
+    if (!counters.length || !('IntersectionObserver' in window)) return;
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        const el = entry.target;
+        const target = Number(el.dataset.target || 0);
+        const start = performance.now();
+        const duration = 1200;
+        function tick(now) {
+          const progress = Math.min((now - start) / duration, 1);
+          el.textContent = Math.floor((1 - Math.pow(1 - progress, 3)) * target).toLocaleString();
+          if (progress < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+        observer.unobserve(el);
+      });
+    }, { threshold: 0.35 });
+    counters.forEach(el => observer.observe(el));
+  }
+
+  window.NodeWeave = {
+    api,
+    apiJson,
+    currentUser,
+    renderAuth,
+    logout,
+    redirectLogin,
+    escapeHtml,
+    timeAgo,
+    state,
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    showFileBanner();
+    setupShortcuts();
+    setupDelegates();
+    setupCounters();
+    currentUser();
   });
-});
-
-// "加载更多" 按钮占位
-const loadMore = document.querySelector('.btn-loadmore');
-if(loadMore){
-  loadMore.addEventListener('click',()=>{
-    const orig = loadMore.textContent;
-    loadMore.textContent = '加载中…';
-    loadMore.style.color = 'var(--cyan)';
-    setTimeout(()=>{
-      loadMore.textContent = orig;
-      loadMore.style.color = '';
-    },1200);
-  });
-}
-
-// 随机给用户头像的 cover 加一点呼吸光（细节）
-document.querySelectorAll('.card-cover').forEach((cover,i)=>{
-  cover.addEventListener('mousemove',(e)=>{
-    const r = cover.getBoundingClientRect();
-    const x = ((e.clientX - r.left)/r.width)*100;
-    const y = ((e.clientY - r.top)/r.height)*100;
-    cover.style.background =
-      `radial-gradient(circle at ${x}% ${y}%, rgba(0,240,255,.18), transparent 50%), ${cover.dataset.bg||''}`;
-  });
-});
-
-console.log('%c◈ NE<X>US // SYSTEM ONLINE','color:#00f0ff;font:bold 16px monospace;text-shadow:0 0 8px #00f0ff');
-console.log('%c欢迎接入赛博社区。','color:#8a8aa8;font:12px monospace');
+})();

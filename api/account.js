@@ -64,7 +64,7 @@ async function sendDeleteEmail(to, link, env) {
 account.get('/me', requireLogin, async (c) => {
   const userId = c.get('userId');
   const user = await c.env.DB.prepare(
-    'SELECT username, email, display_name, bio, avatar_color, role, email_verified, phone_verified, real_name_status, reputation, coins, created_at FROM users WHERE id=?'
+    'SELECT id, username, email, display_name, bio, avatar_color, role, email_verified, phone_verified, real_name_status, reputation, coins, created_at FROM users WHERE id=?'
   ).bind(userId).first();
   if (!user) return err(c, CODE.NOT_FOUND, '用户不存在');
   return ok(c, user);

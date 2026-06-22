@@ -1,276 +1,355 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>帖子详情 // NodeWeave</title>
+<title>内容详情 // NodeWeave</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <style id="customStyles"></style>
 <style>
-.post-page{max-width:860px;margin:0 auto;padding:80px 24px 100px;position:relative;z-index:1}
-.post-page .back-link{display:inline-block;margin-bottom:24px;font-family:var(--font-mono);font-size:13px;color:var(--text-mute);text-decoration:none}
-.post-page .back-link:hover{color:var(--cyan)}
-.post-header{margin-bottom:20px}
-.post-header .tags{margin-bottom:10px;display:flex;gap:6px;flex-wrap:wrap}
-.post-header .tag{display:inline-block;padding:3px 10px;border-radius:3px;font-family:var(--font-mono);font-size:11px;background:rgba(0,240,255,.08);color:var(--cyan);border:1px solid rgba(0,240,255,.15)}
-.post-header h1{font-family:var(--font-display);font-size:clamp(22px,4vw,32px);color:var(--text);line-height:1.3;margin-bottom:12px}
-.post-header .meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--text-mute)}
-.post-header .meta .author{color:var(--cyan);cursor:pointer;text-decoration:none}
-.post-header .meta .author:hover{text-shadow:var(--glow-cyan)}
-.post-content{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:28px 24px;margin-bottom:16px;line-height:1.9;font-size:15px;color:var(--text);white-space:pre-wrap;word-wrap:break-word}
-/* 互动按钮 */
-.interact-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
-.interact-btn{padding:8px 16px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);font-family:var(--font-mono);font-size:12px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px}
-.interact-btn:hover{border-color:var(--cyan);color:var(--cyan)}
-.interact-btn.active{border-color:var(--cyan);color:var(--cyan);background:rgba(0,240,255,.06)}
-.interact-btn.downvoted{border-color:var(--magenta);color:var(--magenta);background:rgba(255,0,60,.06)}
-.interact-btn .count{font-weight:700}
-/* 打赏弹窗 */
-.tip-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center}
-.tip-modal.show{display:flex}
-.tip-modal .tip-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;width:90%;max-width:360px}
-.tip-modal h3{font-family:var(--font-display);font-size:16px;color:var(--cyan);margin-bottom:8px}
-.tip-modal .tip-presets{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.tip-modal .tip-preset{padding:8px 14px;background:var(--surface-2);border:1px solid var(--border);border-radius:4px;color:var(--text-dim);font-family:var(--font-mono);font-size:12px;cursor:pointer;transition:all .15s}
-.tip-modal .tip-preset:hover,.tip-modal .tip-preset.active{border-color:#ffd700;color:#ffd700;background:rgba(255,215,0,.06)}
-.tip-modal input{padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:14px;outline:none;width:100%;margin-bottom:8px}
-.tip-modal input:focus{border-color:#ffd700}
-.tip-modal .tip-msg{width:100%;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px;resize:none;margin-bottom:12px}
-.tip-modal .tip-btns{display:flex;gap:8px;justify-content:flex-end}
-.tip-modal .btn-tip{padding:8px 20px;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#1a1a00;border:none;border-radius:4px;font-family:var(--font-display);font-size:13px;cursor:pointer}
-.tip-modal .btn-cancel{padding:8px 16px;background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--text-dim);font-family:var(--font-mono);font-size:12px;cursor:pointer}
-/* 评分 */
-.rate-stars{display:flex;gap:4px;align-items:center}
+.post-page{max-width:920px;margin:0 auto;padding:82px 24px 110px;position:relative;z-index:1}
+.post-shell{background:rgba(18,18,30,.78);border:1px solid var(--border);border-radius:14px;padding:26px;box-shadow:0 22px 80px rgba(0,0,0,.22)}
+.back-link{display:inline-flex;margin-bottom:18px;color:var(--text-mute);font-family:var(--font-mono);font-size:13px;text-decoration:none}
+.back-link:hover{color:var(--cyan)}
+.post-tags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.post-tags span{padding:4px 10px;border:1px solid rgba(0,240,255,.18);background:rgba(0,240,255,.07);border-radius:999px;color:var(--cyan);font-family:var(--font-mono);font-size:11px}
+.post-title{font-family:var(--font-display);font-size:clamp(24px,4vw,36px);line-height:1.25;margin:0;color:var(--text)}
+.post-meta{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0 22px;color:var(--text-mute);font-size:13px}
+.post-meta a{color:var(--cyan);text-decoration:none}
+.post-body,.hidden-reveal{white-space:pre-wrap;word-break:break-word;line-height:1.9;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:24px}
+.hidden-reveal{margin-top:14px;background:rgba(0,240,255,.035);border-style:dashed}
+.attach-box{display:flex;align-items:center;gap:12px;margin:16px 0;padding:14px 16px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px}
+.attach-box a{color:var(--cyan);font-family:var(--font-mono);font-size:12px}
+.hidden-box{margin:16px 0;padding:18px;border:1px dashed var(--border);border-radius:10px;background:rgba(0,240,255,.035);text-align:center;color:var(--text-dim)}
+.interact-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:18px 0}
+.interact-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--text-dim);font-family:var(--font-mono);font-size:12px}
+.interact-btn:hover,.interact-btn.active{border-color:var(--cyan);color:var(--cyan);background:rgba(0,240,255,.07)}
+.interact-btn.downvoted{border-color:var(--magenta);color:var(--magenta);background:rgba(255,0,60,.07)}
+.rate-stars{display:inline-flex;gap:3px;align-items:center}
 .rate-star{font-size:20px;cursor:pointer;color:var(--text-mute);transition:all .15s}
-.rate-star:hover,.rate-star.active{color:#ffd700;text-shadow:0 0 6px rgba(255,215,0,.3)}
-.rate-avg{font-family:var(--font-display);font-size:14px;color:#ffd700;margin-left:6px}
-.attach-box{background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px}
-.attach-box a{font-size:11px;color:var(--cyan)}
-.hidden-box{background:var(--surface-2);border:1px dashed var(--border);border-radius:6px;padding:16px;margin:16px 0;text-align:center}
-.hidden-box p{color:var(--text-dim);font-size:13px}
-.hidden-box .btn-sm{padding:8px 16px;background:var(--cyan);color:var(--bg);border:none;border-radius:4px;font-family:var(--font-display);font-size:12px;cursor:pointer;margin-top:8px}
-.comments-section h2{font-family:var(--font-display);font-size:16px;color:var(--cyan);margin-bottom:16px}
-.comment-form textarea{width:100%;min-height:80px;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-body);font-size:14px;outline:none;resize:vertical}
-.comment-form textarea:focus{border-color:var(--cyan)}
-.comment-form .form-foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
-.comment-form .btn-sm{padding:8px 16px;background:var(--cyan);color:var(--bg);border:none;border-radius:4px;font-family:var(--font-display);font-size:12px;cursor:pointer}
-.comment-item{padding:14px 0;border-bottom:1px solid var(--border)}
-.comment-item .cmt-author{font-family:var(--font-mono);font-size:12px;color:var(--cyan);margin-bottom:4px}
-.comment-item .cmt-time{font-size:11px;color:var(--text-mute);margin-left:8px}
-.comment-item .cmt-body{font-size:14px;color:var(--text-dim);line-height:1.6}
-.spinner{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--cyan);border-radius:50%;animation:spin .8s linear infinite;margin:60px auto}
+.rate-star.active,.rate-star:hover{color:#ffd700;text-shadow:0 0 8px rgba(255,215,0,.35)}
+.comments-section{margin-top:26px}
+.comments-section h2{font-family:var(--font-display);font-size:17px;color:var(--cyan);margin-bottom:14px}
+.comment-form textarea{width:100%;min-height:90px;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-body);resize:vertical;outline:none}
+.comment-form textarea:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,240,255,.08)}
+.comment-actions{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:9px;color:var(--text-mute);font-size:11px}
+.comment-item{padding:15px 0;border-bottom:1px solid var(--border-2)}
+.comment-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:5px}
+.comment-author{font-family:var(--font-mono);font-size:12px;color:var(--cyan)}
+.comment-time{font-size:11px;color:var(--text-mute)}
+.comment-body{color:var(--text-dim);font-size:14px;line-height:1.7;white-space:pre-wrap}
+.accepted{display:inline-flex;padding:2px 7px;border-radius:999px;border:1px solid rgba(127,255,0,.25);color:var(--green);font-size:10px;font-family:var(--font-mono)}
+.accept-btn{margin-left:auto;padding:5px 8px;border:1px solid rgba(127,255,0,.25);background:rgba(127,255,0,.06);border-radius:6px;color:var(--green);font-family:var(--font-mono);font-size:11px}
+.tip-modal{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.72);align-items:center;justify-content:center;padding:18px}
+.tip-modal.show{display:flex}
+.tip-card{width:min(420px,100%);background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;box-shadow:0 20px 80px rgba(0,0,0,.45)}
+.tip-card h3{font-family:var(--font-display);font-size:17px;color:var(--cyan);margin-bottom:12px}
+.tip-presets{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.tip-preset{padding:8px 13px;border:1px solid var(--border);background:var(--surface-2);border-radius:7px;color:var(--text-dim);font-family:var(--font-mono)}
+.tip-preset:hover,.tip-preset.active{border-color:#ffd700;color:#ffd700;background:rgba(255,215,0,.08)}
+.tip-card input,.tip-card textarea{width:100%;padding:10px 12px;margin-bottom:10px;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text)}
+.tip-actions{display:flex;justify-content:flex-end;gap:10px}
+.msg{display:none;margin-top:12px;padding:10px 12px;border-radius:8px;font-size:13px}
+.msg.show{display:block}
+.msg.err{display:block;background:rgba(255,0,60,.1);border:1px solid rgba(255,0,60,.22);color:var(--magenta)}
+.spinner{width:34px;height:34px;border:2px solid var(--border);border-top-color:var(--cyan);border-radius:50%;animation:spin .8s linear infinite;margin:80px auto}
 @keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:720px){.post-shell{padding:18px}.post-page{padding-left:16px;padding-right:16px}}
 </style>
 </head>
 <body>
 <div class="bg-grid"></div><div class="bg-scanlines"></div><div class="bg-glow"></div>
 <header class="nav">
   <div class="nav-inner">
-    <a href="index.html" class="logo"><span class="logo-mark">◈</span><span class="logo-text">Node<span class="x">Weave</span></span></a>
-    <div class="nav-actions"><a href="index.html" class="btn-ghost" style="border:1px solid var(--border);padding:8px 16px">← 返回</a></div>
+    <a href="index.html" class="logo"><span class="logo-mark">◈</span><span class="logo-text">Node<span class="x">Weave</span></span><span class="logo-sub">// POST</span></a>
+    <nav class="nav-links">
+      <a href="index.html">动态</a>
+      <a href="boards.html">论坛</a>
+      <a href="board.html?board=blog">博客</a>
+      <a href="board.html?board=qa">问答</a>
+    </nav>
+    <div class="nav-actions" data-auth-actions>
+      <a class="btn-ghost" href="login.html">登录</a>
+      <a class="btn-primary" href="editor.html">+ 发帖</a>
+    </div>
   </div>
 </header>
+
 <main class="post-page">
-  <a href="index.html" class="back-link">← 返回</a>
+  <a href="index.html" class="back-link">← 返回动态</a>
   <div id="loading"><div class="spinner"></div></div>
-  <div id="postContent" style="display:none"></div>
+  <article id="postShell" class="post-shell" style="display:none"></article>
 </main>
 
-<!-- 打赏弹窗 -->
 <div class="tip-modal" id="tipModal">
   <div class="tip-card">
-    <h3>💰 打赏作者</h3>
+    <h3>打赏作者</h3>
     <div class="tip-presets" id="tipPresets">
-      <button class="tip-preset" data-amount="5">5</button>
-      <button class="tip-preset" data-amount="10">10</button>
-      <button class="tip-preset" data-amount="50">50</button>
-      <button class="tip-preset" data-amount="100">100</button>
-      <button class="tip-preset" data-amount="0">自定义</button>
+      <button class="tip-preset" type="button" data-amount="5">5</button>
+      <button class="tip-preset" type="button" data-amount="10">10</button>
+      <button class="tip-preset" type="button" data-amount="50">50</button>
+      <button class="tip-preset" type="button" data-amount="100">100</button>
+      <button class="tip-preset" type="button" data-amount="0">自定义</button>
     </div>
-    <input type="number" id="tipCustom" placeholder="自定义金额" min="1" style="display:none">
-    <textarea class="tip-msg" id="tipMessage" placeholder="留言（可选）" rows="2"></textarea>
-    <div class="tip-btns">
-      <button class="btn-cancel" onclick="closeTip()">取消</button>
-      <button class="btn-tip" onclick="sendTip()">打赏</button>
+    <input type="number" id="tipCustom" placeholder="自定义论坛币数量" min="1" style="display:none">
+    <textarea id="tipMessage" rows="2" placeholder="留言（可选）"></textarea>
+    <div class="tip-actions">
+      <button class="btn-ghost" type="button" onclick="closeTip()">取消</button>
+      <button class="btn-primary" type="button" onclick="sendTip()">确认打赏</button>
     </div>
-    <p id="tipError" style="color:var(--magenta);font-size:12px;margin-top:6px;display:none"></p>
+    <div class="msg err" id="tipError"></div>
   </div>
 </div>
 
+<script src="script.js"></script>
 <script>
-var postId = new URLSearchParams(window.location.search).get('id');
-var postData = null;
-var interactState = {liked:false,downvoted:false,rated:false,score:0};
-var tipAmount = 0;
+const postId = new URLSearchParams(location.search).get('id');
+let postData = null;
+let currentUser = null;
+let interactState = { liked: false, downvoted: false, rated: false, score: 0 };
+let tipAmount = 0;
+
+const esc = (value) => window.NodeWeave.escapeHtml(value);
+const apiJson = (...args) => window.NodeWeave.apiJson(...args);
+
+function requirePostId() {
+  if (postId) return true;
+  document.getElementById('loading').innerHTML = '<p style="color:var(--magenta);text-align:center;padding:40px">缺少帖子 ID</p>';
+  return false;
+}
 
 async function loadPost() {
-  if (!postId) { document.getElementById('loading').innerHTML='<p style="color:var(--magenta);text-align:center;padding:40px">缺少帖子ID</p>'; return; }
-  try {
-    var res = await fetch('/api/posts/' + postId); var json = await res.json();
-    if (json.code!==0) { document.getElementById('loading').innerHTML='<p style="color:var(--text-mute);text-align:center;padding:40px">帖子不存在</p>'; return; }
-    var p = json.data; postData = p;
-    var tags = (p.tags||[]).map(function(t){return '<span class="tag">#'+h(t)+'</span>'}).join('');
-    var date = new Date(p.created_at).toLocaleString('zh-CN');
+  if (!requirePostId()) return;
+  const json = await apiJson('/api/posts/' + encodeURIComponent(postId)).catch(() => null);
+  if (!json || json.code !== 0) {
+    document.getElementById('loading').innerHTML = '<p style="color:var(--text-mute);text-align:center;padding:40px">帖子不存在或暂时无法访问</p>';
+    return;
+  }
+  postData = json.data;
+  await loadInteractState();
+  renderPost();
+  loadComments();
+}
 
-    // 附件
-    var attHtml = '';
-    if (p.attachment_url) {
-      attHtml = '<div class="attach-box"><span style="font-size:24px">📎</span><div style="flex:1"><div style="font-size:13px;color:var(--text)">'+h(p.attachment_name||'附件')+'</div><a href="'+h(p.attachment_url)+'" target="_blank">下载/查看</a></div></div>';
+function renderPost() {
+  const p = postData;
+  const shell = document.getElementById('postShell');
+  document.getElementById('loading').style.display = 'none';
+  shell.style.display = '';
+  document.title = (p.title || '内容详情') + ' // NodeWeave';
+  document.getElementById('customStyles').textContent = p.custom_css || '';
+  const tags = (p.tags || []).map(tag => `<span>#${esc(tag)}</span>`).join('');
+  const date = new Date(p.created_at).toLocaleString('zh-CN');
+  const canEdit = currentUser && currentUser.username && p.author_id && (p.author_id === currentUser.id);
+  const attachment = p.attachment_url ? `
+    <div class="attach-box">
+      <span style="font-size:24px">📎</span>
+      <div style="flex:1">
+        <strong>${esc(p.attachment_name || '附件')}</strong>
+        <div><a href="${esc(p.attachment_url)}" target="_blank" rel="noopener">下载 / 查看附件</a></div>
+      </div>
+    </div>` : '';
+  let hidden = '';
+  if (p.hidden_content) {
+    if (p.visibility === 'timed' && p.visible_after && p.visible_after > Date.now()) {
+      hidden = `<div class="hidden-box">⏰ 隐藏内容将在 ${new Date(p.visible_after).toLocaleString('zh-CN')} 后公开</div>`;
+    } else if (p.visibility === 'reply') {
+      hidden = `<div class="hidden-box" id="hiddenBox">🔒 回复后可见隐藏内容<br><button class="btn-primary" type="button" style="margin-top:10px" onclick="revealHidden()">我已回复，查看内容</button></div>`;
+    } else {
+      hidden = `<div class="hidden-reveal">${esc(p.hidden_content)}</div>`;
     }
-
-    // 隐藏内容
-    var hiddenHtml = '';
-    if (p.visibility==='reply' && p.hidden_content) {
-      hiddenHtml = '<div id="hiddenBox" class="hidden-box"><p>🔒 回复后可见</p><button class="btn-sm" onclick="revealHidden()">回复以查看</button></div>';
-    } else if (p.visibility==='timed' && p.visible_after && p.visible_after > Date.now()) {
-      hiddenHtml = '<div class="hidden-box"><p>⏰ 将于 '+new Date(p.visible_after).toLocaleString('zh-CN')+' 公开</p></div>';
-    } else if (p.hidden_content) {
-      hiddenHtml = '<div class="post-content" style="background:var(--surface-2);border:1px dashed var(--border)">'+h(p.hidden_content)+'</div>';
-    }
-
-    // 互动栏
-    var starsHtml = '';
-    for (var i=1;i<=5;i++) {
-      starsHtml += '<span class="rate-star'+(i<=interactState.score?' active':'')+'" onclick="ratePost('+i+')" onmouseover="hoverStar('+i+')" onmouseout="unhoverStar()">★</span>';
-    }
-
-    document.getElementById('loading').style.display='none';
-    document.getElementById('postContent').style.display='';
-    document.getElementById('postContent').innerHTML =
-      '<div class="post-header">'+
-        '<div class="tags">'+tags+'</div>'+
-        '<h1>'+h(p.title)+'</h1>'+
-        '<div class="meta"><a class="author" href="profile.html?id='+p.author_id+'">'+h(p.display_name||p.username)+'</a> · '+date+' · '+(p.view_count||0)+' 浏览</div>'+
-      '</div>'+
-      '<div class="post-content">'+h(p.content)+'</div>'+
-      attHtml + hiddenHtml +
-      '<div class="interact-bar">'+
-        '<button class="interact-btn'+(interactState.liked?' active':'')+'" id="btnLike" onclick="toggleLike()">👍 <span class="count" id="likeCount">'+(p.like_count||0)+'</span></button>'+
-        '<button class="interact-btn'+(interactState.downvoted?' downvoted':'')+'" id="btnDownvote" onclick="toggleDownvote()">👎 <span class="count" id="downCount">'+(p.downvote_count||0)+'</span></button>'+
-        '<button class="interact-btn" onclick="openTip()">💰 打赏 <span class="count" id="tipCount">'+(p.tip_count||0)+'</span></button>'+
-        '<span style="margin-left:8px;display:flex;align-items:center;gap:4px"><span class="rate-stars">'+starsHtml+'</span><span class="rate-avg" id="rateAvg">'+(p.rating_avg?p.rating_avg.toFixed(1):'-')+'</span><span style="font-size:10px;color:var(--text-mute)">('+(p.rating_count||0)+')</span></span>'+
-      '</div>'+
-      '<div class="comments-section"><h2>评论 ('+(p.comment_count||0)+')</h2>'+
-        '<div class="comment-form"><textarea id="commentInput" placeholder="写下你的评论..."></textarea>'+
-          '<div class="form-foot"><span style="font-size:11px;color:var(--text-mute)">支持纯文本</span><button class="btn-sm" onclick="submitComment()">发表评论</button></div></div>'+
-        '<div id="commentsList"><div class="spinner" style="margin:20px auto"></div></div>'+
-      '</div>';
-    loadComments();
-    loadInteractState();
-  } catch(e) { document.getElementById('loading').innerHTML='<p style="color:var(--text-mute);text-align:center;padding:40px">请先启动后端服务</p>'; }
+  }
+  const stars = Array.from({ length: 5 }, (_, index) => {
+    const score = index + 1;
+    return `<span class="rate-star${score <= interactState.score ? ' active' : ''}" onclick="ratePost(${score})">★</span>`;
+  }).join('');
+  shell.innerHTML = `
+    <div class="post-tags">${tags || `<span>${p.type === 'blog' ? '博客' : '帖子'}</span>`}</div>
+    <h1 class="post-title">${esc(p.title)}</h1>
+    <div class="post-meta">
+      <a href="profile.html?id=${esc(p.author_id)}">@${esc(p.display_name || p.username || '匿名用户')}</a>
+      <span>${date}</span>
+      <span>${p.view_count || 0} 浏览</span>
+      <span>${p.board_id || 'general'}</span>
+      ${p.bounty ? `<span style="color:#ffd700">悬赏 ${p.bounty} 论坛币</span>` : ''}
+      ${canEdit ? `<a href="editor.html?edit=${esc(p.id)}">编辑</a>` : ''}
+    </div>
+    <div class="post-body">${esc(p.content)}</div>
+    ${attachment}
+    ${hidden}
+    <div class="interact-bar">
+      <button class="interact-btn${interactState.liked ? ' active' : ''}" onclick="toggleLike()">👍 <span>${p.like_count || 0}</span></button>
+      <button class="interact-btn${interactState.downvoted ? ' downvoted' : ''}" onclick="toggleDownvote()">👎 <span>${p.downvote_count || 0}</span></button>
+      <button class="interact-btn" onclick="openTip()">打赏 <span>${p.tip_count || 0}</span></button>
+      <span class="rate-stars">${stars}</span>
+      <span style="color:#ffd700;font-family:var(--font-mono);font-size:12px">${p.rating_avg ? Number(p.rating_avg).toFixed(1) : '-'} (${p.rating_count || 0})</span>
+    </div>
+    <section class="comments-section">
+      <h2>评论 <span id="commentCount">${p.comment_count || 0}</span></h2>
+      <div class="comment-form">
+        <textarea id="commentInput" placeholder="写下你的评论..."></textarea>
+        <div class="comment-actions">
+          <span>${currentUser ? '以 ' + (currentUser.display_name || currentUser.username) + ' 身份评论' : '登录后可评论、点赞、打赏'}</span>
+          <button class="btn-primary" type="button" onclick="submitComment()">发表评论</button>
+        </div>
+      </div>
+      <div id="commentsList"><div class="spinner" style="margin:28px auto"></div></div>
+    </section>`;
 }
 
 async function loadInteractState() {
-  try {
-    var r = await fetch('/api/posts/'+postId+'/like-status'); var j = await r.json();
-    if (j.code===0) interactState = j.data;
-    updateInteractUI();
-  } catch(e) {}
+  const json = await apiJson('/api/posts/' + encodeURIComponent(postId) + '/like-status').catch(() => null);
+  if (json?.code === 0) interactState = json.data;
 }
 
-function updateInteractUI() {
-  var lb = document.getElementById('btnLike'); if (lb) lb.className = 'interact-btn'+(interactState.liked?' active':'');
-  var db = document.getElementById('btnDownvote'); if (db) db.className = 'interact-btn'+(interactState.downvoted?' downvoted':'');
+async function requireLoginAction() {
+  currentUser = await window.NodeWeave.currentUser(true);
+  if (currentUser) return true;
+  location.href = 'login.html?redirect=' + encodeURIComponent('post.html?id=' + postId);
+  return false;
 }
 
 async function toggleLike() {
-  try {
-    var r = await fetch('/api/posts/'+postId+'/like', {method:'POST'}); var j = await r.json();
-    if (j.code===0) { interactState.liked = j.data.liked; updateInteractUI(); loadPost(); }
-  } catch(e) {}
+  if (!(await requireLoginAction())) return;
+  const json = await apiJson('/api/posts/' + encodeURIComponent(postId) + '/like', { method: 'POST' });
+  if (json.code === 0) loadPost();
+  else alert(json.msg || '操作失败');
 }
 
 async function toggleDownvote() {
-  try {
-    var r = await fetch('/api/posts/'+postId+'/downvote', {method:'POST'}); var j = await r.json();
-    if (j.code===0) { interactState.downvoted = j.data.downvoted; updateInteractUI(); loadPost(); }
-  } catch(e) {}
+  if (!(await requireLoginAction())) return;
+  const json = await apiJson('/api/posts/' + encodeURIComponent(postId) + '/downvote', { method: 'POST' });
+  if (json.code === 0) loadPost();
+  else alert(json.msg || '操作失败');
+}
+
+async function ratePost(score) {
+  if (!(await requireLoginAction())) return;
+  const json = await apiJson('/api/posts/' + encodeURIComponent(postId) + '/rate', {
+    method: 'POST',
+    body: JSON.stringify({ score }),
+  });
+  if (json.code === 0) {
+    interactState.score = score;
+    loadPost();
+  } else {
+    alert(json.msg || '评分失败');
+  }
 }
 
 function openTip() {
   document.getElementById('tipModal').classList.add('show');
+  document.getElementById('tipError').classList.remove('show');
+  document.getElementById('tipCustom').style.display = 'none';
+  document.querySelectorAll('.tip-preset').forEach(btn => btn.classList.remove('active'));
   tipAmount = 0;
-  document.getElementById('tipCustom').style.display='none';
-  document.getElementById('tipError').style.display='none';
-  document.querySelectorAll('.tip-preset').forEach(function(b){b.classList.remove('active')});
 }
 
-function closeTip() { document.getElementById('tipModal').classList.remove('show'); }
-
-document.getElementById('tipPresets').addEventListener('click', function(e){
-  var btn = e.target.closest('.tip-preset'); if (!btn) return;
-  document.querySelectorAll('.tip-preset').forEach(function(b){b.classList.remove('active')});
-  btn.classList.add('active');
-  var amt = parseInt(btn.dataset.amount);
-  if (amt===0) { document.getElementById('tipCustom').style.display=''; tipAmount=0; }
-  else { document.getElementById('tipCustom').style.display='none'; tipAmount=amt; }
-});
-
-document.getElementById('tipCustom').addEventListener('input', function(){ tipAmount = parseInt(this.value)||0; });
+function closeTip() {
+  document.getElementById('tipModal').classList.remove('show');
+}
 
 async function sendTip() {
-  var amt = tipAmount || parseInt(document.getElementById('tipCustom').value)||0;
-  if (amt<1) { document.getElementById('tipError').textContent='请输入有效金额'; document.getElementById('tipError').style.display=''; return; }
-  try {
-    var r = await fetch('/api/posts/'+postId+'/tip', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({amount:amt, message: document.getElementById('tipMessage').value})
-    }); var j = await r.json();
-    if (j.code!==0) { document.getElementById('tipError').textContent=j.msg; document.getElementById('tipError').style.display=''; return; }
-    closeTip(); loadPost();
-  } catch(e) { document.getElementById('tipError').textContent='网络错误'; document.getElementById('tipError').style.display=''; }
-}
-
-async function ratePost(score) {
-  try {
-    var r = await fetch('/api/posts/'+postId+'/rate', {
-      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({score:score})
-    }); var j = await r.json();
-    if (j.code===0) { interactState.score=score; interactState.rated=true; loadPost(); }
-  } catch(e) {}
-}
-
-function hoverStar(n) {
-  document.querySelectorAll('.rate-star').forEach(function(s,i){ if (i<n) s.style.color='#ffd700'; });
-}
-function unhoverStar() {
-  document.querySelectorAll('.rate-star').forEach(function(s,i){ s.style.color= i<interactState.score?'#ffd700':'var(--text-mute)'; });
-}
-
-window.revealHidden = function() {
-  var el = document.getElementById('hiddenBox');
-  if (el && postData && postData.hidden_content) {
-    el.outerHTML = '<div class="post-content" style="background:var(--surface-2);border:1px solid var(--border)">'+h(postData.hidden_content)+'</div>';
+  if (!(await requireLoginAction())) return;
+  const amount = tipAmount || parseInt(document.getElementById('tipCustom').value || '0', 10);
+  if (!amount || amount < 1) {
+    document.getElementById('tipError').textContent = '请输入有效打赏金额';
+    document.getElementById('tipError').classList.add('show');
+    return;
   }
-};
+  const json = await apiJson('/api/posts/' + encodeURIComponent(postId) + '/tip', {
+    method: 'POST',
+    body: JSON.stringify({ amount, message: document.getElementById('tipMessage').value }),
+  });
+  if (json.code !== 0) {
+    document.getElementById('tipError').textContent = json.msg || '打赏失败';
+    document.getElementById('tipError').classList.add('show');
+    return;
+  }
+  closeTip();
+  loadPost();
+}
+
+function revealHidden() {
+  const box = document.getElementById('hiddenBox');
+  if (box && postData?.hidden_content) {
+    box.outerHTML = `<div class="hidden-reveal">${esc(postData.hidden_content)}</div>`;
+  }
+}
 
 async function loadComments() {
-  try {
-    var res = await fetch('/api/comments?post_id='+postId); var json = await res.json();
-    if (json.code!==0) return;
-    var list = document.getElementById('commentsList');
-    if (!json.data.comments.length) { list.innerHTML='<div style="text-align:center;padding:32px;color:var(--text-mute)">还没有评论，来坐沙发吧</div>'; return; }
-    list.innerHTML = json.data.comments.map(function(c){
-      return '<div class="comment-item"><div class="cmt-author">'+h(c.display_name||c.username)+'<span class="cmt-time">'+new Date(c.created_at).toLocaleString('zh-CN')+'</span></div><div class="cmt-body">'+h(c.content)+'</div></div>';
-    }).join('');
-  } catch(e) {}
+  const json = await apiJson('/api/comments?post_id=' + encodeURIComponent(postId)).catch(() => null);
+  const list = document.getElementById('commentsList');
+  if (!list) return;
+  if (!json || json.code !== 0) {
+    list.innerHTML = '<div class="hidden-box">评论暂时加载失败</div>';
+    return;
+  }
+  if (!json.data.comments.length) {
+    list.innerHTML = '<div class="hidden-box">还没有评论，来坐沙发吧。</div>';
+    return;
+  }
+  list.innerHTML = json.data.comments.map(comment => {
+    const canAccept = currentUser && postData && currentUser.id === postData.author_id && comment.author_id !== postData.author_id && !postData.accepted_answer_id;
+    return `<div class="comment-item">
+      <div class="comment-head">
+        <span class="comment-author">@${esc(comment.display_name || comment.username || '匿名用户')}</span>
+        <span class="comment-time">${new Date(comment.created_at).toLocaleString('zh-CN')}</span>
+        ${comment.is_accepted ? '<span class="accepted">已采纳</span>' : ''}
+        ${canAccept ? `<button class="accept-btn" type="button" onclick="acceptAnswer('${esc(comment.id)}')">采纳并发放悬赏</button>` : ''}
+      </div>
+      <div class="comment-body">${esc(comment.content)}</div>
+    </div>`;
+  }).join('');
 }
 
 async function submitComment() {
-  var content = document.getElementById('commentInput').value.trim();
+  if (!(await requireLoginAction())) return;
+  const input = document.getElementById('commentInput');
+  const content = input.value.trim();
   if (!content) return;
-  try {
-    var res = await fetch('/api/comments', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({post_id:postId,content})});
-    var json = await res.json();
-    if (json.code!==0) { alert(json.msg); return; }
-    document.getElementById('commentInput').value=''; loadComments(); loadPost();
-  } catch(e) { alert('网络错误'); }
+  const json = await apiJson('/api/comments', {
+    method: 'POST',
+    body: JSON.stringify({ post_id: postId, content }),
+  });
+  if (json.code !== 0) {
+    alert(json.msg || '评论失败');
+    return;
+  }
+  input.value = '';
+  await loadPost();
 }
 
-function h(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
-if (postId) loadPost();
+async function acceptAnswer(commentId) {
+  if (!(await requireLoginAction())) return;
+  const json = await apiJson('/api/posts/' + encodeURIComponent(postId) + '/accept', {
+    method: 'POST',
+    body: JSON.stringify({ comment_id: commentId }),
+  });
+  if (json.code !== 0) {
+    alert(json.msg || '采纳失败');
+    return;
+  }
+  loadPost();
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  currentUser = await window.NodeWeave.currentUser(true);
+  if (requirePostId()) loadPost();
+  document.getElementById('tipPresets').addEventListener('click', (event) => {
+    const button = event.target.closest('.tip-preset');
+    if (!button) return;
+    document.querySelectorAll('.tip-preset').forEach(btn => btn.classList.remove('active'));
+    button.classList.add('active');
+    tipAmount = parseInt(button.dataset.amount || '0', 10);
+    document.getElementById('tipCustom').style.display = tipAmount === 0 ? '' : 'none';
+  });
+  document.getElementById('tipCustom').addEventListener('input', (event) => {
+    tipAmount = parseInt(event.target.value || '0', 10) || 0;
+  });
+});
 </script>
 </body>
 </html>
