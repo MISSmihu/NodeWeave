@@ -47,6 +47,12 @@
     return `${PUBLIC_ORIGIN}/${cleanPath}${location.search || ''}${location.hash || ''}`;
   }
 
+  function assetUrl(path) {
+    if (/^(https?:|mailto:|tel:|#)/i.test(String(path || ''))) return path;
+    const prefix = location.pathname.includes('/admin/') || location.pathname.includes('/account/') || location.pathname.includes('/oauth/') ? '../' : '';
+    return prefix + String(path || '').replace(/^\/+/, '');
+  }
+
   function showFileBanner() {
     if (location.protocol !== 'file:') return;
     const banner = document.createElement('div');
@@ -70,8 +76,10 @@
   }
 
   function redirectLogin() {
-    const target = location.protocol === 'file:' ? samePathPublicUrl() : `${location.pathname.split('/').pop() || 'index.html'}${location.search || ''}`;
-    const loginUrl = location.protocol === 'file:' ? `${PUBLIC_ORIGIN}/login.html` : 'login.html';
+    const target = location.protocol === 'file:'
+      ? samePathPublicUrl()
+      : `${location.pathname.replace(/^\/+/, '') || 'index.html'}${location.search || ''}`;
+    const loginUrl = location.protocol === 'file:' ? `${PUBLIC_ORIGIN}/login.html` : assetUrl('login.html');
     location.href = `${loginUrl}?redirect=${encodeURIComponent(target)}`;
   }
 
@@ -107,14 +115,18 @@
     });
     document.querySelectorAll('[data-auth-actions]').forEach(el => {
       if (user) {
+        const adminLink = ['owner', 'admin', 'moderator'].includes(user.role)
+          ? `<a class="btn-ghost" href="${assetUrl('admin/index.html')}" title="站长后台">后台</a>`
+          : '';
         el.innerHTML = `
-          <a class="btn-ghost" href="account/settings.html" title="账号设置">${escapeHtml(user.display_name || user.username || '我的账号')}</a>
+          ${adminLink}
+          <a class="btn-ghost" href="${assetUrl('account/settings.html')}" title="账号设置">${escapeHtml(user.display_name || user.username || '我的账号')}</a>
           <button class="btn-ghost" type="button" data-logout>退出</button>
-          <a class="btn-primary" href="editor.html">+ 发帖</a>`;
+          <a class="btn-primary" href="${assetUrl('editor.html')}">+ 发帖</a>`;
       } else {
         el.innerHTML = `
-          <a class="btn-ghost" href="login.html">登录</a>
-          <a class="btn-primary" href="login.html?tab=register">注册</a>`;
+          <a class="btn-ghost" href="${assetUrl('login.html')}">登录</a>
+          <a class="btn-primary" href="${assetUrl('login.html?tab=register')}">注册</a>`;
       }
     });
   }
@@ -172,6 +184,7 @@
   window.NodeWeave = {
     api,
     apiJson,
+    assetUrl,
     currentUser,
     renderAuth,
     logout,

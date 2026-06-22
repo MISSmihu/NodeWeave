@@ -291,6 +291,7 @@ async function runMigrations(db) {
     `ALTER TABLE posts ADD COLUMN is_pinned INTEGER DEFAULT 0`,
     `ALTER TABLE posts ADD COLUMN is_locked INTEGER DEFAULT 0`,
     `ALTER TABLE posts ADD COLUMN is_hidden INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN is_featured INTEGER DEFAULT 0`,
     `ALTER TABLE posts ADD COLUMN is_ai_generated INTEGER DEFAULT 0`,
     `ALTER TABLE posts ADD COLUMN visibility TEXT DEFAULT 'public'`,
     `ALTER TABLE posts ADD COLUMN visible_after INTEGER`,

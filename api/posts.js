@@ -19,6 +19,18 @@ async function requireLogin(c, next) {
   return next();
 }
 
+async function requireStaff(c, next) {
+  const user = await authUser(c, c.env);
+  if (!user) return err(c, CODE.UNAUTHORIZED, '请先登录', 401);
+  const row = await c.env.DB.prepare('SELECT role FROM users WHERE id=?').bind(user.sub).first();
+  if (!row || !['owner', 'admin', 'moderator'].includes(row.role)) {
+    return err(c, CODE.FORBIDDEN, '无权限', 403);
+  }
+  c.set('userId', user.sub);
+  c.set('userRole', row.role);
+  return next();
+}
+
 function asInt(value, fallback = 0) {
   const parsed = parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -34,6 +46,49 @@ function normalizeType(value) {
 
 function normalizeVisibility(value) {
   return ['public', 'reply', 'timed'].includes(value) ? value : 'public';
+}
+
+function normalizeSort(value) {
+  return ['latest', 'hot', 'featured', 'replied', 'bounty', 'unanswered', 'solved'].includes(value) ? value : 'latest';
+}
+
+function normalizeSearch(value) {
+  return String(value || '').trim().slice(0, 80);
+}
+
+function postListSelect() {
+  return `SELECT p.id, p.title, p.content, p.type, p.board_id, p.is_pinned, COALESCE(p.is_featured,0) AS is_featured,
+            p.view_count, p.like_count, p.comment_count, p.downvote_count, p.tip_count, p.tip_total,
+            p.rating_avg, p.rating_count, p.bounty, p.bounty_claimed, p.accepted_answer_id, p.created_at, p.updated_at,
+            last_reply.last_reply_at AS last_reply_at,
+            COALESCE(last_reply.last_reply_at, p.updated_at, p.created_at) AS activity_at,
+            ${authorExpr('p')} AS author_id,
+            u.username, u.display_name, u.avatar_color
+       FROM posts p
+       LEFT JOIN users u ON ${authorExpr('p')}=u.id
+       LEFT JOIN (
+         SELECT post_id, MAX(created_at) AS last_reply_at
+           FROM comments
+          WHERE COALESCE(is_hidden,0)=0
+          GROUP BY post_id
+       ) last_reply ON last_reply.post_id=p.id`;
+}
+
+function publicPostShape(post, signedIn) {
+  if (signedIn) return post;
+  const previewLimit = 220;
+  const content = String(post.content || '');
+  return {
+    ...post,
+    content: content.length > previewLimit ? `${content.slice(0, previewLimit)}...` : content,
+    content_preview: content.slice(0, previewLimit),
+    content_limited: content.length > previewLimit,
+    guest_limit: {
+      content_preview_chars: previewLimit,
+      login_required_for: ['完整正文', '回复', '点赞', '评分', '打赏', '隐藏内容'],
+    },
+    hidden_content: '',
+  };
 }
 
 async function ensureBoard(db, boardId) {
@@ -55,7 +110,8 @@ posts.get('/', optLogin, async (c) => {
   const pageSize = Math.min(50, Math.max(1, asInt(c.req.query('pageSize'), 20)));
   const type = c.req.query('type') || '';
   const board = c.req.query('board') || '';
-  const sort = c.req.query('sort') || 'latest';
+  const sort = normalizeSort(c.req.query('sort'));
+  const search = normalizeSearch(c.req.query('search') || c.req.query('q'));
   const offset = (page - 1) * pageSize;
 
   let where = 'WHERE COALESCE(p.is_hidden,0)=0';
@@ -68,32 +124,60 @@ posts.get('/', optLogin, async (c) => {
     where += ' AND p.board_id=?';
     params.push(board);
   }
+  if (search) {
+    where += ' AND (p.title LIKE ? OR p.content LIKE ? OR p.board_id LIKE ? OR EXISTS (SELECT 1 FROM post_tags pt WHERE pt.post_id=p.id AND pt.tag LIKE ?))';
+    const like = `%${search}%`;
+    params.push(like, like, like, like);
+  }
+  if (sort === 'featured') {
+    where += ' AND COALESCE(p.is_featured,0)=1';
+  }
+  if (sort === 'hot') {
+    where += ' AND (COALESCE(p.view_count,0) + COALESCE(p.like_count,0) * 3 + COALESCE(p.comment_count,0) * 5 + COALESCE(p.tip_total,0) * 2 + COALESCE(p.rating_avg,0) * COALESCE(p.rating_count,0) * 4) >= 20';
+  }
+  if (sort === 'bounty') {
+    where += ' AND COALESCE(p.bounty,0)>0 AND COALESCE(p.bounty_claimed,0)=0';
+  }
+  if (sort === 'unanswered') {
+    where += " AND COALESCE(p.accepted_answer_id,'')=''";
+  }
+  if (sort === 'solved') {
+    where += " AND COALESCE(p.accepted_answer_id,'')<>''";
+  }
 
   const orderBy = sort === 'hot'
-    ? 'ORDER BY COALESCE(p.like_count,0) DESC, COALESCE(p.comment_count,0) DESC, COALESCE(p.view_count,0) DESC, p.created_at DESC'
-    : 'ORDER BY COALESCE(p.is_pinned,0) DESC, p.created_at DESC';
+    ? 'ORDER BY COALESCE(p.is_pinned,0) DESC, (COALESCE(p.view_count,0) + COALESCE(p.like_count,0) * 3 + COALESCE(p.comment_count,0) * 5 + COALESCE(p.tip_total,0) * 2 + COALESCE(p.rating_avg,0) * COALESCE(p.rating_count,0) * 4) DESC, p.created_at DESC'
+    : sort === 'replied'
+      ? 'ORDER BY COALESCE(p.is_pinned,0) DESC, COALESCE(last_reply.last_reply_at, p.updated_at, p.created_at) DESC'
+      : sort === 'bounty'
+        ? 'ORDER BY COALESCE(p.is_pinned,0) DESC, COALESCE(p.bounty,0) DESC, p.created_at DESC'
+      : 'ORDER BY COALESCE(p.is_pinned,0) DESC, p.created_at DESC';
 
   const rows = await c.env.DB.prepare(
-    `SELECT p.id, p.title, p.content, p.type, p.board_id, p.is_pinned, p.view_count, p.like_count,
-            p.comment_count, p.downvote_count, p.tip_count, p.tip_total, p.rating_avg, p.rating_count,
-            p.bounty, p.created_at, ${authorExpr('p')} AS author_id,
-            u.username, u.display_name, u.avatar_color
-       FROM posts p
-       LEFT JOIN users u ON ${authorExpr('p')}=u.id
+    `${postListSelect()}
        ${where} ${orderBy}
        LIMIT ? OFFSET ?`
   ).bind(...params, pageSize, offset).all();
 
   const total = await c.env.DB.prepare(`SELECT COUNT(*) as cnt FROM posts p ${where}`).bind(...params).first();
-  return ok(c, { posts: rows.results || [], total: total?.cnt || 0, page, pageSize });
+  const signedIn = !!c.get('userId');
+  return ok(c, { posts: (rows.results || []).map(post => publicPostShape(post, signedIn)), total: total?.cnt || 0, page, pageSize, guest_limited: !signedIn });
 });
 
 posts.get('/:id', optLogin, async (c) => {
   const postId = c.req.param('id');
   const post = await c.env.DB.prepare(
-    `SELECT p.*, ${authorExpr('p')} AS author_id, u.username, u.display_name, u.avatar_color, u.reputation
+    `SELECT p.*, ${authorExpr('p')} AS author_id, u.username, u.display_name, u.avatar_color, u.reputation,
+            last_reply.last_reply_at AS last_reply_at,
+            COALESCE(last_reply.last_reply_at, p.updated_at, p.created_at) AS activity_at
        FROM posts p
        LEFT JOIN users u ON ${authorExpr('p')}=u.id
+       LEFT JOIN (
+         SELECT post_id, MAX(created_at) AS last_reply_at
+           FROM comments
+          WHERE COALESCE(is_hidden,0)=0
+          GROUP BY post_id
+       ) last_reply ON last_reply.post_id=p.id
       WHERE p.id=?`
   ).bind(postId).first();
 
@@ -102,7 +186,8 @@ posts.get('/:id', optLogin, async (c) => {
 
   await c.env.DB.prepare('UPDATE posts SET view_count=COALESCE(view_count,0)+1 WHERE id=?').bind(postId).run();
   const tags = await c.env.DB.prepare('SELECT tag FROM post_tags WHERE post_id=?').bind(postId).all();
-  return ok(c, { ...post, tags: (tags.results || []).map(t => t.tag), view_count: (post.view_count || 0) + 1 });
+  const signedIn = !!c.get('userId');
+  return ok(c, publicPostShape({ ...post, tags: (tags.results || []).map(t => t.tag), view_count: (post.view_count || 0) + 1 }, signedIn));
 });
 
 posts.post('/', requireLogin, async (c) => {
@@ -253,6 +338,32 @@ posts.delete('/:id', requireLogin, async (c) => {
     c.env.DB.prepare('UPDATE boards SET post_count=MAX(0,COALESCE(post_count,0)-1) WHERE slug=? OR id=?').bind(post.board_id, post.board_id),
   ]);
   return ok(c, { message: '已删除' });
+});
+
+posts.post('/:id/moderate', requireStaff, async (c) => {
+  const postId = c.req.param('id');
+  const { action, value } = await c.req.json().catch(() => ({}));
+  const post = await c.env.DB.prepare('SELECT id FROM posts WHERE id=?').bind(postId).first();
+  if (!post) return err(c, CODE.NOT_FOUND, '帖子不存在', 404);
+
+  const bool = value ? 1 : 0;
+  if (action === 'pin') {
+    await c.env.DB.prepare('UPDATE posts SET is_pinned=?, updated_at=? WHERE id=?').bind(bool, Date.now(), postId).run();
+    return ok(c, { is_pinned: bool });
+  }
+  if (action === 'feature') {
+    await c.env.DB.prepare('UPDATE posts SET is_featured=?, updated_at=? WHERE id=?').bind(bool, Date.now(), postId).run();
+    return ok(c, { is_featured: bool });
+  }
+  if (action === 'lock') {
+    await c.env.DB.prepare('UPDATE posts SET is_locked=?, updated_at=? WHERE id=?').bind(bool, Date.now(), postId).run();
+    return ok(c, { is_locked: bool });
+  }
+  if (action === 'hide') {
+    await c.env.DB.prepare('UPDATE posts SET is_hidden=?, updated_at=? WHERE id=?').bind(bool, Date.now(), postId).run();
+    return ok(c, { is_hidden: bool });
+  }
+  return err(c, CODE.VALIDATION, '无效操作');
 });
 
 posts.put('/:id/customize', requireLogin, async (c) => {
@@ -406,7 +517,7 @@ posts.post('/:id/accept', requireLogin, async (c) => {
   if (post.author_id !== userId) return err(c, CODE.FORBIDDEN, '只能采纳自己帖子的回答', 403);
   if (post.accepted_answer_id) return err(c, CODE.VALIDATION, '已有采纳回答');
 
-  const comment = await c.env.DB.prepare('SELECT id, COALESCE(NULLIF(author_id,""), user_id) AS author_id FROM comments WHERE id=? AND post_id=?').bind(comment_id, postId).first();
+  const comment = await c.env.DB.prepare("SELECT id, COALESCE(NULLIF(author_id,''), user_id) AS author_id FROM comments WHERE id=? AND post_id=?").bind(comment_id, postId).first();
   if (!comment) return err(c, CODE.NOT_FOUND, '评论不存在', 404);
   if (comment.author_id === userId) return err(c, CODE.VALIDATION, '不能采纳自己的评论');
 

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>站长后台 // NodeWeave ADMIN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+<style>
+.admin-page{max-width:1180px;margin:0 auto;padding:82px 24px 110px}
+.admin-hero{position:relative;overflow:hidden;border:1px solid var(--border);border-radius:8px;background:linear-gradient(135deg,rgba(0,240,255,.10),rgba(157,0,255,.06),rgba(255,0,60,.05)),rgba(18,18,30,.82);padding:30px;margin-bottom:20px}
+.admin-hero::after{content:'OWNER PANEL';position:absolute;right:24px;top:20px;font-family:var(--font-display);font-size:11px;letter-spacing:.24em;color:rgba(0,240,255,.28)}
+.admin-hero h1{font-family:var(--font-display);font-size:clamp(32px,5vw,58px);line-height:1.05;margin:0;color:var(--text)}
+.admin-hero h1 span{color:var(--cyan);text-shadow:var(--glow-cyan)}
+.admin-hero p{max-width:720px;margin-top:14px;color:var(--text-dim);line-height:1.85}
+.admin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+.admin-card{position:relative;overflow:hidden;text-decoration:none;color:inherit;border:1px solid var(--border);border-radius:8px;background:rgba(18,18,30,.74);padding:20px;min-height:168px;transition:all .2s}
+.admin-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:linear-gradient(var(--cyan),var(--purple))}
+.admin-card:hover{transform:translateY(-4px);border-color:var(--cyan);box-shadow:0 18px 54px rgba(0,0,0,.32)}
+.admin-card .icon{font-size:30px;margin-bottom:12px}
+.admin-card h2{font-family:var(--font-display);font-size:17px;color:var(--cyan);margin-bottom:8px}
+.admin-card p{color:var(--text-dim);font-size:13px;line-height:1.75}
+.status-panel{margin-top:16px;border:1px solid var(--border);border-radius:8px;background:rgba(18,18,30,.62);padding:18px}
+.status-panel h3{font-family:var(--font-display);font-size:15px;color:var(--text);margin-bottom:12px}
+.status-lines{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.status-line{padding:12px;border:1px solid var(--border-2);background:rgba(10,10,15,.38);font-family:var(--font-mono);font-size:12px;color:var(--text-dim)}
+.status-line b{display:block;color:var(--cyan);font-size:16px;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div><div class="bg-scanlines"></div><div class="bg-glow"></div>
+<header class="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="logo"><span class="logo-mark">◈</span><span class="logo-text">Node<span class="x">Weave</span></span><span class="logo-sub">// ADMIN</span></a>
+    <div class="nav-actions"><a href="../index.html" class="btn-ghost">返回首页</a></div>
+  </div>
+</header>
+
+<main class="admin-page">
+  <section class="admin-hero">
+    <h1>站长<span>控制台</span></h1>
+    <p>这里集中管理站点开关、用户角色、内容审核、邀请码、AI 审核与封禁治理。站长拥有最高权限；管理员和版主只显示可访问的功能入口。</p>
+  </section>
+
+  <section class="admin-grid">
+    <a class="admin-card" href="site-config.html" data-role-min="admin"><div class="icon">⚙️</div><h2>站点配置</h2><p>注册、邀请码、实名制、手机绑定、论坛币、等级组和青少年模式。</p></a>
+    <a class="admin-card" href="users.html" data-role-min="moderator"><div class="icon">👥</div><h2>用户与权限</h2><p>搜索用户、封禁禁言、站长任命管理员/版主、恢复普通会员。</p></a>
+    <a class="admin-card" href="moderation.html"><div class="icon">🛡️</div><h2>内容审核</h2><p>审核队列、通过/驳回/删除、置顶内容与警告处理。</p></a>
+    <a class="admin-card" href="invite-codes.html" data-role-min="moderator"><div class="icon">🎟️</div><h2>邀请码</h2><p>生成、查询和管理邀请码，配合注册开关使用。</p></a>
+    <a class="admin-card" href="ai-config.html" data-role-min="admin"><div class="icon">🤖</div><h2>AI 审核</h2><p>配置模型、供应商、阈值和自动拦截策略。</p></a>
+  </section>
+
+  <section class="status-panel">
+    <h3>当前账号</h3>
+    <div class="status-lines">
+      <div class="status-line">用户名<b data-user-name>--</b></div>
+      <div class="status-line">角色<b data-user-role>--</b></div>
+      <div class="status-line">论坛币<b data-user-coins>--</b></div>
+    </div>
+  </section>
+</main>
+
+<script src="../script.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const user = await window.NodeWeave.currentUser(true);
+  if (!user || !['owner', 'admin', 'moderator'].includes(user.role)) {
+    location.href = '../login.html?redirect=' + encodeURIComponent('admin/index.html');
+    return;
+  }
+  document.querySelectorAll('[data-role-min]').forEach(card => {
+    const role = card.dataset.roleMin;
+    if (role === 'admin' && !['owner', 'admin'].includes(user.role)) card.style.display = 'none';
+  });
+});
+</script>
+</body>
+</html>

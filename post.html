@@ -27,6 +27,11 @@
 .interact-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--text-dim);font-family:var(--font-mono);font-size:12px}
 .interact-btn:hover,.interact-btn.active{border-color:var(--cyan);color:var(--cyan);background:rgba(0,240,255,.07)}
 .interact-btn.downvoted{border-color:var(--magenta);color:var(--magenta);background:rgba(255,0,60,.07)}
+.staff-bar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0;padding:12px;border:1px dashed rgba(0,240,255,.18);border-radius:8px;background:rgba(0,240,255,.035)}
+.staff-bar button{padding:7px 10px;border:1px solid var(--border);background:var(--bg);border-radius:6px;color:var(--text-dim);font-family:var(--font-mono);font-size:11px}
+.staff-bar button:hover{border-color:var(--cyan);color:var(--cyan)}
+.guest-lock{margin:16px 0;padding:16px;border:1px dashed rgba(0,240,255,.22);border-radius:8px;background:linear-gradient(135deg,rgba(0,240,255,.06),rgba(157,0,255,.035));color:var(--text-dim);font-size:13px;line-height:1.8}
+.guest-lock a{color:var(--cyan);text-decoration:none}
 .rate-stars{display:inline-flex;gap:3px;align-items:center}
 .rate-star{font-size:20px;cursor:pointer;color:var(--text-mute);transition:all .15s}
 .rate-star.active,.rate-star:hover{color:#ffd700;text-shadow:0 0 8px rgba(255,215,0,.35)}
@@ -34,6 +39,7 @@
 .comments-section h2{font-family:var(--font-display);font-size:17px;color:var(--cyan);margin-bottom:14px}
 .comment-form textarea{width:100%;min-height:90px;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-body);resize:vertical;outline:none}
 .comment-form textarea:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,240,255,.08)}
+.comment-form.guest textarea{opacity:.72}
 .comment-actions{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:9px;color:var(--text-mute);font-size:11px}
 .comment-item{padding:15px 0;border-bottom:1px solid var(--border-2)}
 .comment-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:5px}
@@ -142,7 +148,9 @@ function renderPost() {
   document.getElementById('customStyles').textContent = p.custom_css || '';
   const tags = (p.tags || []).map(tag => `<span>#${esc(tag)}</span>`).join('');
   const date = new Date(p.created_at).toLocaleString('zh-CN');
+  const lastReply = p.last_reply_at && p.last_reply_at !== p.created_at ? new Date(p.last_reply_at).toLocaleString('zh-CN') : '';
   const canEdit = currentUser && currentUser.username && p.author_id && (p.author_id === currentUser.id);
+  const isStaff = currentUser && ['owner', 'admin', 'moderator'].includes(currentUser.role);
   const attachment = p.attachment_url ? `
     <div class="attach-box">
       <span style="font-size:24px">📎</span>
@@ -165,18 +173,35 @@ function renderPost() {
     const score = index + 1;
     return `<span class="rate-star${score <= interactState.score ? ' active' : ''}" onclick="ratePost(${score})">★</span>`;
   }).join('');
+  const guestLock = p.content_limited ? `
+    <div class="guest-lock">
+      游客模式只展示前 ${p.guest_limit?.content_preview_chars || 220} 字。登录后可查看完整正文、隐藏内容、评论互动、点赞评分和打赏。
+      <a href="login.html?redirect=${encodeURIComponent('post.html?id=' + postId)}">去登录</a>
+    </div>` : '';
+  const guestCommentAttrs = currentUser ? '' : 'readonly onclick="requireLoginAction()"';
+  const commentButtonText = currentUser ? '发表评论' : '登录后评论';
+  const staffBar = isStaff ? `
+    <div class="staff-bar">
+      <button type="button" onclick="moderatePost('pin', ${p.is_pinned ? 0 : 1})">${p.is_pinned ? '取消置顶' : '置顶'}</button>
+      <button type="button" onclick="moderatePost('feature', ${p.is_featured ? 0 : 1})">${p.is_featured ? '取消精华' : '加精'}</button>
+      <button type="button" onclick="moderatePost('lock', ${p.is_locked ? 0 : 1})">${p.is_locked ? '解锁' : '锁帖'}</button>
+      <button type="button" onclick="moderatePost('hide', 1)">隐藏</button>
+    </div>` : '';
   shell.innerHTML = `
     <div class="post-tags">${tags || `<span>${p.type === 'blog' ? '博客' : '帖子'}</span>`}</div>
     <h1 class="post-title">${esc(p.title)}</h1>
     <div class="post-meta">
       <a href="profile.html?id=${esc(p.author_id)}">@${esc(p.display_name || p.username || '匿名用户')}</a>
       <span>${date}</span>
+      ${lastReply ? `<span>最后回复 ${lastReply}</span>` : ''}
       <span>${p.view_count || 0} 浏览</span>
       <span>${p.board_id || 'general'}</span>
       ${p.bounty ? `<span style="color:#ffd700">悬赏 ${p.bounty} 论坛币</span>` : ''}
       ${canEdit ? `<a href="editor.html?edit=${esc(p.id)}">编辑</a>` : ''}
     </div>
+    ${staffBar}
     <div class="post-body">${esc(p.content)}</div>
+    ${guestLock}
     ${attachment}
     ${hidden}
     <div class="interact-bar">
@@ -188,11 +213,11 @@ function renderPost() {
     </div>
     <section class="comments-section">
       <h2>评论 <span id="commentCount">${p.comment_count || 0}</span></h2>
-      <div class="comment-form">
-        <textarea id="commentInput" placeholder="写下你的评论..."></textarea>
+      <div class="comment-form${currentUser ? '' : ' guest'}">
+        <textarea id="commentInput" placeholder="${currentUser ? '写下你的评论...' : '游客可阅读评论，登录后才能回复互动。'}" ${guestCommentAttrs}></textarea>
         <div class="comment-actions">
           <span>${currentUser ? '以 ' + (currentUser.display_name || currentUser.username) + ' 身份评论' : '登录后可评论、点赞、打赏'}</span>
-          <button class="btn-primary" type="button" onclick="submitComment()">发表评论</button>
+          <button class="btn-primary" type="button" onclick="submitComment()">${commentButtonText}</button>
         </div>
       </div>
       <div id="commentsList"><div class="spinner" style="margin:28px auto"></div></div>
@@ -308,6 +333,7 @@ async function loadComments() {
 async function submitComment() {
   if (!(await requireLoginAction())) return;
   const input = document.getElementById('commentInput');
+  if (!input) return;
   const content = input.value.trim();
   if (!content) return;
   const json = await apiJson('/api/comments', {
@@ -330,6 +356,19 @@ async function acceptAnswer(commentId) {
   });
   if (json.code !== 0) {
     alert(json.msg || '采纳失败');
+    return;
+  }
+  loadPost();
+}
+
+async function moderatePost(action, value) {
+  if (!(await requireLoginAction())) return;
+  const json = await apiJson('/api/posts/' + encodeURIComponent(postId) + '/moderate', {
+    method: 'POST',
+    body: JSON.stringify({ action, value }),
+  });
+  if (json.code !== 0) {
+    alert(json.msg || '操作失败');
     return;
   }
   loadPost();

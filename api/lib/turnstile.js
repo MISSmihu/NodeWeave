@@ -3,6 +3,9 @@
 
 async function verifyTurnstile(token, env) {
   const secret = env.TURNSTILE_SECRET;
+  if (!env.TURNSTILE_SITE_KEY) {
+    return true;
+  }
   if (!secret) {
     // 本地开发未配置时允许通过
     console.warn('TURNSTILE_SECRET not configured, skipping verification');

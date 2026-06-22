@@ -8,69 +8,126 @@
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <style>
-.search-page{max-width:700px;margin:0 auto;padding:80px 24px 100px}
-.search-bar{display:flex;gap:10px;margin-bottom:24px}
-.search-bar input{flex:1;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:15px;outline:none}
-.search-bar input:focus{border-color:var(--cyan)}
-.search-bar button{padding:12px 24px;background:var(--cyan);color:var(--bg);border:none;border-radius:6px;font-family:var(--font-display);font-size:14px;cursor:pointer}
-.result-item{padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:10px;text-decoration:none;display:block;transition:all .2s}
-.result-item:hover{border-color:var(--cyan)}
-.result-item .title{font-size:15px;color:var(--text);margin-bottom:4px}
-.result-item .excerpt{font-size:13px;color:var(--text-dim)}
-.result-item .meta{font-size:11px;color:var(--text-mute);margin-top:6px}
+.search-page{max-width:1040px;margin:0 auto;padding:82px 24px 110px}
+.search-hero{border:1px solid var(--border);border-radius:8px;background:linear-gradient(135deg,rgba(0,240,255,.10),rgba(157,0,255,.06)),rgba(18,18,30,.82);padding:28px;margin-bottom:20px}
+.search-hero h1{font-family:var(--font-display);font-size:clamp(30px,5vw,52px);line-height:1.05;margin:0}
+.search-hero h1 span{color:var(--cyan);text-shadow:var(--glow-cyan)}
+.search-hero p{max-width:680px;margin-top:12px;color:var(--text-dim);line-height:1.8}
+.search-bar{display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:22px}
+.search-bar input{width:100%;padding:13px 15px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:15px;outline:none}
+.search-bar input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,240,255,.08)}
+.search-note{margin:14px 0 18px;color:var(--text-mute);font-family:var(--font-mono);font-size:12px}
+.result-section{display:grid;gap:12px}
+.result-heading{font-family:var(--font-display);font-size:15px;color:var(--cyan);margin:20px 0 6px}
+.result-item{position:relative;padding:18px 18px 16px;background:rgba(18,18,30,.76);border:1px solid var(--border);border-radius:8px;text-decoration:none;display:block;transition:all .2s;color:inherit;overflow:hidden}
+.result-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:linear-gradient(var(--cyan),var(--purple));opacity:.65}
+.result-item:hover{border-color:var(--cyan);transform:translateY(-2px);box-shadow:0 16px 46px rgba(0,0,0,.28)}
+.result-title{font-family:var(--font-display);font-size:17px;color:var(--text);margin-bottom:7px}
+.result-excerpt{font-size:13px;color:var(--text-dim);line-height:1.75}
+.result-meta{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--text-mute);font-family:var(--font-mono);margin-top:9px}
+.empty-state{border:1px dashed rgba(0,240,255,.18);border-radius:8px;background:rgba(18,18,30,.52);padding:52px 20px;text-align:center;color:var(--text-dim)}
+@media(max-width:640px){.search-page{padding-left:16px;padding-right:16px}.search-bar{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div class="bg-grid"></div><div class="bg-scanlines"></div><div class="bg-glow"></div>
 <header class="nav">
   <div class="nav-inner">
-    <a href="index.html" class="logo"><span class="logo-mark">◈</span><span class="logo-text">Node<span class="x">Weave</span></span></a>
-    <div class="nav-actions"><a href="index.html" class="btn-ghost" style="border:1px solid var(--border);padding:8px 16px">返回</a></div>
+    <a href="index.html" class="logo"><span class="logo-mark">◈</span><span class="logo-text">Node<span class="x">Weave</span></span><span class="logo-sub">// SEARCH</span></a>
+    <nav class="nav-links">
+      <a href="index.html">动态</a>
+      <a href="boards.html">论坛</a>
+      <a href="blog.html">博客</a>
+      <a href="board.html?board=qa">问答</a>
+    </nav>
+    <div class="nav-actions" data-auth-actions>
+      <a class="btn-ghost" href="login.html">登录</a>
+      <a class="btn-primary" href="editor.html">+ 发帖</a>
+    </div>
   </div>
 </header>
+
 <main class="search-page">
-  <div class="search-bar">
-    <input type="text" id="searchQuery" placeholder="搜索帖子 / 用户 / 标签..." onkeydown="if(event.key==='Enter')search()">
-    <button onclick="search()">搜索</button>
-  </div>
-  <div id="searchResults"></div>
+  <section class="search-hero">
+    <h1>搜索<span>节点内容</span></h1>
+    <p>游客也可以搜索帖子、博客和公开用户资料；未登录时正文只展示摘要，登录后可查看完整内容并参与互动。</p>
+    <div class="search-bar">
+      <input type="search" id="searchQuery" placeholder="搜索帖子 / 用户 / 标签 / 板块..." autocomplete="off">
+      <button class="btn-primary" type="button" id="btnSearch">搜索</button>
+    </div>
+  </section>
+  <div class="search-note" id="searchNote">输入关键词开始检索。</div>
+  <section class="result-section" id="searchResults"></section>
 </main>
+
+<script src="script.js"></script>
 <script>
-var q = new URLSearchParams(location.search).get('q');
-if (q) { document.getElementById('searchQuery').value = q; search(); }
+const esc = (value) => window.NodeWeave.escapeHtml(value);
+const timeAgo = (value) => window.NodeWeave.timeAgo(value);
+
+function excerpt(text, length) {
+  const clean = String(text || '').replace(/\s+/g, ' ').trim();
+  return clean.length > length ? clean.slice(0, length) + '...' : clean;
+}
 
 async function search() {
-  var query = document.getElementById('searchQuery').value.trim();
-  if (!query) return;
-  var results = document.getElementById('searchResults');
-  results.innerHTML = '<p style="color:var(--text-mute)">搜索中...</p>';
-
-  // 并行搜索帖子和用户
+  const query = document.getElementById('searchQuery').value.trim();
+  const results = document.getElementById('searchResults');
+  const note = document.getElementById('searchNote');
+  if (!query) {
+    note.textContent = '输入关键词开始检索。';
+    results.innerHTML = '';
+    return;
+  }
+  note.textContent = '搜索中...';
+  results.innerHTML = '';
   try {
-    var postRes = await fetch('/api/posts?search=' + encodeURIComponent(query) + '&pageSize=10');
-    var postJson = await postRes.json();
-    var html = '';
+    const [postJson, userJson] = await Promise.all([
+      window.NodeWeave.apiJson('/api/posts?search=' + encodeURIComponent(query) + '&pageSize=20'),
+      window.NodeWeave.apiJson('/api/users/search?q=' + encodeURIComponent(query)).catch(() => ({ code: 0, data: [] })),
+    ]);
+    let html = '';
     if (postJson.code === 0 && postJson.data.posts.length) {
-      html += '<h3 style="font-family:var(--font-display);font-size:14px;color:var(--cyan);margin-bottom:12px">帖子</h3>';
-      postJson.data.posts.forEach(function(p){
-        html += '<a href="post.html?id=' + p.id + '" class="result-item"><div class="title">' + h(p.title||'无标题') + '</div><div class="meta">' + h(p.username||'') + ' · ' + new Date(p.created_at).toLocaleDateString('zh-CN') + '</div></a>';
-      });
+      html += '<h2 class="result-heading">内容</h2>';
+      html += postJson.data.posts.map(post => `
+        <a href="post.html?id=${encodeURIComponent(post.id)}" class="result-item">
+          <div class="result-title">${esc(post.title || '无标题')}</div>
+          <div class="result-excerpt">${esc(excerpt(post.content, 180))}${post.content_limited ? '<br><span style="color:var(--text-mute);font-family:var(--font-mono);font-size:11px">游客预览已截断</span>' : ''}</div>
+          <div class="result-meta">
+            <span>${esc(post.type === 'blog' ? '博客' : '帖子')}</span>
+            <span>${esc(post.board_id || 'general')}</span>
+            <span>@${esc(post.display_name || post.username || '匿名用户')}</span>
+            <span>${timeAgo(post.created_at)}</span>
+            <span>回复 ${post.comment_count || 0}</span>
+          </div>
+        </a>`).join('');
     }
-    // 也尝试搜用户
-    try {
-      var userRes = await fetch('/api/users/search?q=' + encodeURIComponent(query));
-      var userJson = await userRes.json();
-      if (userJson.code === 0 && userJson.data && userJson.data.length) {
-        html += '<h3 style="font-family:var(--font-display);font-size:14px;color:var(--cyan);margin:16px 0 12px">用户</h3>';
-        userJson.data.forEach(function(u){
-          html += '<a href="profile.html?id=' + u.id + '" class="result-item"><div class="title">@' + h(u.username) + '</div><div class="meta">' + h(u.display_name||'') + ' · 声望 ' + u.reputation + '</div></a>';
-        });
-      }
-    } catch(e) {}
-    results.innerHTML = html || '<p style="color:var(--text-mute);text-align:center;padding:40px">未找到结果</p>';
-  } catch(e) { results.innerHTML = '<p style="color:var(--text-mute)">搜索失败</p>'; }
+    if (userJson.code === 0 && Array.isArray(userJson.data) && userJson.data.length) {
+      html += '<h2 class="result-heading">用户</h2>';
+      html += userJson.data.map(user => `
+        <a href="profile.html?id=${encodeURIComponent(user.id)}" class="result-item">
+          <div class="result-title">@${esc(user.username)}</div>
+          <div class="result-excerpt">${esc(user.display_name || '未设置显示名称')}</div>
+          <div class="result-meta"><span>声望 ${user.reputation || 0}</span></div>
+        </a>`).join('');
+    }
+    note.textContent = postJson.data?.guest_limited ? '游客搜索模式：只展示公开摘要。' : '搜索完成。';
+    results.innerHTML = html || '<div class="empty-state">没有找到匹配结果，换个关键词试试。</div>';
+  } catch (error) {
+    note.textContent = '搜索失败，请稍后刷新。';
+    results.innerHTML = '<div class="empty-state">内容暂时不可达，但不是你没启动后端的问题，线上 Worker 会自动处理接口。</div>';
+  }
 }
-function h(s) { var d=document.createElement('div');d.textContent=s||'';return d.innerHTML; }
+
+document.addEventListener('DOMContentLoaded', () => {
+  const query = new URLSearchParams(location.search).get('q') || '';
+  document.getElementById('searchQuery').value = query;
+  document.getElementById('btnSearch').addEventListener('click', search);
+  document.getElementById('searchQuery').addEventListener('keydown', event => {
+    if (event.key === 'Enter') search();
+  });
+  if (query) search();
+});
 </script>
 </body>
 </html>

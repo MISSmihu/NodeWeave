@@ -31,6 +31,7 @@
 .actions-bar button{padding:6px 14px;border-radius:3px;font-family:var(--font-mono);font-size:11px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-dim)}
 .actions-bar button:hover{border-color:var(--cyan);color:var(--cyan)}
 .actions-bar .btn-danger{color:var(--magenta);border-color:var(--magenta)}
+.actions-bar .btn-role{color:var(--green);border-color:rgba(127,255,0,.35)}
 .ban-records{margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
 .ban-records h4{font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-bottom:8px}
 .ban-records .record{font-size:12px;color:var(--text-mute);padding:4px 0}
@@ -85,8 +86,10 @@
     </div>
   </div>
 </div>
+<script src="../script.js"></script>
 <script>
 let banTargetId = null;
+let adminUser = null;
 
 async function searchUser() {
   const q = document.getElementById('searchId').value.trim();
@@ -117,8 +120,9 @@ async function searchUser() {
             '</div>' +
           '</div>' +
           '<div class="actions-bar">' +
-            (banned ? '<button onclick="unbanUser(\'' + userId + '\')">解除封禁</button>' :
-             (u.role!=='admin'&&u.role!=='owner'?'<button class="btn-danger" onclick="openBanModal(\'' + userId + '\')">封禁/禁言</button>':'')) +
+            (banned && canBanUsers() ? '<button onclick="unbanUser(\'' + userId + '\')">解除封禁</button>' :
+             (u.role!=='owner'? roleButtons(u) : '') +
+             (canBanUsers() && u.role!=='admin'&&u.role!=='owner'?'<button class="btn-danger" onclick="openBanModal(\'' + userId + '\')">封禁/禁言</button>':'')) +
           '</div>' +
         '</div>' +
         '<div class="ban-records" id="banRecords_' + userId + '"><span style="color:var(--text-mute);font-size:12px">加载封禁记录...</span></div>' +
@@ -145,6 +149,30 @@ async function loadBans(userId) {
 
 function openBanModal(userId) { banTargetId = userId; document.getElementById('banModal').classList.add('show'); }
 function closeBanModal() { document.getElementById('banModal').classList.remove('show'); banTargetId = null; }
+
+function roleButtons(user) {
+  if (!adminUser || adminUser.role !== 'owner') return '';
+  const id = user.id;
+  let html = '';
+  if (user.role !== 'admin') html += `<button class="btn-role" onclick="setRole('${h(id)}','admin')">任命管理员</button>`;
+  if (user.role !== 'moderator') html += `<button class="btn-role" onclick="setRole('${h(id)}','moderator')">任命版主</button>`;
+  if (user.role !== 'member') html += `<button onclick="setRole('${h(id)}','member')">恢复会员</button>`;
+  return html;
+}
+
+async function setRole(userId, role) {
+  if (!confirm('确定把该用户角色改为 ' + role + '？')) return;
+  try {
+    const res = await fetch('/api/users/' + encodeURIComponent(userId) + '/role', {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ role }),
+    });
+    const json = await res.json();
+    if (json.code!==0) { alert(json.msg || '操作失败'); return; }
+    searchUser();
+  } catch(e) { alert('操作失败'); }
+}
 
 async function confirmBan() {
   const type = document.getElementById('banType').value;
@@ -176,6 +204,18 @@ async function unbanUser(userId) {
 }
 
 function h(s) { const d=document.createElement('div');d.textContent=s||'';return d.innerHTML; }
+
+function canBanUsers() {
+  return adminUser && ['owner', 'admin'].includes(adminUser.role);
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!window.NodeWeave) return;
+  adminUser = await window.NodeWeave.currentUser(true);
+  if (!adminUser || !['owner', 'admin', 'moderator'].includes(adminUser.role)) {
+    location.href = '../login.html?redirect=' + encodeURIComponent('admin/users.html');
+  }
+});
 </script>
 </body>
 </html>

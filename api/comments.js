@@ -56,7 +56,7 @@ comments.post('/', requireLogin, async (c) => {
   if (body.length > 5000) return err(c, CODE.VALIDATION, '评论最长 5000 字符');
 
   const post = await c.env.DB.prepare(
-    'SELECT id, title, COALESCE(NULLIF(author_id,""), user_id) AS author_id, COALESCE(is_locked,0) AS is_locked FROM posts WHERE id=?'
+    "SELECT id, title, COALESCE(NULLIF(author_id,''), user_id) AS author_id, COALESCE(is_locked,0) AS is_locked FROM posts WHERE id=?"
   ).bind(post_id).first();
   if (!post) return err(c, CODE.NOT_FOUND, '帖子不存在', 404);
   if (post.is_locked) return err(c, CODE.FORBIDDEN, '帖子已锁定', 403);
