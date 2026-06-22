@@ -64,7 +64,7 @@
     <nav class="nav-links">
       <a href="index.html">动态</a>
       <a href="boards.html">论坛</a>
-      <a href="board.html?board=blog">博客</a>
+      <a href="blog.html">博客</a>
       <a href="board.html?board=qa">问答</a>
     </nav>
     <div class="nav-actions" data-auth-actions>
@@ -429,9 +429,27 @@ function restoreDraft() {
   } catch (error) {}
 }
 
+function applyUrlPreset() {
+  if (editId) return;
+  const params = new URLSearchParams(location.search);
+  const type = params.get('type');
+  const board = params.get('board');
+  if (type === 'blog') {
+    $('postType').value = 'blog';
+    if ([...$('postBoard').options].some(option => option.value === 'blog')) {
+      $('postBoard').value = 'blog';
+    }
+  }
+  if (board && [...$('postBoard').options].some(option => option.value === board)) {
+    $('postBoard').value = board;
+  }
+  updateBountyVisibility();
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   await requireLogin();
   await loadBoards();
+  applyUrlPreset();
   restoreDraft();
   await loadEditPost();
 

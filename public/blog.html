@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>博客专栏 // NodeWeave</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+.blog-hero{max-width:1400px;margin:0 auto;padding:86px 28px 34px;display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:28px;align-items:end}
+.blog-kicker{display:inline-flex;align-items:center;gap:9px;padding:7px 14px;border:1px solid rgba(0,240,255,.2);border-radius:999px;background:rgba(0,240,255,.06);font-family:var(--font-mono);font-size:12px;color:var(--cyan);margin-bottom:18px}
+.blog-kicker i{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green)}
+.blog-title{font-family:var(--font-display);font-size:clamp(42px,6vw,78px);line-height:1.02;margin:0;color:var(--text);text-shadow:0 0 34px rgba(0,240,255,.18)}
+.blog-title span{display:block;color:var(--cyan);text-shadow:var(--glow-cyan)}
+.blog-desc{max-width:720px;margin:20px 0 0;color:var(--text-dim);font-size:16px;line-height:1.9}
+.blog-console{position:relative;overflow:hidden;border:1px solid var(--border);border-radius:18px;background:linear-gradient(145deg,rgba(0,240,255,.11),rgba(157,0,255,.08)),rgba(18,18,30,.82);padding:22px;box-shadow:0 24px 80px rgba(0,0,0,.32)}
+.blog-console::after{content:'';position:absolute;inset:auto -20% -35% -20%;height:120px;background:radial-gradient(ellipse at center,rgba(0,240,255,.18),transparent 70%);pointer-events:none}
+.console-line{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--border-2);font-family:var(--font-mono);font-size:12px;color:var(--text-dim)}
+.console-line:last-child{border-bottom:0}
+.console-line strong{color:var(--text);font-size:15px}
+.blog-layout{max-width:1400px;margin:0 auto;padding:0 28px 90px;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:28px;align-items:start}
+.blog-main{display:grid;gap:18px}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:2px}
+.section-head h2{font-family:var(--font-display);font-size:18px;color:var(--cyan);text-shadow:var(--glow-cyan)}
+.sort-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.sort-tabs button{padding:8px 13px;border:1px solid var(--border);border-radius:999px;background:rgba(18,18,30,.75);color:var(--text-dim);font-family:var(--font-mono);font-size:12px}
+.sort-tabs button.active,.sort-tabs button:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(0,240,255,.07)}
+.feature-card{display:none;position:relative;overflow:hidden;text-decoration:none;color:inherit;border:1px solid rgba(0,240,255,.2);border-radius:18px;background:linear-gradient(135deg,rgba(0,240,255,.12),rgba(255,0,60,.06)),var(--surface);padding:28px;min-height:230px;box-shadow:0 22px 80px rgba(0,0,0,.25)}
+.feature-card.show{display:block}
+.feature-card::before{content:'FEATURED';position:absolute;right:22px;top:18px;font-family:var(--font-display);font-size:11px;color:rgba(0,240,255,.5);letter-spacing:.18em}
+.feature-meta,.article-meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;color:var(--text-mute);font-family:var(--font-mono);font-size:11px;margin-bottom:10px}
+.feature-card h2{max-width:760px;font-family:var(--font-display);font-size:clamp(24px,3vw,36px);line-height:1.2;color:var(--text);margin:0 0 14px}
+.feature-card p{max-width:760px;color:var(--text-dim);font-size:14px;line-height:1.9;margin:0 0 18px}
+.feature-stats,.article-stats{display:flex;gap:16px;flex-wrap:wrap;color:var(--text-mute);font-family:var(--font-mono);font-size:12px}
+.article-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.article-card{display:flex;flex-direction:column;gap:10px;text-decoration:none;color:inherit;border:1px solid var(--border);border-radius:16px;background:rgba(18,18,30,.78);padding:20px;min-height:210px;transition:all .2s}
+.article-card:hover{transform:translateY(-4px);border-color:var(--cyan);box-shadow:0 18px 60px rgba(0,240,255,.08)}
+.article-card h3{font-family:var(--font-display);font-size:19px;line-height:1.35;color:var(--text);margin:0}
+.article-card p{color:var(--text-dim);font-size:13px;line-height:1.75;margin:0;flex:1}
+.blog-side{display:grid;gap:16px}
+.side-card{border:1px solid var(--border);border-radius:16px;background:rgba(18,18,30,.7);padding:18px}
+.side-card h3{font-family:var(--font-display);font-size:15px;color:var(--cyan);margin-bottom:10px}
+.side-card p{color:var(--text-dim);font-size:13px;line-height:1.75;margin-bottom:12px}
+.tag-cloud{display:flex;gap:8px;flex-wrap:wrap}
+.tag-cloud span{padding:5px 9px;border:1px solid rgba(0,240,255,.16);border-radius:999px;background:rgba(0,240,255,.05);color:var(--text-dim);font-family:var(--font-mono);font-size:11px}
+.empty-blog{padding:54px 20px;text-align:center;border:1px dashed var(--border);border-radius:18px;background:rgba(18,18,30,.52);color:var(--text-dim)}
+.empty-blog .icon{font-size:48px;margin-bottom:12px}
+.empty-blog h3{font-family:var(--font-display);color:var(--text);margin-bottom:8px}
+@media(max-width:980px){.blog-hero,.blog-layout{grid-template-columns:1fr}.blog-hero{padding-top:54px}.article-list{grid-template-columns:1fr}}
+@media(max-width:640px){.blog-hero,.blog-layout{padding-left:16px;padding-right:16px}.section-head{align-items:flex-start;flex-direction:column}.nav-search{display:none}}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div><div class="bg-scanlines"></div><div class="bg-glow"></div>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo">
+      <span class="logo-mark">◈</span>
+      <span class="logo-text">Node<span class="x">Weave</span></span>
+      <span class="logo-sub">// BLOG NODE</span>
+    </a>
+    <nav class="nav-links">
+      <a href="index.html">动态</a>
+      <a href="boards.html">论坛</a>
+      <a href="blog.html" class="active">博客</a>
+      <a href="board.html?board=qa">问答</a>
+      <a href="board.html?board=chat">闲聊</a>
+      <a href="shop.html">商城</a>
+      <a href="achievements.html">成就</a>
+    </nav>
+    <div class="nav-search">
+      <span class="search-ico">⌕</span>
+      <input type="text" placeholder="搜索博客 / 标签..." onkeydown="if(event.key==='Enter')location.href='search.html?q='+encodeURIComponent(this.value)">
+      <kbd>/</kbd>
+    </div>
+    <div class="nav-actions" data-auth-actions>
+      <a class="btn-ghost" href="login.html">登录</a>
+      <a class="btn-primary" href="editor.html?type=blog">写博客</a>
+    </div>
+  </div>
+</header>
+
+<section class="blog-hero">
+  <div>
+    <div class="blog-kicker"><i></i><span>NODEWEAVE LONGFORM</span></div>
+    <h1 class="blog-title">把灵感写成<span>可被检索的未来</span></h1>
+    <p class="blog-desc">这里收纳长文、技术笔记、复盘、教程与观点。少一点灌水，多一点可沉淀的内容；让每篇博客都像一枚可回溯的节点。</p>
+  </div>
+  <aside class="blog-console">
+    <div class="console-line"><span>原创博客</span><strong id="blogCount">--</strong></div>
+    <div class="console-line"><span>平均热度</span><strong id="avgHeat">--</strong></div>
+    <div class="console-line"><span>我的论坛币</span><strong data-user-coins>0</strong></div>
+  </aside>
+</section>
+
+<main class="blog-layout">
+  <section class="blog-main">
+    <div class="section-head">
+      <h2>精选与最新</h2>
+      <div class="sort-tabs">
+        <button class="active" data-sort="latest">最新发布</button>
+        <button data-sort="hot">热度优先</button>
+      </div>
+    </div>
+    <a class="feature-card" id="featureCard" href="#"></a>
+    <div class="article-list" id="articleList">
+      <div class="empty-blog" style="grid-column:1/-1"><div class="icon">⌁</div><h3>正在同步博客节点...</h3><p>正在读取 NodeWeave 的原创长文。</p></div>
+    </div>
+    <button class="btn-loadmore" id="btnLoadmore" type="button" style="display:none">加载更多博客</button>
+  </section>
+
+  <aside class="blog-side">
+    <div class="side-card">
+      <h3>写一篇博客</h3>
+      <p>适合发布教程、经验复盘、项目拆解、观点长文。发布类型请选择“博客”。</p>
+      <a class="btn-primary btn-block" href="editor.html?type=blog">进入博客编辑器</a>
+    </div>
+    <div class="side-card">
+      <h3>推荐方向</h3>
+      <div class="tag-cloud">
+        <span>Cloudflare</span><span>AI</span><span>前端</span><span>安全</span><span>建站</span><span>复盘</span><span>开源</span><span>资源整理</span>
+      </div>
+    </div>
+    <div class="side-card">
+      <h3>博客规则</h3>
+      <p>标题具体，正文完整，尽量附上上下文、步骤、结论与参考。好文章会更容易获得点赞、评分和打赏。</p>
+    </div>
+  </aside>
+</main>
+
+<script src="script.js"></script>
+<script>
+let blogPage = 1;
+let blogSort = 'latest';
+const esc = (value) => window.NodeWeave.escapeHtml(value);
+const timeAgo = (value) => window.NodeWeave.timeAgo(value);
+
+function excerpt(text, length) {
+  const clean = String(text || '').replace(/\s+/g, ' ').trim();
+  return clean.length > length ? clean.slice(0, length) + '...' : clean;
+}
+
+function statsHtml(post) {
+  return `
+    <span>浏览 ${post.view_count || 0}</span>
+    <span>评论 ${post.comment_count || 0}</span>
+    <span>赞 ${post.like_count || 0}</span>
+    <span>评分 ${post.rating_avg ? Number(post.rating_avg).toFixed(1) : '-'}</span>`;
+}
+
+function renderFeature(post) {
+  const card = document.getElementById('featureCard');
+  if (!post) {
+    card.classList.remove('show');
+    return;
+  }
+  card.href = 'post.html?id=' + encodeURIComponent(post.id);
+  card.innerHTML = `
+    <div class="feature-meta">
+      <span>博客</span><span>${esc(post.board_id || 'blog')}</span><span>@${esc(post.display_name || post.username || '匿名用户')}</span><span>${timeAgo(post.created_at)}</span>
+    </div>
+    <h2>${esc(post.title)}</h2>
+    <p>${esc(excerpt(post.content, 220))}</p>
+    <div class="feature-stats">${statsHtml(post)}</div>`;
+  card.classList.add('show');
+}
+
+function renderArticles(posts, reset) {
+  const list = document.getElementById('articleList');
+  if (!posts.length && reset) {
+    list.innerHTML = `
+      <div class="empty-blog" style="grid-column:1/-1">
+        <div class="icon">📭</div>
+        <h3>还没有博客</h3>
+        <p>用站长账号发布第一篇长文，让博客区先亮起来。</p>
+        <a class="btn-primary" href="editor.html?type=blog" style="display:inline-block;margin-top:14px">写第一篇博客</a>
+      </div>`;
+    return;
+  }
+  const html = posts.map(post => `
+    <a class="article-card" href="post.html?id=${esc(post.id)}">
+      <div class="article-meta">
+        <span>${esc(post.board_id || 'blog')}</span>
+        <span>@${esc(post.display_name || post.username || '匿名用户')}</span>
+        <span>${timeAgo(post.created_at)}</span>
+      </div>
+      <h3>${esc(post.title)}</h3>
+      <p>${esc(excerpt(post.content, 140))}</p>
+      <div class="article-stats">${statsHtml(post)}</div>
+    </a>`).join('');
+  if (reset) list.innerHTML = html;
+  else list.insertAdjacentHTML('beforeend', html);
+}
+
+async function loadBlogs(reset) {
+  if (reset) blogPage = 1;
+  const list = document.getElementById('articleList');
+  if (reset) list.innerHTML = '<div class="empty-blog" style="grid-column:1/-1"><div class="icon">⌁</div><h3>正在同步博客节点...</h3><p>正在读取 NodeWeave 的原创长文。</p></div>';
+  const params = new URLSearchParams({ type: 'blog', sort: blogSort, page: String(blogPage), pageSize: '9' });
+  const json = await window.NodeWeave.apiJson('/api/posts?' + params.toString()).catch(() => null);
+  if (!json || json.code !== 0) {
+    list.innerHTML = '<div class="empty-blog" style="grid-column:1/-1"><div class="icon">⚠</div><h3>博客加载失败</h3><p>请稍后刷新页面。</p></div>';
+    return;
+  }
+  const posts = json.data.posts || [];
+  document.getElementById('blogCount').textContent = Number(json.data.total || 0).toLocaleString();
+  const heat = posts.length ? Math.round(posts.reduce((sum, post) => sum + Number(post.view_count || 0) + Number(post.like_count || 0) * 3 + Number(post.comment_count || 0) * 5, 0) / posts.length) : 0;
+  document.getElementById('avgHeat').textContent = heat || '--';
+  renderFeature(reset ? posts[0] : null);
+  renderArticles(reset ? posts.slice(1) : posts, reset);
+  document.getElementById('btnLoadmore').style.display = posts.length >= 9 ? '' : 'none';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadBlogs(true);
+  document.querySelectorAll('.sort-tabs button').forEach(button => {
+    button.addEventListener('click', () => {
+      document.querySelectorAll('.sort-tabs button').forEach(item => item.classList.remove('active'));
+      button.classList.add('active');
+      blogSort = button.dataset.sort || 'latest';
+      loadBlogs(true);
+    });
+  });
+  document.getElementById('btnLoadmore').addEventListener('click', () => {
+    blogPage += 1;
+    loadBlogs(false);
+  });
+});
+</script>
+</body>
+</html>
