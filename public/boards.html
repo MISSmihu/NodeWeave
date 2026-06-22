@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -8,23 +8,74 @@
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <style>
-.boards-page{max-width:900px;margin:0 auto;padding:80px 24px 100px}
-.boards-page h2{font-family:var(--font-display);font-size:20px;color:var(--cyan);margin-bottom:6px}
-.boards-page .sub{font-size:13px;color:var(--text-mute);margin-bottom:20px}
-.board-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
-.board-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px 20px;cursor:pointer;transition:all .2s;text-decoration:none;display:block}
-.board-card:hover{border-color:var(--cyan);transform:translateY(-2px);box-shadow:0 4px 20px rgba(0,0,0,.3)}
-.board-card .icon{font-size:32px;margin-bottom:10px}
-.board-card .name{font-family:var(--font-display);font-size:16px;color:var(--text);margin-bottom:6px}
-.board-card .desc{font-size:13px;color:var(--text-dim);line-height:1.5;margin-bottom:10px}
-.board-card .stats{font-family:var(--font-mono);font-size:11px;color:var(--text-mute)}
-.apply-section{margin-top:32px;padding:24px;background:var(--surface);border:1px dashed var(--border);border-radius:10px;text-align:center}
-.apply-section h3{font-family:var(--font-display);font-size:15px;color:var(--text);margin-bottom:8px}
-.apply-section p{font-size:13px;color:var(--text-dim);margin-bottom:16px}
-.msg{display:none;padding:8px;border-radius:4px;font-size:13px;margin-top:8px}
+.boards-page{max-width:1180px;margin:0 auto;padding:86px 24px 110px}
+.boards-hero{position:relative;overflow:hidden;border:1px solid var(--border);border-radius:18px;padding:34px;background:linear-gradient(135deg,rgba(0,240,255,.10),rgba(157,0,255,.08) 45%,rgba(255,0,60,.08)),var(--surface);box-shadow:0 22px 80px rgba(0,0,0,.34)}
+.boards-hero::before{content:'';position:absolute;inset:-1px;background:linear-gradient(120deg,transparent,rgba(0,240,255,.22),transparent);opacity:.55;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;padding:1px;pointer-events:none}
+.boards-hero::after{content:'';position:absolute;right:-90px;top:-120px;width:360px;height:360px;border-radius:50%;background:radial-gradient(circle,rgba(0,240,255,.24),transparent 68%);filter:blur(4px);pointer-events:none}
+.hero-kicker{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:12px;color:var(--cyan);padding:6px 12px;border:1px solid var(--border);border-radius:999px;background:rgba(0,240,255,.06)}
+.hero-kicker i{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green);animation:pulse 1.6s infinite}
+.boards-hero h1{position:relative;margin-top:18px;font-family:var(--font-display);font-size:clamp(34px,5vw,58px);line-height:1.05;letter-spacing:.02em}
+.boards-hero h1 span{color:var(--cyan);text-shadow:var(--glow-cyan)}
+.boards-hero p{position:relative;max-width:680px;margin-top:14px;color:var(--text-dim);font-size:15px;line-height:1.85}
+.hero-panel{position:absolute;right:34px;bottom:30px;width:260px;border:1px solid rgba(0,240,255,.18);border-radius:14px;background:rgba(10,10,15,.62);backdrop-filter:blur(14px);padding:16px}
+.hero-panel .line{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--border-2);font-family:var(--font-mono);font-size:12px;color:var(--text-dim)}
+.hero-panel .line:last-child{border-bottom:none}
+.hero-panel b{color:var(--text);font-weight:600}
+.boards-toolbar{display:grid;grid-template-columns:1fr auto;gap:16px;margin:22px 0}
+.board-search{display:flex;align-items:center;gap:10px;background:rgba(18,18,30,.78);border:1px solid var(--border);border-radius:12px;padding:12px 14px;transition:border-color .2s,box-shadow .2s}
+.board-search:focus-within{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,240,255,.09)}
+.board-search span{color:var(--text-mute)}
+.board-search input{width:100%;background:transparent;border:none;outline:none;color:var(--text);font-family:var(--font-mono);font-size:13px}
+.board-filters{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.filter-btn{border:1px solid var(--border);background:rgba(18,18,30,.74);color:var(--text-dim);padding:10px 14px;border-radius:999px;font-family:var(--font-mono);font-size:12px;transition:all .2s}
+.filter-btn:hover,.filter-btn.active{color:var(--cyan);border-color:var(--cyan);box-shadow:0 0 18px rgba(0,240,255,.16)}
+.board-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}
+.board-card{position:relative;min-height:226px;overflow:hidden;text-decoration:none;color:inherit;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01)),var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;display:flex;flex-direction:column;transition:transform .2s,border-color .2s,box-shadow .2s}
+.board-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 18% 12%,var(--board-color),transparent 34%);opacity:.18;transition:opacity .2s}
+.board-card::after{content:'';position:absolute;right:18px;top:18px;width:76px;height:76px;border-radius:20px;background:linear-gradient(135deg,rgba(255,255,255,.08),transparent);border:1px solid rgba(255,255,255,.06);transform:rotate(8deg)}
+.board-card:hover{transform:translateY(-5px);border-color:var(--board-color);box-shadow:0 18px 48px rgba(0,0,0,.38),0 0 28px color-mix(in srgb,var(--board-color) 24%,transparent)}
+.board-card:hover::before{opacity:.28}
+.board-top,.board-body,.board-foot{position:relative;z-index:1}
+.board-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.board-icon{display:grid;place-items:center;width:58px;height:58px;border-radius:15px;font-size:30px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.08);box-shadow:0 0 24px color-mix(in srgb,var(--board-color) 22%,transparent)}
+.board-badge{font-family:var(--font-mono);font-size:10px;color:var(--board-color);border:1px solid color-mix(in srgb,var(--board-color) 45%,transparent);background:color-mix(in srgb,var(--board-color) 12%,transparent);padding:4px 8px;border-radius:999px;white-space:nowrap}
+.board-body{padding-top:18px;flex:1}
+.board-name{font-family:var(--font-display);font-size:19px;color:var(--text);letter-spacing:.03em;margin-bottom:8px}
+.board-desc{font-size:13px;color:var(--text-dim);line-height:1.72;min-height:44px}
+.board-tags{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}
+.board-tags span{font-family:var(--font-mono);font-size:10px;color:var(--text-mute);border:1px solid var(--border-2);background:rgba(255,255,255,.03);border-radius:999px;padding:3px 8px}
+.board-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border-2)}
+.board-stat{font-family:var(--font-mono);font-size:12px;color:var(--text-dim)}
+.board-stat b{color:var(--text);font-size:15px}
+.board-enter{font-family:var(--font-display);font-size:11px;color:var(--cyan);letter-spacing:.08em}
+.boards-bottom{display:grid;grid-template-columns:1.15fr .85fr;gap:18px;margin-top:22px}
+.apply-section,.rules-panel{border:1px solid var(--border);border-radius:16px;background:rgba(18,18,30,.76);padding:22px}
+.apply-section h3,.rules-panel h3{font-family:var(--font-display);font-size:16px;color:var(--text);margin-bottom:8px}
+.apply-section p,.rules-panel p{font-size:13px;color:var(--text-dim);line-height:1.75}
+.apply-form{display:grid;grid-template-columns:1fr 1.4fr auto;gap:10px;margin-top:16px}
+.apply-form input{min-width:0;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:11px 12px;outline:none}
+.apply-form input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,240,255,.08)}
+.apply-form button{white-space:nowrap}
+.rules-list{display:grid;gap:10px;margin-top:13px}
+.rules-list div{display:flex;gap:10px;font-size:12px;color:var(--text-dim)}
+.rules-list b{color:var(--cyan);font-family:var(--font-mono);font-weight:600}
+.empty-state,.loading-state{grid-column:1/-1;border:1px dashed var(--border);border-radius:16px;padding:46px 20px;text-align:center;color:var(--text-mute);background:rgba(18,18,30,.48)}
+.empty-state .icon,.loading-state .icon{font-size:42px;margin-bottom:10px}
+.msg{display:none;padding:10px 12px;border-radius:8px;font-size:13px;margin-top:12px}
 .msg.show{display:block}
-.msg-ok{background:rgba(127,255,0,.1);color:var(--green)}
-.msg-err{background:rgba(255,0,60,.1);color:var(--magenta)}
+.msg-ok{background:rgba(127,255,0,.10);color:var(--green);border:1px solid rgba(127,255,0,.22)}
+.msg-err{background:rgba(255,0,60,.10);color:#ff6d8d;border:1px solid rgba(255,0,60,.22)}
+@media (max-width:920px){
+  .hero-panel{position:relative;right:auto;bottom:auto;width:auto;margin-top:24px}
+  .boards-toolbar,.boards-bottom{grid-template-columns:1fr}
+  .board-filters{justify-content:flex-start}
+  .apply-form{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .boards-page{padding:76px 16px 90px}
+  .boards-hero{padding:24px}
+  .board-grid{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
@@ -36,67 +87,183 @@
   </div>
 </header>
 <main class="boards-page">
-  <h2>📋 板块广场</h2>
-  <p class="sub">选择你感兴趣的板块，加入讨论</p>
-  <div class="board-grid" id="boardGrid">加载中...</div>
-  <div class="apply-section">
-    <h3>想创建自己的板块？</h3>
-    <p>声望达到 Lv4 (1500) 即可申请建版，成为版主</p>
-    <button class="btn-primary" onclick="applyBoard()" style="padding:10px 24px;font-family:var(--font-display);font-size:14px;background:var(--cyan);color:var(--bg);border:none;border-radius:4px;cursor:pointer">申请建版</button>
-    <div class="msg" id="applyMsg"></div>
-  </div>
+  <section class="boards-hero">
+    <div class="hero-kicker"><i></i><span>NODEWEAVE SECTOR MAP</span></div>
+    <h1>选择你的<span>节点频道</span></h1>
+    <p>这里不是冷冰冰的分类列表，而是社区的入口大厅。问答、AI、福利、中转站、闲聊和技术讨论各自有自己的频率，点进去就进入对应板块。</p>
+    <div class="hero-panel">
+      <div class="line"><span>开放板块</span><b id="totalBoards">--</b></div>
+      <div class="line"><span>累计帖子</span><b id="totalPosts">--</b></div>
+      <div class="line"><span>入口状态</span><b>ONLINE</b></div>
+    </div>
+  </section>
+
+  <section class="boards-toolbar">
+    <label class="board-search">
+      <span>⌕</span>
+      <input id="boardSearch" type="search" placeholder="搜索板块：AI / 问答 / 福利 / 中转站..." autocomplete="off">
+    </label>
+    <div class="board-filters" id="boardFilters">
+      <button class="filter-btn active" data-filter="all">全部</button>
+      <button class="filter-btn" data-filter="tech">技术</button>
+      <button class="filter-btn" data-filter="trade">资源</button>
+      <button class="filter-btn" data-filter="social">社区</button>
+    </div>
+  </section>
+
+  <section class="board-grid" id="boardGrid">
+    <div class="loading-state"><div class="icon">◎</div><p>正在同步板块节点...</p></div>
+  </section>
+
+  <section class="boards-bottom">
+    <div class="apply-section">
+      <h3>申请创建新板块</h3>
+      <p>声望达到 Lv4（1500）后可以申请建版。建议写清楚主题边界、内容规范和你愿意维护的方向。</p>
+      <div class="apply-form">
+        <input id="applyName" maxlength="20" placeholder="板块名称">
+        <input id="applyDesc" maxlength="80" placeholder="一句话说明这个板块适合聊什么">
+        <button class="btn-primary" onclick="applyBoard()">提交申请</button>
+      </div>
+      <div class="msg" id="applyMsg"></div>
+    </div>
+    <aside class="rules-panel">
+      <h3>广场规则</h3>
+      <p>板块越清晰，讨论越容易沉淀。发帖前先选对频道，问答悬赏、资源分享、推广内容会进入对应分区。</p>
+      <div class="rules-list">
+        <div><b>01</b><span>问答板块优先写清环境、报错和已尝试方案。</span></div>
+        <div><b>02</b><span>福利与中转站禁止伪装下载、诱导跳转和恶意文件。</span></div>
+        <div><b>03</b><span>推广内容请保持透明，别把广告伪装成普通经验贴。</span></div>
+      </div>
+    </aside>
+  </section>
 </main>
 <script>
-// 与 0013_boards.sql 迁移数据一致
 var SEED_BOARDS = [
-  {slug:'general',icon:'💬',name:'综合讨论',desc:'自由讨论，不限话题'},
-  {slug:'qa',icon:'❓',name:'问答',desc:'技术问答与悬赏，采纳打赏论坛币'},
-  {slug:'tech',icon:'💻',name:'技术交流',desc:'技术分享与心得'},
-  {slug:'dev',icon:'⚡',name:'开发',desc:'编程语言与框架'},
-  {slug:'design',icon:'🎨',name:'设计',desc:'UI/UX与视觉设计'},
-  {slug:'ai',icon:'🤖',name:'人工智能',desc:'AI/ML 技术讨论'},
-  {slug:'blog',icon:'📝',name:'博客',desc:'原创技术博客'},
-  {slug:'chat',icon:'💬',name:'娱乐闲聊',desc:'灌水摸鱼，轻松闲聊，分享日常'},
-  {slug:'promo',icon:'📢',name:'推广',desc:'产品推广与商务合作'},
-  {slug:'share',icon:'🎁',name:'福利分享',desc:'资源分享与优惠信息'},
-  {slug:'transfer',icon:'📦',name:'中转站',desc:'文件中转与资源交换'}
+  {slug:'general',icon:'💬',name:'综合讨论',description:'自由讨论，不限话题',color:'#00f0ff',post_count:0},
+  {slug:'qa',icon:'❓',name:'问答',description:'技术问答与悬赏，采纳打赏论坛币',color:'#ffd700',post_count:0},
+  {slug:'tech',icon:'💻',name:'技术交流',description:'技术分享与心得',color:'#7fff00',post_count:0},
+  {slug:'dev',icon:'⚡',name:'开发',description:'编程语言与框架',color:'#9d00ff',post_count:0},
+  {slug:'ai',icon:'🤖',name:'人工智能',description:'AI/ML 技术讨论',color:'#ffd700',post_count:0},
+  {slug:'chat',icon:'💬',name:'娱乐闲聊',description:'灌水摸鱼，轻松闲聊，分享日常',color:'#ff69b4',post_count:0},
+  {slug:'promo',icon:'📢',name:'推广',description:'产品推广、项目宣传与商务合作',color:'#ff8c00',post_count:0},
+  {slug:'share',icon:'🎁',name:'福利分享',description:'资源分享、白嫖福利与优惠信息',color:'#ff1493',post_count:0},
+  {slug:'transfer',icon:'📦',name:'中转站',description:'文件中转、网盘分享与资源交换',color:'#00ced1',post_count:0}
 ];
+var allBoards = [];
+var activeFilter = 'all';
+
+var BOARD_META = {
+  general:{group:'social',label:'公共大厅',tags:['闲聊','公告','反馈']},
+  qa:{group:'tech',label:'悬赏问答',tags:['采纳','打赏','论坛币']},
+  tech:{group:'tech',label:'技术沉淀',tags:['教程','经验','排错']},
+  dev:{group:'tech',label:'开发节点',tags:['代码','框架','工具链']},
+  ai:{group:'tech',label:'AI 频道',tags:['模型','提示词','自动化']},
+  chat:{group:'social',label:'轻松频道',tags:['日常','摸鱼','脑洞']},
+  promo:{group:'trade',label:'推广专区',tags:['产品','项目','合作']},
+  share:{group:'trade',label:'福利雷达',tags:['资源','优惠','羊毛']},
+  transfer:{group:'trade',label:'中转站',tags:['网盘','附件','交换']}
+};
 
 async function init() {
-  var grid = document.getElementById('boardGrid');
   try {
-    var r = await fetch('/api/boards'); var j = await r.json();
-    if (j.code===0 && j.data && j.data.length) {
-      grid.innerHTML = j.data.map(function(b){
-        return '<a href="board.html?board='+b.slug+'" class="board-card">'+
-          '<div class="icon">'+(b.icon||'📋')+'</div>'+
-          '<div class="name">'+h(b.name)+'</div>'+
-          '<div class="desc">'+h(b.description||'')+'</div>'+
-          '<div class="stats">'+(b.post_count||0).toLocaleString()+' 篇帖子</div>'+
-        '</a>';
-      }).join('');
-      return;
-    }
-  } catch(e) {}
-  // 后端不可用时显示种子数据
-  grid.innerHTML = SEED_BOARDS.map(function(b){
-    return '<a href="board.html?board='+b.slug+'" class="board-card">'+
-      '<div class="icon">'+b.icon+'</div>'+
-      '<div class="name">'+b.name+'</div>'+
-      '<div class="desc">'+b.desc+'</div>'+
-      '<div class="stats">0 篇帖子</div>'+
-    '</a>';
-  }).join('');
+    var r = await fetch('/api/boards');
+    var j = await r.json();
+    allBoards = j.code === 0 && j.data && j.data.length ? j.data : SEED_BOARDS;
+  } catch(e) {
+    allBoards = SEED_BOARDS;
+  }
+  render();
 }
 
-function applyBoard() {
+function render() {
+  var keyword = document.getElementById('boardSearch').value.trim().toLowerCase();
+  var boards = allBoards.filter(function(board){
+    var meta = getMeta(board);
+    var text = [board.name, board.slug, board.description, meta.label, meta.tags.join(' ')].join(' ').toLowerCase();
+    return (activeFilter === 'all' || meta.group === activeFilter) && (!keyword || text.indexOf(keyword) >= 0);
+  });
+  updateStats();
+  var grid = document.getElementById('boardGrid');
+  if (!boards.length) {
+    grid.innerHTML = '<div class="empty-state"><div class="icon">∅</div><p>没搜到对应板块，换个关键词试试。</p></div>';
+    return;
+  }
+  grid.innerHTML = boards.map(boardCard).join('');
+}
+
+function boardCard(board) {
+  var meta = getMeta(board);
+  var color = sanitizeColor(board.color || '#00f0ff');
+  var count = Number(board.post_count || 0);
+  return '<a class="board-card" href="board.html?board='+encodeURIComponent(board.slug)+'" style="--board-color:'+color+'">'+
+    '<div class="board-top">'+
+      '<div class="board-icon">'+h(board.icon || '📋')+'</div>'+
+      '<div class="board-badge">'+h(meta.label)+'</div>'+
+    '</div>'+
+    '<div class="board-body">'+
+      '<div class="board-name">'+h(board.name || board.slug)+'</div>'+
+      '<div class="board-desc">'+h(board.description || '这个节点正在等待第一批内容沉淀。')+'</div>'+
+      '<div class="board-tags">'+meta.tags.map(function(tag){return '<span># '+h(tag)+'</span>'}).join('')+'</div>'+
+    '</div>'+
+    '<div class="board-foot">'+
+      '<div class="board-stat"><b>'+count.toLocaleString()+'</b> 帖子</div>'+
+      '<div class="board-enter">进入 →</div>'+
+    '</div>'+
+  '</a>';
+}
+
+function getMeta(board) {
+  return BOARD_META[board.slug] || {group:'social',label:'自建板块',tags:['成员共建','新版块']};
+}
+
+function updateStats() {
+  var totalPosts = allBoards.reduce(function(sum, board){return sum + Number(board.post_count || 0)}, 0);
+  document.getElementById('totalBoards').textContent = allBoards.length;
+  document.getElementById('totalPosts').textContent = totalPosts.toLocaleString();
+}
+
+async function applyBoard() {
   var msg = document.getElementById('applyMsg');
-  msg.textContent = '请先登录后再申请建版';
-  msg.className = 'msg show msg-ok';
-  setTimeout(function(){msg.classList.remove('show')},3000);
+  var name = document.getElementById('applyName').value.trim();
+  var desc = document.getElementById('applyDesc').value.trim();
+  if (!name) return showMsg('请输入板块名称', false);
+  try {
+    var r = await fetch('/api/boards/apply', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      credentials:'include',
+      body:JSON.stringify({board_name:name,description:desc})
+    });
+    var j = await r.json();
+    if (j.code !== 0) throw new Error(j.msg || '提交失败');
+    document.getElementById('applyName').value = '';
+    document.getElementById('applyDesc').value = '';
+    showMsg('申请已提交，等待管理员审核', true);
+  } catch(e) {
+    showMsg(e.message || '请先登录后再申请建版', false);
+  }
+}
+
+function showMsg(text, ok) {
+  var msg = document.getElementById('applyMsg');
+  msg.textContent = text;
+  msg.className = 'msg show ' + (ok ? 'msg-ok' : 'msg-err');
+}
+
+function sanitizeColor(color) {
+  return /^#[0-9a-fA-F]{3,8}$/.test(color) ? color : '#00f0ff';
 }
 
 function h(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+document.getElementById('boardSearch').addEventListener('input', render);
+document.querySelectorAll('.filter-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.filter-btn').forEach(function(item){item.classList.remove('active')});
+    btn.classList.add('active');
+    activeFilter = btn.dataset.filter;
+    render();
+  });
+});
 init();
 </script>
 </body>
