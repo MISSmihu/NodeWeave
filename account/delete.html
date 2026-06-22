@@ -16,6 +16,7 @@
 .delete-card ul{text-align:left;color:var(--text-dim);font-size:13px;line-height:1.8;margin-bottom:20px;padding-left:20px}
 .delete-card .btn-danger{width:100%;padding:12px;background:transparent;border:1px solid var(--magenta);border-radius:4px;color:var(--magenta);font-family:var(--font-display);font-size:14px;cursor:pointer;transition:all .2s}
 .delete-card .btn-danger:hover{background:var(--magenta);color:#fff}
+.delete-card .btn-danger:disabled{opacity:.55;cursor:not-allowed}
 .delete-card .btn-back{display:inline-block;margin-top:16px;font-family:var(--font-mono);font-size:12px;color:var(--text-mute);text-decoration:none}
 .delete-card .btn-back:hover{color:var(--cyan)}
 .msg{display:none;padding:8px 12px;border-radius:4px;font-size:13px;margin-top:12px}
@@ -28,26 +29,24 @@
 <div class="bg-grid"></div><div class="bg-scanlines"></div><div class="bg-glow"></div>
 <div class="auth-page">
   <div class="delete-card">
-    <!-- Step 1: Request -->
     <div id="stepRequest">
       <div class="warn-icon">⚠️</div>
       <h2>账号注销</h2>
-      <p>注销账号是一个不可逆的操作。请在操作前确认以下事项：</p>
+      <p>注销账号是不可逆的敏感操作。请在操作前确认以下事项：</p>
       <ul>
-        <li>您发布的内容将被隐藏</li>
-        <li>数据在90天软删除后可彻底清除</li>
-        <li>90天内您可以联系管理员撤销注销</li>
-        <li>论坛币不可退还</li>
+        <li>你发布的内容会进入隐藏或匿名化处理流程。</li>
+        <li>账号会先标记为已注销，后续按规则清理数据。</li>
+        <li>论坛币、徽章、装扮等权益不会退回。</li>
+        <li>如果这是误操作，请不要点击邮件中的确认链接。</li>
       </ul>
-      <button class="btn-danger" id="requestBtn">申请注销</button>
+      <button class="btn-danger" id="requestBtn" type="button">申请注销</button>
       <p class="msg" id="requestMsg"></p>
     </div>
-    <!-- Step 2: Confirm (from email link) -->
     <div id="stepConfirm" style="display:none">
       <div class="warn-icon">🗑️</div>
       <h2>确认注销</h2>
-      <p>即将注销您的 NodeWeave 账号。此操作无法撤销。</p>
-      <button class="btn-danger" id="confirmBtn">确认注销</button>
+      <p>即将注销你的 NodeWeave 账号。此操作无法撤销，请再次确认。</p>
+      <button class="btn-danger" id="confirmBtn" type="button">确认注销</button>
       <p class="msg" id="confirmMsg"></p>
     </div>
     <a href="../index.html" class="btn-back">← 返回首页</a>
@@ -60,31 +59,50 @@ if (token) {
   document.getElementById('stepConfirm').style.display = '';
 }
 
+function setMsg(el, json, fallback) {
+  el.className = json.code === 0 ? 'msg show msg-ok' : 'msg show msg-err';
+  el.textContent = json.msg || fallback;
+}
+
 document.getElementById('requestBtn').addEventListener('click', async () => {
   const msg = document.getElementById('requestMsg');
+  const btn = document.getElementById('requestBtn');
+  btn.disabled = true;
   try {
-    const res = await fetch('/api/account/request-delete', { method:'POST' });
+    const res = await fetch('/api/account/request-delete', { method: 'POST', credentials: 'include' });
     const json = await res.json();
-    msg.className = json.code===0 ? 'msg show msg-ok' : 'msg show msg-err';
-    msg.textContent = json.msg || '操作成功';
-  } catch(e) { msg.className='msg show msg-err';msg.textContent='网络错误'; }
+    setMsg(msg, json, '操作完成');
+  } catch(e) {
+    msg.className = 'msg show msg-err';
+    msg.textContent = '网络错误，请稍后重试';
+  } finally {
+    btn.disabled = false;
+  }
 });
 
 document.getElementById('confirmBtn').addEventListener('click', async () => {
   const msg = document.getElementById('confirmMsg');
+  const btn = document.getElementById('confirmBtn');
+  btn.disabled = true;
   try {
     const res = await fetch('/api/account/confirm-delete', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({token}),
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
     });
     const json = await res.json();
-    msg.className = json.code===0 ? 'msg show msg-ok' : 'msg show msg-err';
-    msg.textContent = json.msg || '操作成功';
+    setMsg(msg, json, '操作完成');
     if (json.code === 0) {
-      document.getElementById('confirmBtn').style.display = 'none';
+      btn.style.display = 'none';
       setTimeout(() => { location.href = '../index.html'; }, 3000);
     }
-  } catch(e) { msg.className='msg show msg-err';msg.textContent='网络错误'; }
+  } catch(e) {
+    msg.className = 'msg show msg-err';
+    msg.textContent = '网络错误，请稍后重试';
+  } finally {
+    btn.disabled = false;
+  }
 });
 </script>
 </body>

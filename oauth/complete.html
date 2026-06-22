@@ -9,19 +9,20 @@
 <link rel="stylesheet" href="../style.css">
 <style>
 .auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
-.complete-card{width:100%;max-width:420px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:32px 28px;text-align:center;position:relative;z-index:1}
-.complete-card .avatar{width:64px;height:64px;border-radius:50%;border:2px solid var(--cyan);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--bg)}
+.complete-card{width:100%;max-width:430px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:32px 28px;text-align:center;position:relative;z-index:1}
+.complete-card .avatar{width:68px;height:68px;border-radius:50%;border:2px solid var(--cyan);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--bg);box-shadow:var(--glow-cyan)}
 .complete-card .avatar img{width:100%;height:100%;object-fit:cover}
 .complete-card .avatar .fallback{font-family:var(--font-display);font-size:24px;color:var(--cyan)}
-.complete-card h2{font-family:var(--font-display);font-size:18px;color:var(--cyan);margin-bottom:4px}
+.complete-card h2{font-family:var(--font-display);font-size:19px;color:var(--cyan);margin-bottom:4px}
 .complete-card .sub{font-size:13px;color:var(--text-mute);margin-bottom:20px}
 .complete-card .form-group{margin-bottom:14px;text-align:left}
-.complete-card label{display:block;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase}
-.complete-card input{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:14px;outline:none}
-.complete-card input:focus{border-color:var(--cyan)}
+.complete-card label{display:block;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);margin-bottom:5px;text-transform:uppercase}
+.complete-card input{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:14px;outline:none}
+.complete-card input:focus{border-color:var(--cyan);box-shadow:0 0 0 2px rgba(0,240,255,.08)}
 .complete-card .checkbox-group{display:flex;align-items:flex-start;gap:8px;margin:16px 0;text-align:left}
 .complete-card .checkbox-group input[type="checkbox"]{appearance:none;width:16px;height:16px;min-width:16px;border:1px solid var(--border);border-radius:2px;background:var(--bg);cursor:pointer;position:relative;top:2px}
 .complete-card .checkbox-group input[type="checkbox"]:checked{background:var(--cyan);border-color:var(--cyan)}
+.complete-card .checkbox-group input[type="checkbox"]:checked::after{content:'';position:absolute;left:4px;top:1px;width:5px;height:9px;border:solid var(--bg);border-width:0 2px 2px 0;transform:rotate(45deg)}
 .complete-card .checkbox-group label{font-size:12px;color:var(--text-dim);line-height:1.5;cursor:pointer;text-transform:none}
 .complete-card .checkbox-group a{color:var(--cyan);text-decoration:none}
 .complete-card .btn-primary{width:100%;padding:12px;font-family:var(--font-display);font-size:14px;margin-top:8px}
@@ -40,7 +41,7 @@
       <span class="fallback" id="avatarFallback">?</span>
     </div>
     <h2 id="providerLabel">OAuth 登录</h2>
-    <p class="sub" id="userNameDisplay"></p>
+    <p class="sub" id="userNameDisplay">正在读取授权信息...</p>
 
     <div class="form-group" id="inviteCodeGroup" style="display:none">
       <label>邀请码（必填）</label>
@@ -53,45 +54,43 @@
     </div>
 
     <p class="error-msg" id="errorMsg"></p>
-    <button class="btn-primary" id="submitBtn">完成注册</button>
+    <button class="btn-primary" id="submitBtn" type="button">完成注册</button>
   </div>
 </div>
 
 <script>
+let pendingData = null;
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
 async function init() {
   try {
-    const res = await fetch('/api/oauth/check-pending');
-    if (!res.ok) { showError('会话已过期，请重新登录'); return; }
+    const res = await fetch('/api/oauth/check-pending', { credentials: 'include' });
     const json = await res.json();
-    if (json.code !== 0) { showError(json.msg); return; }
-    const data = json.data;
-    if (!data) { showError('会话已过期，请重新登录'); return; }
+    if (json.code !== 0) return showError(json.msg || '会话已过期，请重新登录');
+    pendingData = json.data;
 
-    if (data.avatar) {
-      document.getElementById('userAvatar').innerHTML = '<img src="' + data.avatar + '" alt="">';
+    if (pendingData.avatar) {
+      document.getElementById('userAvatar').innerHTML = '<img src="' + pendingData.avatar + '" alt="">';
     }
-    document.getElementById('userNameDisplay').textContent = data.name || '';
-
-    const label = data.provider === 'github' ? 'GitHub' : data.provider === 'qq' ? 'QQ' : 'Google';
+    document.getElementById('userNameDisplay').textContent = pendingData.name || '';
+    const label = pendingData.provider === 'github' ? 'GitHub' : pendingData.provider === 'qq' ? 'QQ' : 'Google';
     document.getElementById('providerLabel').textContent = label + ' 完成注册';
 
-    // Check if invite code is needed
     const cfgRes = await fetch('/api/site-config/public');
     const cfgJson = await cfgRes.json();
     if (cfgJson.code === 0 && cfgJson.data.invite_code_required) {
-      // For GitHub, check if age bypass
-      if (data.provider === 'github' && data.github_bypass_invite) {
-        // No invite needed
-      } else {
+      if (!(pendingData.provider === 'github' && pendingData.github_bypass_invite)) {
         document.getElementById('inviteCodeGroup').style.display = '';
       }
     }
-  } catch(e) { showError('网络错误'); }
-}
-
-function showError(msg) {
-  document.getElementById('errorMsg').textContent = msg;
-  document.getElementById('errorMsg').classList.add('show');
+  } catch(e) {
+    showError('网络错误，请稍后重试');
+  }
 }
 
 document.getElementById('submitBtn').addEventListener('click', async () => {
@@ -99,7 +98,8 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
   errEl.classList.remove('show');
 
   if (!document.getElementById('agreeTerms').checked) {
-    showError('请先同意用户协议和隐私政策'); return;
+    showError('请先同意用户协议和隐私政策');
+    return;
   }
 
   const inviteCode = document.getElementById('inviteCode').value.trim();
@@ -109,13 +109,16 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
   try {
     const res = await fetch('/api/oauth/complete', {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
     const json = await res.json();
-    if (json.code !== 0) { showError(json.msg); return; }
+    if (json.code !== 0) return showError(json.msg || '注册失败');
     location.href = '../index.html';
-  } catch(e) { showError('网络错误，请稍后重试'); }
+  } catch(e) {
+    showError('网络错误，请稍后重试');
+  }
 });
 
 init();

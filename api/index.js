@@ -246,10 +246,15 @@ async function runMigrations(db) {
     `ALTER TABLE site_config ADD COLUMN oauth_github_enabled INTEGER DEFAULT 0`,
     `ALTER TABLE site_config ADD COLUMN oauth_qq_enabled INTEGER DEFAULT 0`,
     `ALTER TABLE site_config ADD COLUMN oauth_google_enabled INTEGER DEFAULT 0`,
+    `ALTER TABLE site_config ADD COLUMN github_age_threshold_days INTEGER DEFAULT 365`,
+    `ALTER TABLE site_config ADD COLUMN github_age_bypass_invite INTEGER DEFAULT 1`,
+    `ALTER TABLE site_config ADD COLUMN post_moderation_strategy TEXT DEFAULT 'post_first'`,
+    `ALTER TABLE site_config ADD COLUMN new_user_pre_moderation_count INTEGER DEFAULT 3`,
     `ALTER TABLE site_config ADD COLUMN signin_reward_enabled INTEGER DEFAULT 1`,
     `ALTER TABLE site_config ADD COLUMN coin_enabled INTEGER DEFAULT 1`,
     `ALTER TABLE site_config ADD COLUMN user_level_enabled INTEGER DEFAULT 1`,
     `ALTER TABLE site_config ADD COLUMN teen_mode_enabled INTEGER DEFAULT 0`,
+    `ALTER TABLE site_config ADD COLUMN updated_by TEXT DEFAULT ''`,
     `ALTER TABLE users ADD COLUMN phone_hash TEXT DEFAULT ''`,
     `ALTER TABLE users ADD COLUMN id_card_hash TEXT DEFAULT ''`,
     `ALTER TABLE users ADD COLUMN real_name_status TEXT DEFAULT 'unverified'`,
@@ -275,6 +280,12 @@ async function runMigrations(db) {
     `ALTER TABLE user_badges ADD COLUMN equipped INTEGER DEFAULT 0`,
     `ALTER TABLE user_achievements ADD COLUMN id TEXT DEFAULT ''`,
     `ALTER TABLE user_achievements ADD COLUMN created_at INTEGER DEFAULT 0`,
+    `ALTER TABLE verification_tokens ADD COLUMN token TEXT DEFAULT ''`,
+    `ALTER TABLE verification_tokens ADD COLUMN used_at INTEGER`,
+    `ALTER TABLE invite_codes ADD COLUMN max_uses INTEGER DEFAULT 1`,
+    `ALTER TABLE invite_codes ADD COLUMN used_count INTEGER DEFAULT 0`,
+    `ALTER TABLE invite_codes ADD COLUMN expires_at INTEGER`,
+    `ALTER TABLE invite_codes ADD COLUMN status TEXT DEFAULT 'active'`,
     `ALTER TABLE coin_logs ADD COLUMN balance_after INTEGER DEFAULT 0`
   ];
   for (const sql of compatibilityStatements) {
@@ -298,9 +309,29 @@ async function runMigrations(db) {
   await db.prepare(`CREATE TABLE IF NOT EXISTS bounty_logs (id TEXT PRIMARY KEY, post_id TEXT NOT NULL, from_user TEXT NOT NULL, to_user TEXT NOT NULL, amount INTEGER NOT NULL, created_at INTEGER NOT NULL)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS user_bans (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, type TEXT NOT NULL, reason TEXT, banned_until INTEGER, banned_by TEXT NOT NULL, created_at INTEGER NOT NULL)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS ai_review_config (id INTEGER PRIMARY KEY DEFAULT 1 CHECK(id=1), enabled INTEGER DEFAULT 0, provider TEXT DEFAULT 'glm', model TEXT DEFAULT 'glm-4-flash', threshold INTEGER DEFAULT 60, auto_block INTEGER DEFAULT 80, updated_at INTEGER, updated_by TEXT)`).run();
-  await db.prepare(`INSERT OR IGNORE INTO site_config (id) VALUES (1)`).run().catch(async () => {
-    await db.prepare(`INSERT INTO site_config (key,value,updated_at,id) SELECT 'defaults','{}',?,1 WHERE NOT EXISTS (SELECT 1 FROM site_config WHERE id=1)`).bind(Date.now()).run();
-  });
+  await db.prepare(`CREATE TABLE IF NOT EXISTS config_audit_log (id TEXT PRIMARY KEY, config_key TEXT NOT NULL, old_value TEXT, new_value TEXT, changed_by TEXT NOT NULL, changed_at INTEGER NOT NULL, ip TEXT)`).run();
+  const now = Date.now();
+  const siteConfigDefaults = [
+    {
+      sql: `INSERT OR IGNORE INTO site_config (id, registration_enabled, invite_code_required, email_verification_required, real_name_mode, phone_bind_mode, oauth_github_enabled, oauth_qq_enabled, oauth_google_enabled, signin_reward_enabled, coin_enabled, user_level_enabled, teen_mode_enabled, updated_at) VALUES (1,1,0,0,'off','off',0,0,0,1,1,1,0,?)`,
+      params: [now],
+    },
+    {
+      sql: `INSERT OR IGNORE INTO site_config (key, value, updated_at, id, registration_enabled, invite_code_required, email_verification_required, real_name_mode, phone_bind_mode, oauth_github_enabled, oauth_qq_enabled, oauth_google_enabled, signin_reward_enabled, coin_enabled, user_level_enabled, teen_mode_enabled) VALUES ('defaults','{}',?,1,1,0,0,'off','off',0,0,0,1,1,1,0)`,
+      params: [now],
+    },
+    { sql: `INSERT OR IGNORE INTO site_config (id) VALUES (1)`, params: [] },
+    { sql: `INSERT OR IGNORE INTO site_config (key, value, updated_at, id) VALUES ('defaults','{}',?,1)`, params: [now] },
+  ];
+  for (const statement of siteConfigDefaults) {
+    try {
+      await db.prepare(statement.sql).bind(...statement.params).run();
+      break;
+    } catch (error) {}
+  }
+  try {
+    await db.prepare(`UPDATE site_config SET registration_enabled=COALESCE(registration_enabled,1), invite_code_required=COALESCE(invite_code_required,0), email_verification_required=COALESCE(email_verification_required,0), real_name_mode=COALESCE(real_name_mode,'off'), phone_bind_mode=COALESCE(phone_bind_mode,'off'), signin_reward_enabled=COALESCE(signin_reward_enabled,1), coin_enabled=COALESCE(coin_enabled,1), user_level_enabled=COALESCE(user_level_enabled,1), teen_mode_enabled=COALESCE(teen_mode_enabled,0) WHERE id=1`).run();
+  } catch (error) {}
   await db.prepare(`INSERT OR IGNORE INTO ai_review_config (id) VALUES (1)`).run();
   await db.prepare(`INSERT OR IGNORE INTO boards(id,name,slug,description,icon,color,created_by,is_public,sort_order,created_at) VALUES
     ('b_general','综合讨论','general','自由讨论，不限话题','💬','#00f0ff','system',1,1,0),

@@ -7,7 +7,7 @@ function generateId(size) {
   const bytes = crypto.getRandomValues(new Uint8Array(size || LEN));
   let id = '';
   for (let i = 0; i < bytes.length; i++) {
-    id += ALPHABET[bytes[i] & 63];
+    id += ALPHABET[bytes[i] % ALPHABET.length];
   }
   return id;
 }

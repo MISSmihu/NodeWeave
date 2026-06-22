@@ -9,6 +9,20 @@ import { ok, err, CODE } from './lib/response.js';
 
 const auth = new Hono();
 
+async function insertVerificationToken(db, { id, userId, type, expiresAt, createdAt }) {
+  try {
+    await db.prepare(
+      'INSERT INTO verification_tokens(id,user_id,type,token,expires_at,created_at) VALUES(?,?,?,?,?,?)'
+    ).bind(id, userId, type, id, expiresAt, createdAt).run();
+  } catch (error) {
+    const message = String(error.message || error);
+    if (!message.includes('no column named token')) throw error;
+    await db.prepare(
+      'INSERT INTO verification_tokens(id,user_id,type,expires_at,created_at) VALUES(?,?,?,?,?)'
+    ).bind(id, userId, type, expiresAt, createdAt).run();
+  }
+}
+
 // ========== POST /register ==========
 auth.post('/register', async (c) => {
   const body = await c.req.json().catch(() => ({}));
@@ -30,7 +44,7 @@ auth.post('/register', async (c) => {
     siteConfig = await c.env.DB.prepare('SELECT * FROM site_config WHERE id=1').first();
   } catch(e) { /* 表不存在时降级 */ }
   if (siteConfig) {
-    if (!siteConfig.registration_enabled) return err(c, CODE.FORBIDDEN, '当前未开放注册');
+    if (siteConfig.registration_enabled === 0) return err(c, CODE.FORBIDDEN, '当前未开放注册');
     if (siteConfig.invite_code_required) {
       if (!invite_code) return err(c, CODE.VALIDATION, '当前需要邀请码才能注册');
       // 验证邀请码 (F-002 完整实现，此处先预留)
@@ -63,14 +77,14 @@ auth.post('/register', async (c) => {
   }
 
   // 7. 生成验证 token 并发送邮件
-  const vToken = generateId(32);
-  await c.env.DB.prepare(
-    'INSERT INTO verification_tokens(id,user_id,type,expires_at,created_at) VALUES(?,?,?,?,?)'
-  ).bind(vToken, userId, 'email_verify', now + 3600000, now).run();
+  if (siteConfig && siteConfig.email_verification_required) {
+    const vToken = generateId(32);
+    await insertVerificationToken(c.env.DB, { id: vToken, userId, type: 'email_verify', expiresAt: now + 3600000, createdAt: now });
+    await sendVerificationEmail(email, vToken, c.env);
+    return ok(c, { message: '验证邮件已发送，请查收邮箱' }, 201);
+  }
 
-  await sendVerificationEmail(email, vToken, c.env);
-
-  return ok(c, { message: '验证邮件已发送，请查收邮箱' }, 201);
+  return ok(c, { message: '注册成功，请登录' }, 201);
 });
 
 // ========== POST /verify-email ==========
@@ -112,9 +126,7 @@ auth.post('/send-verification', async (c) => {
   if (!user) return err(c, CODE.NOT_FOUND, '该邮箱未注册'); // 不泄露用户是否存在
 
   const vToken = generateId(32);
-  await c.env.DB.prepare(
-    'INSERT INTO verification_tokens(id,user_id,type,expires_at,created_at) VALUES(?,?,?,?,?)'
-  ).bind(vToken, user.id, 'email_verify', Date.now() + 3600000, Date.now()).run();
+  await insertVerificationToken(c.env.DB, { id: vToken, userId: user.id, type: 'email_verify', expiresAt: Date.now() + 3600000, createdAt: Date.now() });
 
   await sendVerificationEmail(email, vToken, c.env);
   return ok(c, { message: '验证邮件已重新发送' });
@@ -172,9 +184,7 @@ auth.post('/forgot-password', async (c) => {
   if (recent && recent.cnt >= 3) return err(c, CODE.RATE_LIMIT, '重置请求太频繁，请1小时后再试');
 
   const rToken = generateId(32);
-  await c.env.DB.prepare(
-    'INSERT INTO verification_tokens(id,user_id,type,expires_at,created_at) VALUES(?,?,?,?,?)'
-  ).bind(rToken, user.id, 'password_reset', Date.now() + 3600000, Date.now()).run();
+  await insertVerificationToken(c.env.DB, { id: rToken, userId: user.id, type: 'password_reset', expiresAt: Date.now() + 3600000, createdAt: Date.now() });
 
   await sendPasswordResetEmail(email, rToken, c.env);
   return ok(c, { message: '如果该邮箱已注册，重置链接已发送' });
