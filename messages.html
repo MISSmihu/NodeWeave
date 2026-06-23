@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>站内信 // NodeWeave</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+.msg-page{max-width:1120px;margin:0 auto;padding:82px 24px 110px;position:relative;z-index:1}
+.msg-hero{border:1px solid var(--border);border-radius:14px;background:linear-gradient(135deg,rgba(0,240,255,.1),rgba(157,0,255,.05)),rgba(18,18,30,.78);padding:24px;margin-bottom:18px}
+.msg-hero h1{font-family:var(--font-display);font-size:30px;color:var(--text);margin-bottom:8px}
+.msg-hero span{color:var(--cyan)}
+.msg-hero p{color:var(--text-dim);line-height:1.75}
+.msg-layout{display:grid;grid-template-columns:330px 1fr;gap:16px}
+.panel{border:1px solid var(--border);border-radius:12px;background:rgba(18,18,30,.74);overflow:hidden}
+.compose{padding:14px;border-bottom:1px solid var(--border)}
+.compose input{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);outline:none}
+.threads{max-height:640px;overflow:auto}
+.thread{display:flex;gap:10px;padding:14px;border-bottom:1px solid var(--border-2);cursor:pointer;transition:all .2s}
+.thread:hover,.thread.active{background:rgba(0,240,255,.06)}
+.avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--border);font-family:var(--font-display);color:var(--bg);flex-shrink:0}
+.thread-main{min-width:0;flex:1}
+.thread-name{display:flex;justify-content:space-between;gap:8px;color:var(--text);font-size:13px}
+.thread-last{margin-top:4px;color:var(--text-mute);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{display:inline-flex;min-width:18px;height:18px;padding:0 6px;border-radius:999px;align-items:center;justify-content:center;background:var(--magenta);color:#fff;font-size:10px;font-family:var(--font-mono)}
+.chat{display:grid;grid-template-rows:auto 1fr auto;min-height:640px}
+.chat-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px}
+.chat-head b{color:var(--cyan)}
+.chat-body{padding:18px;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.bubble{max-width:72%;padding:11px 13px;border:1px solid var(--border);border-radius:12px;background:var(--bg);color:var(--text-dim);line-height:1.7;white-space:pre-wrap}
+.bubble.mine{align-self:flex-end;border-color:rgba(0,240,255,.35);background:rgba(0,240,255,.07);color:var(--text)}
+.bubble .time{margin-top:5px;font-family:var(--font-mono);font-size:10px;color:var(--text-mute)}
+.chat-form{padding:14px;border-top:1px solid var(--border);display:grid;gap:10px}
+.chat-form textarea{width:100%;min-height:96px;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);resize:vertical;outline:none}
+.chat-form textarea:focus,.compose input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,240,255,.08)}
+.chat-actions{display:flex;justify-content:space-between;align-items:center;color:var(--text-mute);font-size:12px}
+.empty{padding:40px;text-align:center;color:var(--text-mute)}
+@media(max-width:820px){.msg-layout{grid-template-columns:1fr}.chat{min-height:520px}}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div><div class="bg-scanlines"></div><div class="bg-glow"></div>
+<header class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo"><span class="logo-mark">◈</span><span class="logo-text">Node<span class="x">Weave</span></span><span class="logo-sub">// MESSAGE</span></a>
+    <nav class="nav-links">
+      <a href="index.html">动态</a><a href="boards.html">论坛</a><a href="blog.html">博客</a><a href="announcements.html">公告</a>
+    </nav>
+    <div class="nav-actions" data-auth-actions></div>
+  </div>
+</header>
+<main class="msg-page">
+  <section class="msg-hero"><h1>站内<span>信</span></h1><p>私信会保存在站内，用于用户沟通、版主提醒和管理协作。请勿发送违法、骚扰或广告内容。</p></section>
+  <section class="msg-layout">
+    <aside class="panel">
+      <div class="compose"><input id="peerInput" placeholder="输入用户名或用户ID，回车开始对话"></div>
+      <div class="threads" id="threads"><div class="empty">加载中...</div></div>
+    </aside>
+    <section class="panel chat">
+      <div class="chat-head"><div>对话：<b id="peerName">未选择</b></div><a id="peerProfile" href="#" style="display:none;color:var(--cyan);font-size:12px">查看资料</a></div>
+      <div class="chat-body" id="chatBody"><div class="empty">从左侧选择对话，或输入用户名开始新私信。</div></div>
+      <div class="chat-form">
+        <textarea id="messageInput" maxlength="2000" placeholder="写一条站内信..." disabled></textarea>
+        <div class="chat-actions"><span id="hint">请选择收信人</span><button class="btn-primary" type="button" onclick="sendMessage()">发送</button></div>
+      </div>
+    </section>
+  </section>
+</main>
+<script src="script.js"></script>
+<script>
+let currentUser = null;
+let currentPeer = null;
+const esc = (value) => window.NodeWeave.escapeHtml(value);
+const apiJson = (...args) => window.NodeWeave.apiJson(...args);
+
+async function requireAuth() {
+  currentUser = await window.NodeWeave.currentUser(true);
+  if (!currentUser) {
+    location.href = 'login.html?redirect=' + encodeURIComponent('messages.html');
+    return false;
+  }
+  return true;
+}
+
+async function loadThreads() {
+  const json = await apiJson('/api/messages/threads');
+  const box = document.getElementById('threads');
+  if (json.code !== 0) { box.innerHTML = '<div class="empty">请先登录</div>'; return; }
+  if (!json.data.threads.length) { box.innerHTML = '<div class="empty">还没有私信，输入用户名开始第一段对话。</div>'; return; }
+  box.innerHTML = json.data.threads.map(t => {
+    const name = t.peer_display_name || t.peer_username || t.peer_id;
+    return `<div class="thread" data-peer="${esc(t.peer_id)}" onclick="openThread('${esc(t.peer_id)}')">
+      <div class="avatar" style="background:${esc(t.peer_avatar_color || '#00f0ff')}">${esc(String(name || '?').slice(0,2).toUpperCase())}</div>
+      <div class="thread-main">
+        <div class="thread-name"><span>${esc(name)}</span>${t.unread_count ? `<span class="badge">${t.unread_count}</span>` : ''}</div>
+        <div class="thread-last">${esc(t.last_message || '')}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function openThread(peerId) {
+  const json = await apiJson('/api/messages/thread/' + encodeURIComponent(peerId));
+  if (json.code !== 0) { alert(json.msg || '无法打开对话'); return; }
+  currentPeer = json.data.peer;
+  document.querySelectorAll('.thread').forEach(el => el.classList.toggle('active', el.dataset.peer === currentPeer.id));
+  document.getElementById('peerName').textContent = currentPeer.display_name || currentPeer.username;
+  document.getElementById('peerProfile').href = 'profile.html?id=' + encodeURIComponent(currentPeer.id);
+  document.getElementById('peerProfile').style.display = '';
+  document.getElementById('messageInput').disabled = false;
+  document.getElementById('hint').textContent = 'Enter 换行，点击发送提交';
+  renderMessages(json.data.messages || []);
+  loadThreads();
+}
+
+function renderMessages(messages) {
+  const box = document.getElementById('chatBody');
+  if (!messages.length) { box.innerHTML = '<div class="empty">还没有消息，打个招呼吧。</div>'; return; }
+  box.innerHTML = messages.map(m => `<div class="bubble ${m.sender_id === currentUser.id ? 'mine' : ''}">
+    ${esc(m.content)}
+    <div class="time">${esc(m.sender_display_name || m.sender_username || '')} · ${new Date(m.created_at).toLocaleString('zh-CN')}</div>
+  </div>`).join('');
+  box.scrollTop = box.scrollHeight;
+}
+
+async function sendMessage() {
+  if (!currentPeer) { alert('请先选择收信人'); return; }
+  const input = document.getElementById('messageInput');
+  const content = input.value.trim();
+  if (!content) return;
+  const json = await apiJson('/api/messages/thread/' + encodeURIComponent(currentPeer.id), {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  });
+  if (json.code !== 0) { alert(json.msg || '发送失败'); return; }
+  input.value = '';
+  openThread(currentPeer.id);
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!(await requireAuth())) return;
+  await loadThreads();
+  const peer = new URLSearchParams(location.search).get('to');
+  if (peer) openThread(peer);
+  document.getElementById('peerInput').addEventListener('keydown', event => {
+    if (event.key !== 'Enter') return;
+    const value = event.currentTarget.value.trim();
+    if (value) openThread(value);
+  });
+});
+</script>
+</body>
+</html>

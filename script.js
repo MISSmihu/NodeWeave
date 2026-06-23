@@ -120,6 +120,8 @@
           : '';
         el.innerHTML = `
           ${adminLink}
+          <a class="btn-ghost" href="${assetUrl('messages.html')}" title="站内信">私信</a>
+          <a class="btn-ghost" href="${assetUrl('announcements.html')}" title="站内公告">公告</a>
           <a class="btn-ghost" href="${assetUrl('notifications.html')}" title="站内通知">通知<span data-notif-badge style="display:none;margin-left:5px;color:var(--magenta)"></span></a>
           <a class="btn-ghost" href="${assetUrl('account/settings.html')}" title="账号设置">${escapeHtml(user.display_name || user.username || '我的账号')}</a>
           <button class="btn-ghost" type="button" data-logout>退出</button>

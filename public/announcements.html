@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>站内公告 // NodeWeave</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+.ann-page{max-width:980px;margin:0 auto;padding:82px 24px 110px;position:relative;z-index:1}
+.ann-hero{border:1px solid var(--border);border-radius:14px;background:linear-gradient(135deg,rgba(0,240,255,.1),rgba(157,0,255,.05)),rgba(18,18,30,.78);padding:24px;margin-bottom:18px}
+.ann-hero h1{font-family:var(--font-display);font-size:32px;margin-bottom:8px}.ann-hero span{color:var(--cyan)}
+.ann-hero p{color:var(--text-dim);line-height:1.75}
+.ann-list{display:grid;gap:14px}
+.ann-card{border:1px solid var(--border);border-radius:12px;background:rgba(18,18,30,.76);padding:18px;transition:all .2s}
+.ann-card:hover{border-color:var(--cyan);transform:translateY(-2px);box-shadow:0 14px 42px rgba(0,240,255,.08)}
+.ann-card.pinned{border-color:rgba(0,240,255,.34)}
+.ann-meta{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:8px;color:var(--text-mute);font-family:var(--font-mono);font-size:11px}
+.level{padding:2px 8px;border-radius:999px;border:1px solid var(--border)}
+.level.info{color:var(--cyan);background:rgba(0,240,255,.06)}
+.level.warning{color:#ffd700;background:rgba(255,215,0,.08)}
+.level.critical{color:var(--magenta);background:rgba(255,0,60,.08)}
+.ann-title{font-size:18px;color:var(--text);margin-bottom:9px}
+.ann-content{color:var(--text-dim);line-height:1.85;white-space:pre-wrap}
+.admin-link{display:none;margin-top:12px}
+.empty{padding:40px;text-align:center;color:var(--text-mute);border:1px dashed var(--border);border-radius:12px}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div><div class="bg-scanlines"></div><div class="bg-glow"></div>
+<header class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo"><span class="logo-mark">◈</span><span class="logo-text">Node<span class="x">Weave</span></span><span class="logo-sub">// NOTICE</span></a>
+    <nav class="nav-links"><a href="index.html">动态</a><a href="boards.html">论坛</a><a href="blog.html">博客</a><a href="messages.html">站内信</a></nav>
+    <div class="nav-actions" data-auth-actions></div>
+  </div>
+</header>
+<main class="ann-page">
+  <section class="ann-hero">
+    <h1>站内<span>公告</span></h1>
+    <p>站点维护、规则更新、活动通知都会在这里同步。重大变更会同时进入站内通知。</p>
+    <a class="btn-primary admin-link" id="adminLink" href="admin/announcements.html">发布公告</a>
+  </section>
+  <section class="ann-list" id="annList"><div class="empty">加载中...</div></section>
+</main>
+<script src="script.js"></script>
+<script>
+const esc = (value) => window.NodeWeave.escapeHtml(value);
+async function loadAnnouncements() {
+  const user = await window.NodeWeave.currentUser(true);
+  if (user && ['owner','admin'].includes(user.role)) document.getElementById('adminLink').style.display = 'inline-flex';
+  const json = await window.NodeWeave.apiJson('/api/announcements').catch(() => null);
+  const list = document.getElementById('annList');
+  if (!json || json.code !== 0) { list.innerHTML = '<div class="empty">公告暂时不可达</div>'; return; }
+  const items = json.data.announcements || [];
+  if (!items.length) { list.innerHTML = '<div class="empty">暂无公告</div>'; return; }
+  list.innerHTML = items.map(item => `<article class="ann-card ${item.pinned ? 'pinned' : ''}">
+    <div class="ann-meta">
+      <span class="level ${esc(item.level)}">${levelLabel(item.level)}</span>
+      ${item.pinned ? '<span>置顶</span>' : ''}
+      <span>${new Date(item.created_at).toLocaleString('zh-CN')}</span>
+      <span>@${esc(item.author_display_name || item.author_name || 'admin')}</span>
+    </div>
+    <h2 class="ann-title">${esc(item.title)}</h2>
+    <div class="ann-content">${esc(item.content)}</div>
+  </article>`).join('');
+}
+function levelLabel(level) {
+  return level === 'critical' ? '重要' : level === 'warning' ? '提醒' : '公告';
+}
+document.addEventListener('DOMContentLoaded', loadAnnouncements);
+</script>
+</body>
+</html>

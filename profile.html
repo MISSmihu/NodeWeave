@@ -97,6 +97,7 @@
         <div style="margin-top:12px">
           <button class="btn-primary" id="btnEdit" type="button" style="display:none" onclick="toggleCustomize()">装扮设置</button>
           <a class="btn-ghost" id="btnBlogHome" href="#" style="margin-left:8px">博客主页</a>
+          <a class="btn-ghost" id="btnMessageUser" href="#" style="display:none;margin-left:8px">发私信</a>
           <button class="btn-ghost" id="btnReportProfile" type="button" style="display:none;margin-left:8px" onclick="openProfileReport()">举报资料</button>
         </div>
       </div>
@@ -229,6 +230,8 @@ async function loadProfile() {
     document.getElementById('customCSS').value = user.profile_css || '';
     document.querySelectorAll('.bg-preset').forEach(el => el.classList.toggle('active', el.dataset.type === (user.profile_bg_type || '')));
   } else if (currentUser) {
+    document.getElementById('btnMessageUser').href = 'messages.html?to=' + encodeURIComponent(user.id);
+    document.getElementById('btnMessageUser').style.display = 'inline-flex';
     document.getElementById('btnReportProfile').style.display = '';
   }
   renderPosts(user.recent_posts || []);

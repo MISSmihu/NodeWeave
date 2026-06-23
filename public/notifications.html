@@ -45,7 +45,7 @@ async function load() {
     var j = await r.json();
     if (j.code!==0) { list.innerHTML='<p style="color:var(--text-mute);text-align:center;padding:40px">请先登录</p>'; return; }
     if (!j.data.notifications.length) { list.innerHTML='<p style="color:var(--text-mute);text-align:center;padding:40px">暂无通知</p>'; return; }
-    var icons = {comment:'💬',reply:'↩️',mention:'@',like:'👍',comment_like:'👍',follow:'👤',tip:'💰',accepted:'✅',moderation:'🛡️',report:'🚨',report_result:'📮',violation:'⚠️',system:'📢',achievement:'🏆'};
+    var icons = {comment:'💬',reply:'↩️',mention:'@',like:'👍',comment_like:'👍',follow:'👤',message:'✉️',tip:'💰',accepted:'✅',moderation:'🛡️',report:'🚨',report_result:'📮',violation:'⚠️',announcement:'📢',system:'📢',achievement:'🏆'};
     list.innerHTML = j.data.notifications.map(function(n){
       var href = notificationHref(n);
       return '<a class="notif-item'+(n.is_read?'':' unread')+'" href="'+href+'" data-id="'+h(n.id)+'">'+
@@ -71,6 +71,8 @@ document.addEventListener('click', function(event){
 function h(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
 function notificationHref(n) {
   if (n.type === 'report') return 'admin/moderation.html?view=reports';
+  if (n.type === 'message') return n.ref_id ? 'messages.html?to=' + encodeURIComponent(n.ref_id) : 'messages.html';
+  if (n.type === 'announcement') return 'announcements.html';
   if (!n.ref_id) return '#';
   return 'post.html?id=' + encodeURIComponent(n.ref_id);
 }
@@ -81,12 +83,14 @@ function typeLabel(type) {
     mention:'@提醒',
     like:'内容点赞',
     comment_like:'评论点赞',
+    message:'站内私信',
     tip:'论坛币打赏',
     accepted:'回答采纳',
     moderation:'管理通知',
     report:'举报工单',
     report_result:'举报反馈',
     violation:'违规记录',
+    announcement:'站内公告',
     system:'系统公告',
     achievement:'成就通知'
   })[type] || '通知';

@@ -16,6 +16,8 @@ import { boardsRouter } from './boards.js';
 import { achievementsRouter } from './achievements.js';
 import { notificationsRouter } from './notifications.js';
 import { reportsRouter } from './reports.js';
+import { messagesRouter } from './messages.js';
+import { announcementsRouter } from './announcements.js';
 import { followRouter } from './follow.js';
 import { siteConfig } from './site-config.js';
 import { attachmentsRouter } from './attachments.js';
@@ -239,6 +241,26 @@ async function runMigrations(db) {
       created_by TEXT NOT NULL,
       created_at INTEGER NOT NULL
     )`,
+    `CREATE TABLE IF NOT EXISTS direct_messages (
+      id TEXT PRIMARY KEY,
+      thread_id TEXT NOT NULL,
+      sender_id TEXT NOT NULL,
+      receiver_id TEXT NOT NULL,
+      content TEXT NOT NULL,
+      is_read INTEGER DEFAULT 0,
+      created_at INTEGER NOT NULL
+    )`,
+    `CREATE TABLE IF NOT EXISTS announcements (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      level TEXT DEFAULT 'info',
+      status TEXT DEFAULT 'published',
+      pinned INTEGER DEFAULT 0,
+      created_by TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    )`,
     `CREATE TABLE IF NOT EXISTS attachments (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
@@ -416,6 +438,11 @@ async function runMigrations(db) {
   await db.prepare(`CREATE INDEX IF NOT EXISTS idx_reports_target ON reports(target_user_id, created_at)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS user_violations (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, item_type TEXT DEFAULT '', item_id TEXT DEFAULT '', severity TEXT DEFAULT 'minor', reason TEXT NOT NULL, created_by TEXT NOT NULL, created_at INTEGER NOT NULL)`).run();
   await db.prepare(`CREATE INDEX IF NOT EXISTS idx_violations_user ON user_violations(user_id, created_at)`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS direct_messages (id TEXT PRIMARY KEY, thread_id TEXT NOT NULL, sender_id TEXT NOT NULL, receiver_id TEXT NOT NULL, content TEXT NOT NULL, is_read INTEGER DEFAULT 0, created_at INTEGER NOT NULL)`).run();
+  await db.prepare(`CREATE INDEX IF NOT EXISTS idx_dm_thread ON direct_messages(thread_id, created_at)`).run();
+  await db.prepare(`CREATE INDEX IF NOT EXISTS idx_dm_inbox ON direct_messages(receiver_id, is_read, created_at)`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS announcements (id TEXT PRIMARY KEY, title TEXT NOT NULL, content TEXT NOT NULL, level TEXT DEFAULT 'info', status TEXT DEFAULT 'published', pinned INTEGER DEFAULT 0, created_by TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)`).run();
+  await db.prepare(`CREATE INDEX IF NOT EXISTS idx_announcements_status ON announcements(status, pinned, created_at)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS ai_review_config (id INTEGER PRIMARY KEY DEFAULT 1 CHECK(id=1), enabled INTEGER DEFAULT 0, provider TEXT DEFAULT 'glm', model TEXT DEFAULT 'glm-4-flash', threshold INTEGER DEFAULT 60, auto_block INTEGER DEFAULT 80, updated_at INTEGER, updated_by TEXT)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS config_audit_log (id TEXT PRIMARY KEY, config_key TEXT NOT NULL, old_value TEXT, new_value TEXT, changed_by TEXT NOT NULL, changed_at INTEGER NOT NULL, ip TEXT)`).run();
   const now = Date.now();
@@ -507,6 +534,8 @@ app.route('/api/boards', boardsRouter);
 app.route('/api/achievements', achievementsRouter);
 app.route('/api/notifications', notificationsRouter);
 app.route('/api/reports', reportsRouter);
+app.route('/api/messages', messagesRouter);
+app.route('/api/announcements', announcementsRouter);
 app.route('/api/follow', followRouter);
 app.route('/api/site-config', siteConfig);
 app.route('/api/attachments', attachmentsRouter);
