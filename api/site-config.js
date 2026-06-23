@@ -21,7 +21,7 @@ function boolValue(value, fallback) {
 siteConfig.get('/public', async (c) => {
   try {
     const row = await c.env.DB.prepare(
-      'SELECT registration_enabled, invite_code_required, email_verification_required, real_name_mode, oauth_github_enabled, oauth_qq_enabled, oauth_google_enabled, signin_reward_enabled, coin_enabled, user_level_enabled, teen_mode_enabled FROM site_config WHERE id=1'
+      'SELECT registration_enabled, invite_code_required, email_verification_required, real_name_mode, oauth_github_enabled, oauth_qq_enabled, oauth_google_enabled, signin_reward_enabled, coin_enabled, user_level_enabled, teen_mode_enabled, user_invite_enabled, user_invite_monthly_limit FROM site_config WHERE id=1'
     ).first();
 
     const cfg = row || {};
@@ -37,6 +37,8 @@ siteConfig.get('/public', async (c) => {
       coin_enabled: boolValue(cfg.coin_enabled, true),
       user_level_enabled: boolValue(cfg.user_level_enabled, true),
       teen_mode_enabled: boolValue(cfg.teen_mode_enabled, false),
+      user_invite_enabled: boolValue(cfg.user_invite_enabled, true),
+      user_invite_monthly_limit: Number(cfg.user_invite_monthly_limit || 9),
       turnstile_site_key: c.env.TURNSTILE_SITE_KEY || '',
     });
   } catch(e) {
@@ -53,6 +55,8 @@ siteConfig.get('/public', async (c) => {
       coin_enabled: true,
       user_level_enabled: true,
       teen_mode_enabled: false,
+      user_invite_enabled: true,
+      user_invite_monthly_limit: 9,
       turnstile_site_key: c.env.TURNSTILE_SITE_KEY || '',
     });
   }

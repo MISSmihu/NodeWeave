@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>邀请注册 // NodeWeave</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+.invite-page{max-width:980px;margin:0 auto;padding:84px 24px 110px}
+.invite-hero{background:linear-gradient(135deg,rgba(0,240,255,.12),rgba(157,0,255,.08)),var(--surface);border:1px solid var(--border);border-radius:18px;padding:28px;box-shadow:0 24px 90px rgba(0,0,0,.24);position:relative;overflow:hidden}
+.invite-hero::after{content:'';position:absolute;right:-80px;top:-80px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(0,240,255,.22),transparent 62%);pointer-events:none}
+.invite-hero h1{font-family:var(--font-display);font-size:26px;color:var(--cyan);text-shadow:var(--glow-cyan);margin-bottom:8px}
+.invite-hero p{color:var(--text-dim);font-size:13px;line-height:1.8;max-width:680px}
+.quota-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}
+.quota-card{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px}
+.quota-card span{display:block;font-family:var(--font-mono);font-size:11px;color:var(--text-mute);margin-bottom:6px}
+.quota-card strong{font-family:var(--font-display);font-size:24px;color:var(--text)}
+.action-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:18px}
+.panel{margin-top:18px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px}
+.panel h2{font-family:var(--font-display);font-size:17px;color:var(--cyan);margin-bottom:12px}
+.invite-list{display:grid;gap:10px}
+.invite-item{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px;display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center}
+.code-line{font-family:var(--font-mono);font-size:15px;color:var(--text);letter-spacing:.08em;word-break:break-all}
+.invite-url{font-family:var(--font-mono);font-size:11px;color:var(--text-mute);margin-top:5px;word-break:break-all}
+.invite-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;font-family:var(--font-mono);font-size:10px;color:var(--text-mute)}
+.badge{display:inline-flex;padding:3px 8px;border-radius:999px;border:1px solid var(--border);font-family:var(--font-mono);font-size:10px}
+.badge.active{color:var(--green);border-color:rgba(127,255,0,.35);background:rgba(127,255,0,.08)}
+.badge.used{color:var(--cyan);border-color:rgba(0,240,255,.35);background:rgba(0,240,255,.08)}
+.badge.disabled{color:var(--text-mute)}
+.item-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.mini-btn{padding:7px 10px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);font-family:var(--font-mono);font-size:11px;cursor:pointer}
+.mini-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.empty{padding:28px;text-align:center;color:var(--text-mute);border:1px dashed var(--border);border-radius:12px}
+.msg{display:none;margin-top:12px;padding:10px 12px;border-radius:8px;font-size:13px}
+.msg.show{display:block}
+.msg.ok{background:rgba(127,255,0,.1);color:var(--green);border:1px solid rgba(127,255,0,.22)}
+.msg.err{background:rgba(255,0,60,.1);color:var(--magenta);border:1px solid rgba(255,0,60,.22)}
+@media(max-width:760px){.quota-grid{grid-template-columns:repeat(2,1fr)}.invite-item{grid-template-columns:1fr}.item-actions{justify-content:flex-start}.invite-page{padding-left:16px;padding-right:16px}}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div><div class="bg-scanlines"></div><div class="bg-glow"></div>
+<header class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo"><span class="logo-mark">◈</span><span class="logo-text">Node<span class="x">Weave</span></span><span class="logo-sub">// INVITES</span></a>
+    <nav class="nav-links">
+      <a href="index.html">动态</a>
+      <a href="boards.html">论坛</a>
+      <a href="blog.html">博客</a>
+      <a href="announcements.html">公告</a>
+    </nav>
+    <div class="nav-actions" data-auth-actions>
+      <a class="btn-ghost" href="login.html">登录</a>
+      <a class="btn-primary" href="login.html?tab=register">注册</a>
+    </div>
+  </div>
+</header>
+
+<main class="invite-page">
+  <section class="invite-hero">
+    <h1>邀请注册</h1>
+    <p>把你的专属链接发给朋友，对方注册时会自动填入邀请码。每个邀请码只能成功使用一次；站长可在后台随时开关入口并调整每月额度。</p>
+    <div class="quota-grid">
+      <div class="quota-card"><span>邀请入口</span><strong id="quotaStatus">--</strong></div>
+      <div class="quota-card"><span>每月额度</span><strong id="quotaLimit">--</strong></div>
+      <div class="quota-card"><span>本月已生成</span><strong id="quotaUsed">--</strong></div>
+      <div class="quota-card"><span>剩余额度</span><strong id="quotaRemain">--</strong></div>
+    </div>
+    <div class="action-row">
+      <button class="btn-primary" type="button" id="generateBtn" onclick="generateInvite()">生成邀请链接</button>
+      <a class="btn-ghost" href="account/settings.html">账号设置</a>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-mute)">默认每月 9 次，实际以后台配置为准</span>
+    </div>
+    <div class="msg" id="inviteMsg"></div>
+  </section>
+
+  <section class="panel">
+    <h2>我的邀请码</h2>
+    <div class="invite-list" id="inviteList"><div class="empty">加载中...</div></div>
+  </section>
+</main>
+
+<script src="script.js"></script>
+<script>
+const esc = (value) => window.NodeWeave.escapeHtml(value);
+let inviteState = null;
+
+function jsString(value) {
+  return String(value || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n').replace(/\r/g, '');
+}
+
+function statusText(status, usedBy) {
+  if (usedBy || status === 'used') return '已使用';
+  if (status === 'disabled') return '已停用';
+  return '可使用';
+}
+
+function statusClass(status, usedBy) {
+  if (usedBy || status === 'used') return 'used';
+  if (status === 'disabled') return 'disabled';
+  return 'active';
+}
+
+function showMsg(text, ok) {
+  const el = document.getElementById('inviteMsg');
+  el.textContent = text;
+  el.className = 'msg show ' + (ok ? 'ok' : 'err');
+  setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    showMsg('已复制到剪贴板', true);
+  } catch (error) {
+    showMsg('复制失败，请手动复制', false);
+  }
+}
+
+async function loadInvites() {
+  const json = await window.NodeWeave.apiJson('/api/invites/me').catch(() => null);
+  if (!json || json.code === 4011) {
+    location.href = 'login.html?redirect=' + encodeURIComponent('invites.html');
+    return;
+  }
+  if (json.code !== 0) {
+    document.getElementById('inviteList').innerHTML = '<div class="empty">' + esc(json.msg || '邀请中心暂不可用') + '</div>';
+    return;
+  }
+  inviteState = json.data;
+  document.getElementById('quotaStatus').textContent = inviteState.enabled ? '开启' : '关闭';
+  document.getElementById('quotaLimit').textContent = inviteState.monthly_limit;
+  document.getElementById('quotaUsed').textContent = inviteState.used_this_month;
+  document.getElementById('quotaRemain').textContent = inviteState.remaining;
+  document.getElementById('generateBtn').disabled = !inviteState.enabled || inviteState.remaining <= 0;
+  renderCodes(inviteState.codes || []);
+}
+
+function renderCodes(codes) {
+  const list = document.getElementById('inviteList');
+  if (!inviteState?.enabled) {
+    list.innerHTML = '<div class="empty">站长已关闭用户邀请入口，已生成的邀请码仍可在这里查看状态。</div>';
+  }
+  if (!codes.length) {
+    list.innerHTML = '<div class="empty">还没有生成邀请码。点击上方按钮创建第一条邀请链接。</div>';
+    return;
+  }
+  list.innerHTML = codes.map((item) => {
+    const label = statusText(item.status, item.used_by);
+    const klass = statusClass(item.status, item.used_by);
+    const usedName = item.used_by_username ? ` · 被 ${esc(item.used_by_display_name || item.used_by_username)} 使用` : '';
+    const canDisable = klass === 'active';
+    return `<article class="invite-item">
+      <div>
+        <div class="code-line">${esc(item.code)} <span class="badge ${klass}">${label}</span></div>
+        <div class="invite-url">${esc(item.invite_url)}</div>
+        <div class="invite-meta"><span>创建：${new Date(item.created_at).toLocaleString('zh-CN')}</span><span>${usedName || '未使用'}</span></div>
+      </div>
+      <div class="item-actions">
+        <button class="mini-btn" type="button" onclick="copyText('${jsString(item.code)}')">复制码</button>
+        <button class="mini-btn" type="button" onclick="copyText('${jsString(item.invite_url)}')">复制链接</button>
+        ${canDisable ? `<button class="mini-btn" type="button" onclick="disableInvite('${jsString(item.code)}')">停用</button>` : ''}
+      </div>
+    </article>`;
+  }).join('');
+}
+
+async function generateInvite() {
+  const button = document.getElementById('generateBtn');
+  button.disabled = true;
+  const json = await window.NodeWeave.apiJson('/api/invites/generate', { method: 'POST' }).catch(() => ({ code: 1, msg: '网络错误，请稍后重试' }));
+  if (json.code !== 0) {
+    showMsg(json.msg || '生成失败', false);
+    button.disabled = false;
+    return;
+  }
+  showMsg('邀请链接已生成', true);
+  await copyText(json.data.invite_url);
+  await loadInvites();
+}
+
+async function disableInvite(code) {
+  if (!confirm('确定停用这个未使用的邀请码？')) return;
+  const json = await window.NodeWeave.apiJson('/api/invites/' + encodeURIComponent(code) + '/disable', { method: 'POST' }).catch(() => ({ code: 1, msg: '网络错误，请稍后重试' }));
+  showMsg(json.code === 0 ? '邀请码已停用' : (json.msg || '停用失败'), json.code === 0);
+  await loadInvites();
+}
+
+document.addEventListener('DOMContentLoaded', loadInvites);
+</script>
+</body>
+</html>

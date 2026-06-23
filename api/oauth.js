@@ -3,6 +3,8 @@ import { Hono } from 'hono';
 import { sign, verify, setTokenCookie } from './lib/jwt.js';
 import { generateId } from './lib/id.js';
 import { ok, err, CODE } from './lib/response.js';
+import { consumeInviteCode, findInviteCode, normalizeInviteCode } from './lib/invite.js';
+import { createNotification } from './notifications.js';
 
 const oauth = new Hono();
 
@@ -63,7 +65,7 @@ async function ensureRegistrationOpen(c) {
   return { cfg, blocked: false };
 }
 
-async function createOAuthUser(c, { provider, provider_uid, username, email, displayName, avatar }) {
+async function createOAuthUserWithMeta(c, { provider, provider_uid, username, email, displayName, avatar }) {
   const userId = 'u_' + generateId();
   const now = Date.now();
   const safeUsername = username || `user_${generateId(8)}`;
@@ -72,7 +74,7 @@ async function createOAuthUser(c, { provider, provider_uid, username, email, dis
   const safeEmail = oauthEmail(provider, provider_uid, email);
 
   const existingEmail = await c.env.DB.prepare('SELECT id FROM users WHERE email=?').bind(safeEmail).first();
-  if (existingEmail) return existingEmail.id;
+  if (existingEmail) return { userId: existingEmail.id, username: finalUsername, created: false };
 
   await c.env.DB.prepare(
     'INSERT INTO users(id,username,email,display_name,password_hash,email_verified,role,created_at,updated_at) VALUES(?,?,?,?,?,1,?,?,?)'
@@ -82,17 +84,21 @@ async function createOAuthUser(c, { provider, provider_uid, username, email, dis
     'INSERT INTO oauth_accounts(id,user_id,provider,provider_uid,provider_name,provider_avatar,created_at) VALUES(?,?,?,?,?,?,?)'
   ).bind(generateId(12), userId, provider, provider_uid, displayName || '', avatar || '', now).run();
 
-  return userId;
+  return { userId, username: finalUsername, created: true };
 }
 
-async function validateInviteCode(c, inviteCode) {
-  if (!inviteCode) return false;
-  const row = await c.env.DB.prepare(
-    'SELECT * FROM invite_codes WHERE code=? AND status=? AND used_count < max_uses AND (expires_at IS NULL OR expires_at > ?)'
-  ).bind(inviteCode, 'active', Date.now()).first();
-  if (!row) return false;
-  await c.env.DB.prepare('UPDATE invite_codes SET used_count=used_count+1 WHERE code=?').bind(inviteCode).run();
-  return true;
+async function createOAuthUser(c, input) {
+  const result = await createOAuthUserWithMeta(c, input);
+  return result.userId;
+}
+
+async function validateInviteCode(c, inviteCode, cfg) {
+  const code = normalizeInviteCode(inviteCode);
+  if (!code) return null;
+  const invite = await findInviteCode(c.env.DB, code);
+  if (!invite) return null;
+  if (invite.type === 'user' && cfg?.user_invite_enabled === 0) return null;
+  return invite;
 }
 
 oauth.get('/github/authorize', async (c) => {
@@ -304,15 +310,17 @@ oauth.post('/complete', async (c) => {
   if (!pending) return err(c, CODE.FORBIDDEN, 'OAuth 会话已过期，请重新登录', 403);
 
   const { invite_code, agreed_to_terms } = await c.req.json().catch(() => ({}));
+  const normalizedInviteCode = normalizeInviteCode(invite_code);
   if (!agreed_to_terms) return err(c, CODE.VALIDATION, '请先同意用户协议和隐私政策');
 
   const cfg = await siteConfig(c);
+  let invite = null;
   if (cfg.invite_code_required) {
-    const validInvite = await validateInviteCode(c, invite_code);
-    if (!validInvite) return err(c, CODE.VALIDATION, '邀请码无效或已过期');
+    invite = await validateInviteCode(c, normalizedInviteCode, cfg);
+    if (!invite) return err(c, CODE.VALIDATION, '邀请码无效、已用完或已过期');
   }
 
-  const userId = await createOAuthUser(c, {
+  const createdUser = await createOAuthUserWithMeta(c, {
     provider: pending.provider,
     provider_uid: pending.provider_uid,
     username: pending.name,
@@ -320,6 +328,27 @@ oauth.post('/complete', async (c) => {
     displayName: pending.name,
     avatar: pending.avatar || '',
   });
+  const userId = createdUser.userId;
+  if (invite) {
+    const consumedInvite = await consumeInviteCode(c.env.DB, normalizedInviteCode, userId);
+    if (!consumedInvite) {
+      if (createdUser.created) {
+        await c.env.DB.prepare('DELETE FROM oauth_accounts WHERE user_id=? AND provider=? AND provider_uid=?')
+          .bind(userId, pending.provider, pending.provider_uid).run();
+        await c.env.DB.prepare('DELETE FROM users WHERE id=?').bind(userId).run();
+      }
+      return err(c, CODE.VALIDATION, '邀请码无效、已用完或已过期');
+    }
+    if (consumedInvite.type === 'user' && consumedInvite.inviter_id) {
+      await createNotification(c.env, {
+        user_id: consumedInvite.inviter_id,
+        type: 'invite',
+        ref_id: userId,
+        actor_id: userId,
+        message: `你的邀请码 ${consumedInvite.code} 已被新用户 ${createdUser.username} 使用`,
+      });
+    }
+  }
 
   clearOAuthPending(c);
   const token = await sign({ sub: userId }, c.env);

@@ -37,7 +37,7 @@ siteConfigAdmin.put('/', requireAdmin, async (c) => {
     'github_age_threshold_days', 'github_age_bypass_invite',
     'post_moderation_strategy', 'new_user_pre_moderation_count',
     'signin_reward_enabled', 'coin_enabled', 'user_level_enabled',
-    'teen_mode_enabled',
+    'teen_mode_enabled', 'user_invite_enabled', 'user_invite_monthly_limit',
     'signin_coin_mode', 'signin_coin_fixed', 'signin_coin_min', 'signin_coin_max',
     'signin_reputation_mode', 'signin_reputation_fixed', 'signin_reputation_min', 'signin_reputation_max',
     'signin_exp_mode', 'signin_exp_fixed', 'signin_exp_min', 'signin_exp_max',
@@ -91,7 +91,7 @@ function defaultConfig() {
     signin_coin_mode: 'fixed', signin_coin_fixed: 3, signin_coin_min: 2, signin_coin_max: 8,
     signin_reputation_mode: 'fixed', signin_reputation_fixed: 1, signin_reputation_min: 1, signin_reputation_max: 3,
     signin_exp_mode: 'fixed', signin_exp_fixed: 1, signin_exp_min: 1, signin_exp_max: 3,
-    teen_mode_enabled: 0,
+    teen_mode_enabled: 0, user_invite_enabled: 1, user_invite_monthly_limit: 9,
   };
 }
 

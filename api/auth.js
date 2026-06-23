@@ -6,6 +6,8 @@ import { sign, setTokenCookie, clearTokenCookie } from './lib/jwt.js';
 import { verifyTurnstile } from './lib/turnstile.js';
 import { generateId } from './lib/id.js';
 import { ok, err, CODE } from './lib/response.js';
+import { consumeInviteCode, findInviteCode, normalizeInviteCode } from './lib/invite.js';
+import { createNotification } from './notifications.js';
 
 const auth = new Hono();
 
@@ -26,7 +28,8 @@ async function insertVerificationToken(db, { id, userId, type, expiresAt, create
 // ========== POST /register ==========
 auth.post('/register', async (c) => {
   const body = await c.req.json().catch(() => ({}));
-  const { username, email, password, turnstile_token, agreed_to_terms, invite_code } = body;
+  const { username, email, password, turnstile_token, agreed_to_terms } = body;
+  const invite_code = normalizeInviteCode(body.invite_code);
 
   // 1. 基础校验
   if (!username || !email || !password) return err(c, CODE.VALIDATION, '请填写所有必填字段');
@@ -47,12 +50,13 @@ auth.post('/register', async (c) => {
     if (siteConfig.registration_enabled === 0) return err(c, CODE.FORBIDDEN, '当前未开放注册');
     if (siteConfig.invite_code_required) {
       if (!invite_code) return err(c, CODE.VALIDATION, '当前需要邀请码才能注册');
-      // 验证邀请码 (F-002 完整实现，此处先预留)
-      const codeRow = await c.env.DB.prepare(
-        'SELECT * FROM invite_codes WHERE code=? AND status=? AND (expires_at IS NULL OR expires_at > ?)'
-      ).bind(invite_code, 'active', Date.now()).first();
-      if (!codeRow) return err(c, CODE.VALIDATION, '邀请码无效或已过期');
-      if (codeRow.used_count >= codeRow.max_uses) return err(c, CODE.VALIDATION, '邀请码已被使用完');
+    }
+  }
+  if (invite_code) {
+    const inviteRow = await findInviteCode(c.env.DB, invite_code);
+    if (!inviteRow) return err(c, CODE.VALIDATION, '邀请码无效、已用完或已过期');
+    if (inviteRow.type === 'user' && siteConfig?.user_invite_enabled === 0) {
+      return err(c, CODE.FORBIDDEN, '站长已关闭用户邀请注册', 403);
     }
   }
 
@@ -70,10 +74,22 @@ auth.post('/register', async (c) => {
   ).bind(userId, username, email, username, pwdHash, 'member', now, now).run();
 
   // 6. 消耗邀请码
+  let consumedInvite = null;
   if (invite_code) {
-    await c.env.DB.prepare(
-      'UPDATE invite_codes SET used_count=used_count+1 WHERE code=?'
-    ).bind(invite_code).run();
+    consumedInvite = await consumeInviteCode(c.env.DB, invite_code, userId);
+    if (!consumedInvite) {
+      await c.env.DB.prepare('DELETE FROM users WHERE id=?').bind(userId).run();
+      return err(c, CODE.VALIDATION, '邀请码无效、已用完或已过期');
+    }
+    if (consumedInvite.type === 'user' && consumedInvite.inviter_id) {
+      await createNotification(c.env, {
+        user_id: consumedInvite.inviter_id,
+        type: 'invite',
+        ref_id: userId,
+        actor_id: userId,
+        message: `你的邀请码 ${consumedInvite.code} 已被新用户 ${username} 使用`,
+      });
+    }
   }
 
   // 7. 生成验证 token 并发送邮件

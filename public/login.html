@@ -145,6 +145,8 @@
 const API = '/api';
 let turnstileSiteKey = '';
 let turnstileWidgets = {};
+const params = new URLSearchParams(location.search);
+const inviteFromUrl = params.get('invite') || '';
 
 function waitForTurnstile() {
   return new Promise((resolve, reject) => {
@@ -216,8 +218,12 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 });
 
-if (new URLSearchParams(location.search).get('tab') === 'register') {
+if (params.get('tab') === 'register' || inviteFromUrl) {
   activateTab('register');
+}
+if (inviteFromUrl) {
+  document.getElementById('inviteCodeGroup').style.display = '';
+  document.getElementById('regInviteCode').value = inviteFromUrl.trim().toUpperCase();
 }
 
 // Load site config for OAuth buttons / invite code
@@ -230,7 +236,7 @@ async function loadConfig() {
     if (cfg.oauth_github_enabled) document.getElementById('oauthGithub').style.display = '';
     if (cfg.oauth_qq_enabled) document.getElementById('oauthQQ').style.display = '';
     if (cfg.oauth_google_enabled) document.getElementById('oauthGoogle').style.display = '';
-    if (cfg.invite_code_required) document.getElementById('inviteCodeGroup').style.display = '';
+    if (cfg.invite_code_required || inviteFromUrl) document.getElementById('inviteCodeGroup').style.display = '';
     if (!cfg.registration_enabled) {
       document.querySelector('.tab-btn[data-tab="register"]').style.display = 'none';
     }

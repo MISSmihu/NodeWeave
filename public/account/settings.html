@@ -94,6 +94,7 @@
       </div>
       <div class="actions">
         <button class="btn-primary" type="button" onclick="saveProfile()">保存资料</button>
+        <a class="btn-ghost" id="inviteCenterLink" href="../invites.html" style="display:none">邀请注册</a>
         <a class="btn-ghost" href="verify-identity.html">绑定手机</a>
       </div>
       <div class="msg" id="profileMsg"></div>
@@ -226,6 +227,13 @@ async function loadProfile() {
   document.getElementById('statusUser').textContent = currentUser.username || '--';
   document.getElementById('statusEmail').textContent = currentUser.email_verified ? '已验证' : '未验证';
   document.getElementById('statusPhone').textContent = currentUser.phone_verified ? '已绑定' : '未绑定';
+}
+
+async function loadInviteEntry() {
+  const json = await window.NodeWeave.apiJson('/api/site-config/public').catch(() => null);
+  if (json?.code === 0 && json.data?.user_invite_enabled) {
+    document.getElementById('inviteCenterLink').style.display = '';
+  }
 }
 
 async function loadAppearance() {
@@ -411,6 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateBlogBgOptions();
   loadProfile();
   loadAppearance();
+  loadInviteEntry();
 });
 </script>
 </body>

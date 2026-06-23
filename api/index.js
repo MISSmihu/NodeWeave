@@ -18,6 +18,7 @@ import { notificationsRouter } from './notifications.js';
 import { reportsRouter } from './reports.js';
 import { messagesRouter } from './messages.js';
 import { announcementsRouter } from './announcements.js';
+import { invitesRouter } from './invites.js';
 import { followRouter } from './follow.js';
 import { siteConfig } from './site-config.js';
 import { attachmentsRouter } from './attachments.js';
@@ -261,6 +262,15 @@ async function runMigrations(db) {
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
     )`,
+    `CREATE TABLE IF NOT EXISTS user_invite_codes (
+      code TEXT PRIMARY KEY,
+      inviter_id TEXT NOT NULL,
+      used_by TEXT,
+      status TEXT DEFAULT 'active',
+      created_at INTEGER NOT NULL,
+      used_at INTEGER,
+      expires_at INTEGER
+    )`,
     `CREATE TABLE IF NOT EXISTS attachments (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
@@ -316,6 +326,8 @@ async function runMigrations(db) {
     `ALTER TABLE site_config ADD COLUMN coin_enabled INTEGER DEFAULT 1`,
     `ALTER TABLE site_config ADD COLUMN user_level_enabled INTEGER DEFAULT 1`,
     `ALTER TABLE site_config ADD COLUMN teen_mode_enabled INTEGER DEFAULT 0`,
+    `ALTER TABLE site_config ADD COLUMN user_invite_enabled INTEGER DEFAULT 1`,
+    `ALTER TABLE site_config ADD COLUMN user_invite_monthly_limit INTEGER DEFAULT 9`,
     `ALTER TABLE site_config ADD COLUMN updated_by TEXT DEFAULT ''`,
     `ALTER TABLE users ADD COLUMN display_name TEXT DEFAULT ''`,
     `ALTER TABLE users ADD COLUMN avatar_color TEXT DEFAULT '#00f0ff'`,
@@ -400,6 +412,8 @@ async function runMigrations(db) {
     `ALTER TABLE invite_codes ADD COLUMN used_count INTEGER DEFAULT 0`,
     `ALTER TABLE invite_codes ADD COLUMN expires_at INTEGER`,
     `ALTER TABLE invite_codes ADD COLUMN status TEXT DEFAULT 'active'`,
+    `ALTER TABLE oauth_accounts ADD COLUMN provider_name TEXT DEFAULT ''`,
+    `ALTER TABLE oauth_accounts ADD COLUMN provider_avatar TEXT DEFAULT ''`,
     `ALTER TABLE coin_logs ADD COLUMN balance_after INTEGER DEFAULT 0`,
     `ALTER TABLE moderation_queue ADD COLUMN priority INTEGER DEFAULT 0`,
     `ALTER TABLE moderation_queue ADD COLUMN ai_score INTEGER DEFAULT 0`,
@@ -443,16 +457,20 @@ async function runMigrations(db) {
   await db.prepare(`CREATE INDEX IF NOT EXISTS idx_dm_inbox ON direct_messages(receiver_id, is_read, created_at)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS announcements (id TEXT PRIMARY KEY, title TEXT NOT NULL, content TEXT NOT NULL, level TEXT DEFAULT 'info', status TEXT DEFAULT 'published', pinned INTEGER DEFAULT 0, created_by TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)`).run();
   await db.prepare(`CREATE INDEX IF NOT EXISTS idx_announcements_status ON announcements(status, pinned, created_at)`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS user_invite_codes (code TEXT PRIMARY KEY, inviter_id TEXT NOT NULL, used_by TEXT, status TEXT DEFAULT 'active', created_at INTEGER NOT NULL, used_at INTEGER, expires_at INTEGER)`).run();
+  await db.prepare(`CREATE INDEX IF NOT EXISTS idx_user_invites_inviter ON user_invite_codes(inviter_id, created_at)`).run();
+  await db.prepare(`CREATE INDEX IF NOT EXISTS idx_user_invites_used_by ON user_invite_codes(used_by)`).run();
+  await db.prepare(`CREATE INDEX IF NOT EXISTS idx_user_invites_status ON user_invite_codes(status, created_at)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS ai_review_config (id INTEGER PRIMARY KEY DEFAULT 1 CHECK(id=1), enabled INTEGER DEFAULT 0, provider TEXT DEFAULT 'glm', model TEXT DEFAULT 'glm-4-flash', threshold INTEGER DEFAULT 60, auto_block INTEGER DEFAULT 80, updated_at INTEGER, updated_by TEXT)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS config_audit_log (id TEXT PRIMARY KEY, config_key TEXT NOT NULL, old_value TEXT, new_value TEXT, changed_by TEXT NOT NULL, changed_at INTEGER NOT NULL, ip TEXT)`).run();
   const now = Date.now();
   const siteConfigDefaults = [
     {
-      sql: `INSERT OR IGNORE INTO site_config (id, registration_enabled, invite_code_required, email_verification_required, real_name_mode, phone_bind_mode, oauth_github_enabled, oauth_qq_enabled, oauth_google_enabled, signin_reward_enabled, coin_enabled, user_level_enabled, teen_mode_enabled, updated_at) VALUES (1,1,0,0,'off','off',0,0,0,1,1,1,0,?)`,
+      sql: `INSERT OR IGNORE INTO site_config (id, registration_enabled, invite_code_required, email_verification_required, real_name_mode, phone_bind_mode, oauth_github_enabled, oauth_qq_enabled, oauth_google_enabled, signin_reward_enabled, coin_enabled, user_level_enabled, teen_mode_enabled, user_invite_enabled, user_invite_monthly_limit, updated_at) VALUES (1,1,0,0,'off','off',0,0,0,1,1,1,0,1,9,?)`,
       params: [now],
     },
     {
-      sql: `INSERT OR IGNORE INTO site_config (key, value, updated_at, id, registration_enabled, invite_code_required, email_verification_required, real_name_mode, phone_bind_mode, oauth_github_enabled, oauth_qq_enabled, oauth_google_enabled, signin_reward_enabled, coin_enabled, user_level_enabled, teen_mode_enabled) VALUES ('defaults','{}',?,1,1,0,0,'off','off',0,0,0,1,1,1,0)`,
+      sql: `INSERT OR IGNORE INTO site_config (key, value, updated_at, id, registration_enabled, invite_code_required, email_verification_required, real_name_mode, phone_bind_mode, oauth_github_enabled, oauth_qq_enabled, oauth_google_enabled, signin_reward_enabled, coin_enabled, user_level_enabled, teen_mode_enabled, user_invite_enabled, user_invite_monthly_limit) VALUES ('defaults','{}',?,1,1,0,0,'off','off',0,0,0,1,1,1,0,1,9)`,
       params: [now],
     },
     { sql: `INSERT OR IGNORE INTO site_config (id) VALUES (1)`, params: [] },
@@ -465,7 +483,7 @@ async function runMigrations(db) {
     } catch (error) {}
   }
   try {
-    await db.prepare(`UPDATE site_config SET registration_enabled=COALESCE(registration_enabled,1), invite_code_required=COALESCE(invite_code_required,0), email_verification_required=COALESCE(email_verification_required,0), real_name_mode=COALESCE(real_name_mode,'off'), phone_bind_mode=COALESCE(phone_bind_mode,'off'), signin_reward_enabled=COALESCE(signin_reward_enabled,1), coin_enabled=COALESCE(coin_enabled,1), user_level_enabled=COALESCE(user_level_enabled,1), teen_mode_enabled=COALESCE(teen_mode_enabled,0) WHERE id=1`).run();
+    await db.prepare(`UPDATE site_config SET registration_enabled=COALESCE(registration_enabled,1), invite_code_required=COALESCE(invite_code_required,0), email_verification_required=COALESCE(email_verification_required,0), real_name_mode=COALESCE(real_name_mode,'off'), phone_bind_mode=COALESCE(phone_bind_mode,'off'), signin_reward_enabled=COALESCE(signin_reward_enabled,1), coin_enabled=COALESCE(coin_enabled,1), user_level_enabled=COALESCE(user_level_enabled,1), teen_mode_enabled=COALESCE(teen_mode_enabled,0), user_invite_enabled=COALESCE(user_invite_enabled,1), user_invite_monthly_limit=COALESCE(user_invite_monthly_limit,9) WHERE id=1`).run();
   } catch (error) {}
   await db.prepare(`INSERT OR IGNORE INTO ai_review_config (id) VALUES (1)`).run();
   await db.prepare(`INSERT OR IGNORE INTO boards(id,name,slug,description,icon,color,created_by,is_public,sort_order,created_at) VALUES
@@ -536,6 +554,7 @@ app.route('/api/notifications', notificationsRouter);
 app.route('/api/reports', reportsRouter);
 app.route('/api/messages', messagesRouter);
 app.route('/api/announcements', announcementsRouter);
+app.route('/api/invites', invitesRouter);
 app.route('/api/follow', followRouter);
 app.route('/api/site-config', siteConfig);
 app.route('/api/attachments', attachmentsRouter);

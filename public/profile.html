@@ -96,6 +96,7 @@
         <span class="level-badge" id="levelBadge" onclick="location.href='levels.html?user='+encodeURIComponent(userId||'')">Lv0 新人</span>
         <div style="margin-top:12px">
           <button class="btn-primary" id="btnEdit" type="button" style="display:none" onclick="toggleCustomize()">装扮设置</button>
+          <a class="btn-ghost" id="btnInvites" href="invites.html" style="display:none;margin-left:8px">邀请注册</a>
           <a class="btn-ghost" id="btnBlogHome" href="#" style="margin-left:8px">博客主页</a>
           <a class="btn-ghost" id="btnMessageUser" href="#" style="display:none;margin-left:8px">发私信</a>
           <button class="btn-ghost" id="btnReportProfile" type="button" style="display:none;margin-left:8px" onclick="openProfileReport()">举报资料</button>
@@ -227,6 +228,7 @@ async function loadProfile() {
   applyProfileAppearance(user.profile_bg_type || '', user.profile_bg_value || '', user.profile_css || '');
   if (currentUser && currentUser.id === user.id) {
     document.getElementById('btnEdit').style.display = '';
+    loadInviteProfileEntry();
     document.getElementById('customCSS').value = user.profile_css || '';
     document.querySelectorAll('.bg-preset').forEach(el => el.classList.toggle('active', el.dataset.type === (user.profile_bg_type || '')));
   } else if (currentUser) {
@@ -236,6 +238,13 @@ async function loadProfile() {
   }
   renderPosts(user.recent_posts || []);
   loadBadges(user.id);
+}
+
+async function loadInviteProfileEntry() {
+  const json = await window.NodeWeave.apiJson('/api/site-config/public').catch(() => null);
+  if (json?.code === 0 && json.data?.user_invite_enabled) {
+    document.getElementById('btnInvites').style.display = '';
+  }
 }
 
 function renderPosts(posts) {
