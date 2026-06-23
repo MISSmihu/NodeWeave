@@ -15,6 +15,7 @@ import { badges } from './badges.js';
 import { boardsRouter } from './boards.js';
 import { achievementsRouter } from './achievements.js';
 import { notificationsRouter } from './notifications.js';
+import { reportsRouter } from './reports.js';
 import { followRouter } from './follow.js';
 import { siteConfig } from './site-config.js';
 import { attachmentsRouter } from './attachments.js';
@@ -213,6 +214,31 @@ async function runMigrations(db) {
       is_read INTEGER DEFAULT 0,
       created_at INTEGER NOT NULL
     )`,
+    `CREATE TABLE IF NOT EXISTS reports (
+      id TEXT PRIMARY KEY,
+      item_type TEXT NOT NULL,
+      item_id TEXT NOT NULL,
+      reporter_id TEXT NOT NULL,
+      target_user_id TEXT DEFAULT '',
+      ref_post_id TEXT DEFAULT '',
+      reason TEXT NOT NULL,
+      detail TEXT DEFAULT '',
+      status TEXT DEFAULT 'pending',
+      reviewer_id TEXT DEFAULT '',
+      review_note TEXT DEFAULT '',
+      created_at INTEGER NOT NULL,
+      reviewed_at INTEGER
+    )`,
+    `CREATE TABLE IF NOT EXISTS user_violations (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      item_type TEXT DEFAULT '',
+      item_id TEXT DEFAULT '',
+      severity TEXT DEFAULT 'minor',
+      reason TEXT NOT NULL,
+      created_by TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    )`,
     `CREATE TABLE IF NOT EXISTS attachments (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
@@ -352,7 +378,16 @@ async function runMigrations(db) {
     `ALTER TABLE invite_codes ADD COLUMN used_count INTEGER DEFAULT 0`,
     `ALTER TABLE invite_codes ADD COLUMN expires_at INTEGER`,
     `ALTER TABLE invite_codes ADD COLUMN status TEXT DEFAULT 'active'`,
-    `ALTER TABLE coin_logs ADD COLUMN balance_after INTEGER DEFAULT 0`
+    `ALTER TABLE coin_logs ADD COLUMN balance_after INTEGER DEFAULT 0`,
+    `ALTER TABLE moderation_queue ADD COLUMN priority INTEGER DEFAULT 0`,
+    `ALTER TABLE moderation_queue ADD COLUMN ai_score INTEGER DEFAULT 0`,
+    `ALTER TABLE moderation_queue ADD COLUMN reviewed_by TEXT DEFAULT ''`,
+    `ALTER TABLE moderation_queue ADD COLUMN result TEXT DEFAULT ''`,
+    `ALTER TABLE reports ADD COLUMN target_user_id TEXT DEFAULT ''`,
+    `ALTER TABLE reports ADD COLUMN ref_post_id TEXT DEFAULT ''`,
+    `ALTER TABLE reports ADD COLUMN reviewer_id TEXT DEFAULT ''`,
+    `ALTER TABLE reports ADD COLUMN review_note TEXT DEFAULT ''`,
+    `ALTER TABLE reports ADD COLUMN reviewed_at INTEGER`
   ];
   for (const sql of compatibilityStatements) {
     try {
@@ -375,6 +410,12 @@ async function runMigrations(db) {
   await db.prepare(`CREATE TABLE IF NOT EXISTS post_ratings (post_id TEXT NOT NULL, user_id TEXT NOT NULL, score INTEGER NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY (post_id, user_id))`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS bounty_logs (id TEXT PRIMARY KEY, post_id TEXT NOT NULL, from_user TEXT NOT NULL, to_user TEXT NOT NULL, amount INTEGER NOT NULL, created_at INTEGER NOT NULL)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS user_bans (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, type TEXT NOT NULL, reason TEXT, banned_until INTEGER, banned_by TEXT NOT NULL, created_at INTEGER NOT NULL)`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS reports (id TEXT PRIMARY KEY, item_type TEXT NOT NULL, item_id TEXT NOT NULL, reporter_id TEXT NOT NULL, target_user_id TEXT DEFAULT '', ref_post_id TEXT DEFAULT '', reason TEXT NOT NULL, detail TEXT DEFAULT '', status TEXT DEFAULT 'pending', reviewer_id TEXT DEFAULT '', review_note TEXT DEFAULT '', created_at INTEGER NOT NULL, reviewed_at INTEGER)`).run();
+  await db.prepare(`CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status, created_at)`).run();
+  await db.prepare(`CREATE INDEX IF NOT EXISTS idx_reports_item ON reports(item_type, item_id)`).run();
+  await db.prepare(`CREATE INDEX IF NOT EXISTS idx_reports_target ON reports(target_user_id, created_at)`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS user_violations (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, item_type TEXT DEFAULT '', item_id TEXT DEFAULT '', severity TEXT DEFAULT 'minor', reason TEXT NOT NULL, created_by TEXT NOT NULL, created_at INTEGER NOT NULL)`).run();
+  await db.prepare(`CREATE INDEX IF NOT EXISTS idx_violations_user ON user_violations(user_id, created_at)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS ai_review_config (id INTEGER PRIMARY KEY DEFAULT 1 CHECK(id=1), enabled INTEGER DEFAULT 0, provider TEXT DEFAULT 'glm', model TEXT DEFAULT 'glm-4-flash', threshold INTEGER DEFAULT 60, auto_block INTEGER DEFAULT 80, updated_at INTEGER, updated_by TEXT)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS config_audit_log (id TEXT PRIMARY KEY, config_key TEXT NOT NULL, old_value TEXT, new_value TEXT, changed_by TEXT NOT NULL, changed_at INTEGER NOT NULL, ip TEXT)`).run();
   const now = Date.now();
@@ -465,6 +506,7 @@ app.route('/api/badges', badges);
 app.route('/api/boards', boardsRouter);
 app.route('/api/achievements', achievementsRouter);
 app.route('/api/notifications', notificationsRouter);
+app.route('/api/reports', reportsRouter);
 app.route('/api/follow', followRouter);
 app.route('/api/site-config', siteConfig);
 app.route('/api/attachments', attachmentsRouter);

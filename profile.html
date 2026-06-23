@@ -51,6 +51,17 @@
 .bg-preset{width:44px;height:44px;border-radius:10px;border:2px solid transparent;cursor:pointer}
 .bg-preset.active{border-color:var(--cyan);box-shadow:var(--glow-cyan)}
 .empty{color:var(--text-mute);font-size:13px;padding:14px;border:1px dashed var(--border);border-radius:10px}
+.report-modal{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.72);align-items:center;justify-content:center;padding:18px}
+.report-modal.show{display:flex}
+.report-card{width:min(420px,100%);background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;box-shadow:0 20px 80px rgba(0,0,0,.45)}
+.report-card h3{font-family:var(--font-display);font-size:17px;color:var(--magenta);margin-bottom:8px}
+.report-card p{color:var(--text-mute);font-size:12px;line-height:1.7;margin-bottom:12px}
+.report-card label{display:block;color:var(--text-dim);font-family:var(--font-mono);font-size:11px;margin:10px 0 5px}
+.report-card select,.report-card textarea{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);outline:none}
+.report-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px}
+.msg{display:none;margin-top:12px;padding:10px 12px;border-radius:8px;font-size:13px}
+.msg.show{display:block}
+.msg.err{display:block;background:rgba(255,0,60,.1);border:1px solid rgba(255,0,60,.22);color:var(--magenta)}
 @media(max-width:720px){.stats-row{grid-template-columns:repeat(2,1fr)}.asset-panel{grid-template-columns:1fr}.profile-card{padding:18px}}
 </style>
 </head>
@@ -86,6 +97,7 @@
         <div style="margin-top:12px">
           <button class="btn-primary" id="btnEdit" type="button" style="display:none" onclick="toggleCustomize()">装扮设置</button>
           <a class="btn-ghost" id="btnBlogHome" href="#" style="margin-left:8px">博客主页</a>
+          <button class="btn-ghost" id="btnReportProfile" type="button" style="display:none;margin-left:8px" onclick="openProfileReport()">举报资料</button>
         </div>
       </div>
     </div>
@@ -137,6 +149,29 @@
     <div class="post-list" id="postList"><div class="empty">加载中...</div></div>
   </section>
 </main>
+
+<div class="report-modal" id="reportModal">
+  <div class="report-card">
+    <h3>举报用户资料</h3>
+    <p>用于处理头像、昵称、简介等资料违规。请不要恶意举报。</p>
+    <label>举报原因</label>
+    <select id="reportReason">
+      <option value="冒充他人">冒充他人</option>
+      <option value="违法违规">违法违规</option>
+      <option value="广告引流">广告引流</option>
+      <option value="辱骂骚扰">辱骂骚扰</option>
+      <option value="色情暴力">色情暴力</option>
+      <option value="其他问题">其他问题</option>
+    </select>
+    <label>补充说明</label>
+    <textarea id="reportDetail" rows="4" maxlength="800" placeholder="可选：说明具体问题"></textarea>
+    <div class="report-actions">
+      <button class="btn-ghost" type="button" onclick="closeProfileReport()">取消</button>
+      <button class="btn-primary" type="button" onclick="submitProfileReport()">提交举报</button>
+    </div>
+    <div class="msg err" id="reportError"></div>
+  </div>
+</div>
 
 <script src="script.js"></script>
 <script>
@@ -193,6 +228,8 @@ async function loadProfile() {
     document.getElementById('btnEdit').style.display = '';
     document.getElementById('customCSS').value = user.profile_css || '';
     document.querySelectorAll('.bg-preset').forEach(el => el.classList.toggle('active', el.dataset.type === (user.profile_bg_type || '')));
+  } else if (currentUser) {
+    document.getElementById('btnReportProfile').style.display = '';
   }
   renderPosts(user.recent_posts || []);
   loadBadges(user.id);
@@ -243,6 +280,41 @@ async function saveCustomize() {
   applyProfileAppearance(profile_bg_type, '', profile_css);
   document.getElementById('customizeMsg').style.display = 'inline';
   setTimeout(() => document.getElementById('customizeMsg').style.display = 'none', 1800);
+}
+
+async function openProfileReport() {
+  currentUser = await window.NodeWeave.currentUser(true);
+  if (!currentUser) {
+    location.href = 'login.html?redirect=' + encodeURIComponent('profile.html?id=' + userId);
+    return;
+  }
+  document.getElementById('reportReason').value = '冒充他人';
+  document.getElementById('reportDetail').value = '';
+  document.getElementById('reportError').classList.remove('show');
+  document.getElementById('reportModal').classList.add('show');
+}
+
+function closeProfileReport() {
+  document.getElementById('reportModal').classList.remove('show');
+}
+
+async function submitProfileReport() {
+  const json = await window.NodeWeave.apiJson('/api/reports', {
+    method: 'POST',
+    body: JSON.stringify({
+      item_type: 'profile',
+      item_id: userId,
+      reason: document.getElementById('reportReason').value,
+      detail: document.getElementById('reportDetail').value,
+    }),
+  });
+  if (json.code !== 0) {
+    document.getElementById('reportError').textContent = json.msg || '举报提交失败';
+    document.getElementById('reportError').classList.add('show');
+    return;
+  }
+  closeProfileReport();
+  alert(json.data?.message || '举报已提交');
 }
 
 document.getElementById('bgPresets').addEventListener('click', event => {

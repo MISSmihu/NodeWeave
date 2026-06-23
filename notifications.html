@@ -45,9 +45,9 @@ async function load() {
     var j = await r.json();
     if (j.code!==0) { list.innerHTML='<p style="color:var(--text-mute);text-align:center;padding:40px">请先登录</p>'; return; }
     if (!j.data.notifications.length) { list.innerHTML='<p style="color:var(--text-mute);text-align:center;padding:40px">暂无通知</p>'; return; }
-    var icons = {comment:'💬',reply:'↩️',mention:'@',like:'👍',comment_like:'👍',follow:'👤',tip:'💰',accepted:'✅',moderation:'🛡️',system:'📢',achievement:'🏆'};
+    var icons = {comment:'💬',reply:'↩️',mention:'@',like:'👍',comment_like:'👍',follow:'👤',tip:'💰',accepted:'✅',moderation:'🛡️',report:'🚨',report_result:'📮',violation:'⚠️',system:'📢',achievement:'🏆'};
     list.innerHTML = j.data.notifications.map(function(n){
-      var href = n.ref_id ? 'post.html?id=' + encodeURIComponent(n.ref_id) : '#';
+      var href = notificationHref(n);
       return '<a class="notif-item'+(n.is_read?'':' unread')+'" href="'+href+'" data-id="'+h(n.id)+'">'+
         '<div class="icon">'+(icons[n.type]||'📌')+'</div>'+
         '<div class="body">'+h(n.message)+(n.is_read?'':'<span class="unread-dot"></span>')+
@@ -69,6 +69,11 @@ document.addEventListener('click', function(event){
   try { fetch('/api/notifications/' + encodeURIComponent(item.dataset.id) + '/read', { method:'POST' }); } catch(e) {}
 });
 function h(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+function notificationHref(n) {
+  if (n.type === 'report') return 'admin/moderation.html?view=reports';
+  if (!n.ref_id) return '#';
+  return 'post.html?id=' + encodeURIComponent(n.ref_id);
+}
 function typeLabel(type) {
   return ({
     comment:'帖子评论',
@@ -79,6 +84,9 @@ function typeLabel(type) {
     tip:'论坛币打赏',
     accepted:'回答采纳',
     moderation:'管理通知',
+    report:'举报工单',
+    report_result:'举报反馈',
+    violation:'违规记录',
     system:'系统公告',
     achievement:'成就通知'
   })[type] || '通知';

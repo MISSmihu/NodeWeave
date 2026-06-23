@@ -55,15 +55,20 @@
 .accept-btn{margin-left:auto;padding:5px 8px;border:1px solid rgba(127,255,0,.25);background:rgba(127,255,0,.06);border-radius:6px;color:var(--green);font-family:var(--font-mono);font-size:11px}
 .comment-like{margin-top:8px;padding:4px 8px;border:1px solid var(--border);background:var(--surface-2);border-radius:6px;color:var(--text-mute);font-family:var(--font-mono);font-size:11px}
 .comment-like:hover{border-color:var(--cyan);color:var(--cyan)}
-.tip-modal{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.72);align-items:center;justify-content:center;padding:18px}
-.tip-modal.show{display:flex}
-.tip-card{width:min(420px,100%);background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;box-shadow:0 20px 80px rgba(0,0,0,.45)}
+.tip-modal,.report-modal{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.72);align-items:center;justify-content:center;padding:18px}
+.tip-modal.show,.report-modal.show{display:flex}
+.tip-card,.report-card{width:min(420px,100%);background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;box-shadow:0 20px 80px rgba(0,0,0,.45)}
 .tip-card h3{font-family:var(--font-display);font-size:17px;color:var(--cyan);margin-bottom:12px}
+.report-card h3{font-family:var(--font-display);font-size:17px;color:var(--magenta);margin-bottom:8px}
+.report-card p{color:var(--text-mute);font-size:12px;line-height:1.7;margin-bottom:12px}
+.report-card label{display:block;color:var(--text-dim);font-family:var(--font-mono);font-size:11px;margin:10px 0 5px}
+.report-card select,.report-card textarea{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);outline:none}
+.report-card select:focus,.report-card textarea:focus{border-color:var(--magenta);box-shadow:0 0 0 3px rgba(255,0,60,.08)}
 .tip-presets{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .tip-preset{padding:8px 13px;border:1px solid var(--border);background:var(--surface-2);border-radius:7px;color:var(--text-dim);font-family:var(--font-mono)}
 .tip-preset:hover,.tip-preset.active{border-color:#ffd700;color:#ffd700;background:rgba(255,215,0,.08)}
 .tip-card input,.tip-card textarea{width:100%;padding:10px 12px;margin-bottom:10px;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text)}
-.tip-actions{display:flex;justify-content:flex-end;gap:10px}
+.tip-actions,.report-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px}
 .msg{display:none;margin-top:12px;padding:10px 12px;border-radius:8px;font-size:13px}
 .msg.show{display:block}
 .msg.err{display:block;background:rgba(255,0,60,.1);border:1px solid rgba(255,0,60,.22);color:var(--magenta)}
@@ -116,6 +121,30 @@
   </div>
 </div>
 
+<div class="report-modal" id="reportModal">
+  <div class="report-card">
+    <h3>举报内容</h3>
+    <p>请尽量描述具体问题。恶意举报会被记录，正常举报会进入站长/版主审核队列。</p>
+    <label>举报原因</label>
+    <select id="reportReason">
+      <option value="违法违规">违法违规</option>
+      <option value="广告引流">广告引流</option>
+      <option value="辱骂骚扰">辱骂骚扰</option>
+      <option value="色情暴力">色情暴力</option>
+      <option value="侵权转载">侵权转载</option>
+      <option value="垃圾灌水">垃圾灌水</option>
+      <option value="其他问题">其他问题</option>
+    </select>
+    <label>补充说明</label>
+    <textarea id="reportDetail" rows="4" maxlength="800" placeholder="可选：补充链接、楼层、证据或说明"></textarea>
+    <div class="report-actions">
+      <button class="btn-ghost" type="button" onclick="closeReport()">取消</button>
+      <button class="btn-primary" type="button" onclick="submitReport()">提交举报</button>
+    </div>
+    <div class="msg err" id="reportError"></div>
+  </div>
+</div>
+
 <script src="script.js"></script>
 <script>
 const postId = new URLSearchParams(location.search).get('id');
@@ -123,6 +152,7 @@ let postData = null;
 let currentUser = null;
 let interactState = { liked: false, downvoted: false, rated: false, score: 0 };
 let tipAmount = 0;
+let reportTarget = null;
 
 const esc = (value) => window.NodeWeave.escapeHtml(value);
 const apiJson = (...args) => window.NodeWeave.apiJson(...args);
@@ -217,6 +247,7 @@ function renderPost() {
       <button class="interact-btn${interactState.liked ? ' active' : ''}" onclick="toggleLike()">👍 <span>${p.like_count || 0}</span></button>
       <button class="interact-btn${interactState.downvoted ? ' downvoted' : ''}" onclick="toggleDownvote()">👎 <span>${p.downvote_count || 0}</span></button>
       <button class="interact-btn" onclick="openTip()">打赏 <span>${p.tip_count || 0}</span></button>
+      <button class="interact-btn" onclick="openReport('post','${esc(p.id)}')">举报</button>
       <span class="rate-stars">${stars}</span>
       <span style="color:#ffd700;font-family:var(--font-mono);font-size:12px">${p.rating_avg ? Number(p.rating_avg).toFixed(1) : '-'} (${p.rating_count || 0})</span>
     </div>
@@ -328,7 +359,7 @@ async function loadComments() {
   list.innerHTML = json.data.comments.map(comment => {
     const canAccept = currentUser && postData && currentUser.id === postData.author_id && comment.author_id !== postData.author_id && !postData.accepted_answer_id;
     const isStaff = currentUser && ['owner', 'admin', 'moderator'].includes(currentUser.role);
-    return `<div class="comment-item">
+    return `<div class="comment-item" id="comment-${esc(comment.id)}">
       <div class="comment-head">
         <span class="comment-author">@${esc(comment.display_name || comment.username || '匿名用户')}</span>
         <span class="comment-time">${new Date(comment.created_at).toLocaleString('zh-CN')}</span>
@@ -337,6 +368,7 @@ async function loadComments() {
       </div>
       <div class="comment-body">${esc(comment.content)}</div>
       <button class="comment-like" type="button" onclick="likeComment('${esc(comment.id)}')">👍 ${comment.like_count || 0}</button>
+      <button class="comment-like" type="button" onclick="openReport('comment','${esc(comment.id)}')">举报</button>
       ${isStaff ? `<div class="comment-mod">
         <button type="button" onclick="editComment('${esc(comment.id)}')">编辑评论</button>
         <button type="button" onclick="hideComment('${esc(comment.id)}')">隐藏评论</button>
@@ -448,6 +480,39 @@ async function likeComment(commentId) {
     return;
   }
   loadComments();
+}
+
+async function openReport(itemType, itemId) {
+  if (!(await requireLoginAction())) return;
+  reportTarget = { item_type: itemType, item_id: itemId };
+  document.getElementById('reportReason').value = '违法违规';
+  document.getElementById('reportDetail').value = '';
+  document.getElementById('reportError').classList.remove('show');
+  document.getElementById('reportModal').classList.add('show');
+}
+
+function closeReport() {
+  document.getElementById('reportModal').classList.remove('show');
+  reportTarget = null;
+}
+
+async function submitReport() {
+  if (!reportTarget) return;
+  const json = await apiJson('/api/reports', {
+    method: 'POST',
+    body: JSON.stringify({
+      ...reportTarget,
+      reason: document.getElementById('reportReason').value,
+      detail: document.getElementById('reportDetail').value,
+    }),
+  });
+  if (json.code !== 0) {
+    document.getElementById('reportError').textContent = json.msg || '举报提交失败';
+    document.getElementById('reportError').classList.add('show');
+    return;
+  }
+  closeReport();
+  alert(json.data?.message || '举报已提交');
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
