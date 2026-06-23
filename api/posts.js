@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { authUser } from './lib/jwt.js';
 import { generateId } from './lib/id.js';
 import { ok, err, CODE } from './lib/response.js';
+import { createNotification, notifyMentions } from './notifications.js';
 
 const posts = new Hono();
 
@@ -255,6 +256,15 @@ posts.post('/', requireLogin, async (c) => {
     ]);
   }
   await syncTags(c.env.DB, postId, body.tags);
+  try {
+    const author = await c.env.DB.prepare('SELECT display_name, username FROM users WHERE id=?').bind(userId).first();
+    await notifyMentions(c.env, {
+      text: `${title}\n${content}\n${hiddenContent}`,
+      actor_id: userId,
+      ref_id: postId,
+      message: `${author?.display_name || author?.username || '有人'} 在帖子中 @ 了你`,
+    });
+  } catch (error) {}
   return ok(c, { id: postId }, 201);
 });
 
@@ -262,7 +272,7 @@ posts.put('/:id', requireLogin, async (c) => {
   const userId = c.get('userId');
   const postId = c.req.param('id');
   const body = await c.req.json().catch(() => ({}));
-  const post = await c.env.DB.prepare(`SELECT ${authorExpr()} AS author_id FROM posts p WHERE p.id=?`).bind(postId).first();
+  const post = await c.env.DB.prepare(`SELECT title, ${authorExpr()} AS author_id FROM posts p WHERE p.id=?`).bind(postId).first();
   if (!post) return err(c, CODE.NOT_FOUND, '帖子不存在', 404);
   const roleRow = await c.env.DB.prepare('SELECT role FROM users WHERE id=?').bind(userId).first();
   const isStaff = roleRow && ['owner', 'admin', 'moderator'].includes(roleRow.role);
@@ -328,13 +338,33 @@ posts.put('/:id', requireLogin, async (c) => {
     await c.env.DB.prepare(`UPDATE posts SET ${fields.join(',')} WHERE id=?`).bind(...params).run();
   }
   await syncTags(c.env.DB, postId, body.tags);
+  if (post.author_id !== userId && isStaff) {
+    try {
+      await createNotification(c.env, {
+        user_id: post.author_id,
+        type: 'moderation',
+        ref_id: postId,
+        actor_id: userId,
+        message: `你的内容「${String(post.title || '').slice(0, 30)}」已被管理组编辑`,
+      });
+    } catch (error) {}
+  }
+  try {
+    const actor = await c.env.DB.prepare('SELECT display_name, username FROM users WHERE id=?').bind(userId).first();
+    await notifyMentions(c.env, {
+      text: `${body.title || ''}\n${body.content || ''}\n${body.hidden_content || ''}`,
+      actor_id: userId,
+      ref_id: postId,
+      message: `${actor?.display_name || actor?.username || '有人'} 在帖子中 @ 了你`,
+    });
+  } catch (error) {}
   return ok(c, { message: '已更新' });
 });
 
 posts.delete('/:id', requireLogin, async (c) => {
   const userId = c.get('userId');
   const postId = c.req.param('id');
-  const post = await c.env.DB.prepare(`SELECT ${authorExpr()} AS author_id, board_id FROM posts p WHERE p.id=?`).bind(postId).first();
+  const post = await c.env.DB.prepare(`SELECT title, ${authorExpr()} AS author_id, board_id FROM posts p WHERE p.id=?`).bind(postId).first();
   if (!post) return err(c, CODE.NOT_FOUND, '帖子不存在', 404);
   const roleRow = await c.env.DB.prepare('SELECT role FROM users WHERE id=?').bind(userId).first();
   const isStaff = roleRow && ['owner', 'admin', 'moderator'].includes(roleRow.role);
@@ -346,30 +376,57 @@ posts.delete('/:id', requireLogin, async (c) => {
     c.env.DB.prepare('DELETE FROM posts WHERE id=?').bind(postId),
     c.env.DB.prepare('UPDATE boards SET post_count=MAX(0,COALESCE(post_count,0)-1) WHERE slug=? OR id=?').bind(post.board_id, post.board_id),
   ]);
+  if (post.author_id !== userId && isStaff) {
+    try {
+      await createNotification(c.env, {
+        user_id: post.author_id,
+        type: 'moderation',
+        ref_id: postId,
+        actor_id: userId,
+        message: `你的内容「${String(post.title || '').slice(0, 30)}」已被管理组删除`,
+      });
+    } catch (error) {}
+  }
   return ok(c, { message: '已删除' });
 });
 
 posts.post('/:id/moderate', requireStaff, async (c) => {
   const postId = c.req.param('id');
   const { action, value } = await c.req.json().catch(() => ({}));
-  const post = await c.env.DB.prepare('SELECT id FROM posts WHERE id=?').bind(postId).first();
+  const post = await c.env.DB.prepare(`SELECT id, title, ${authorExpr()} AS author_id FROM posts p WHERE p.id=?`).bind(postId).first();
   if (!post) return err(c, CODE.NOT_FOUND, '帖子不存在', 404);
 
   const bool = value ? 1 : 0;
+  const notifyModeration = async (message) => {
+    if (post.author_id === c.get('userId')) return;
+    try {
+      await createNotification(c.env, {
+        user_id: post.author_id,
+        type: 'moderation',
+        ref_id: postId,
+        actor_id: c.get('userId'),
+        message: `${message}「${String(post.title || '').slice(0, 30)}」`,
+      });
+    } catch (error) {}
+  };
   if (action === 'pin') {
     await c.env.DB.prepare('UPDATE posts SET is_pinned=?, updated_at=? WHERE id=?').bind(bool, Date.now(), postId).run();
+    await notifyModeration(bool ? '你的内容已被置顶：' : '你的内容已取消置顶：');
     return ok(c, { is_pinned: bool });
   }
   if (action === 'feature') {
     await c.env.DB.prepare('UPDATE posts SET is_featured=?, updated_at=? WHERE id=?').bind(bool, Date.now(), postId).run();
+    await notifyModeration(bool ? '你的内容已被加精：' : '你的内容已取消精华：');
     return ok(c, { is_featured: bool });
   }
   if (action === 'lock') {
     await c.env.DB.prepare('UPDATE posts SET is_locked=?, updated_at=? WHERE id=?').bind(bool, Date.now(), postId).run();
+    await notifyModeration(bool ? '你的内容已被锁定：' : '你的内容已解除锁定：');
     return ok(c, { is_locked: bool });
   }
   if (action === 'hide') {
     await c.env.DB.prepare('UPDATE posts SET is_hidden=?, updated_at=? WHERE id=?').bind(bool, Date.now(), postId).run();
+    await notifyModeration(bool ? '你的内容已被隐藏：' : '你的内容已恢复显示：');
     return ok(c, { is_hidden: bool });
   }
   return err(c, CODE.VALIDATION, '无效操作');
@@ -392,7 +449,7 @@ posts.put('/:id/customize', requireLogin, async (c) => {
 posts.post('/:id/like', requireLogin, async (c) => {
   const userId = c.get('userId');
   const postId = c.req.param('id');
-  const post = await c.env.DB.prepare('SELECT id FROM posts WHERE id=?').bind(postId).first();
+  const post = await c.env.DB.prepare(`SELECT id, title, ${authorExpr()} AS author_id FROM posts p WHERE p.id=?`).bind(postId).first();
   if (!post) return err(c, CODE.NOT_FOUND, '帖子不存在', 404);
 
   const existing = await c.env.DB.prepare('SELECT 1 FROM post_likes WHERE post_id=? AND user_id=?').bind(postId, userId).first();
@@ -407,6 +464,18 @@ posts.post('/:id/like', requireLogin, async (c) => {
     c.env.DB.prepare('INSERT OR IGNORE INTO post_likes(post_id,user_id,created_at) VALUES(?,?,?)').bind(postId, userId, Date.now()),
     c.env.DB.prepare('UPDATE posts SET like_count=COALESCE(like_count,0)+1 WHERE id=?').bind(postId),
   ]);
+  if (post.author_id !== userId) {
+    try {
+      const actor = await c.env.DB.prepare('SELECT display_name, username FROM users WHERE id=?').bind(userId).first();
+      await createNotification(c.env, {
+        user_id: post.author_id,
+        type: 'like',
+        ref_id: postId,
+        actor_id: userId,
+        message: `${actor?.display_name || actor?.username || '有人'} 点赞了你的内容「${String(post.title || '').slice(0, 30)}」`,
+      });
+    } catch (error) {}
+  }
   return ok(c, { liked: true });
 });
 
@@ -438,7 +507,7 @@ posts.post('/:id/tip', requireLogin, async (c) => {
   const tipAmount = Math.max(0, asInt(amount, 0));
   if (tipAmount < 1) return err(c, CODE.VALIDATION, '打赏金额至少 1 论坛币');
 
-  const post = await c.env.DB.prepare(`SELECT id, ${authorExpr()} AS author_id FROM posts p WHERE p.id=?`).bind(postId).first();
+  const post = await c.env.DB.prepare(`SELECT id, title, ${authorExpr()} AS author_id FROM posts p WHERE p.id=?`).bind(postId).first();
   if (!post) return err(c, CODE.NOT_FOUND, '帖子不存在', 404);
   if (post.author_id === userId) return err(c, CODE.VALIDATION, '不能给自己打赏');
 
@@ -455,6 +524,16 @@ posts.post('/:id/tip', requireLogin, async (c) => {
     c.env.DB.prepare('INSERT INTO coin_logs(id,user_id,amount,type,ref_id,created_at) VALUES(?,?,?,?,?,?)').bind('cl_' + generateId(8), userId, -tipAmount, 'tip_send', postId, now),
     c.env.DB.prepare('INSERT INTO coin_logs(id,user_id,amount,type,ref_id,created_at) VALUES(?,?,?,?,?,?)').bind('cl_' + generateId(8), post.author_id, tipAmount, 'tip_receive', postId, now),
   ]);
+  try {
+    const actor = await c.env.DB.prepare('SELECT display_name, username FROM users WHERE id=?').bind(userId).first();
+    await createNotification(c.env, {
+      user_id: post.author_id,
+      type: 'tip',
+      ref_id: postId,
+      actor_id: userId,
+      message: `${actor?.display_name || actor?.username || '有人'} 打赏了你 ${tipAmount} 论坛币：「${String(post.title || '').slice(0, 30)}」`,
+    });
+  } catch (error) {}
   return ok(c, { id: tipId, amount: tipAmount });
 });
 
@@ -543,6 +622,15 @@ posts.post('/:id/accept', requireLogin, async (c) => {
     );
   }
   await c.env.DB.batch(statements);
+  try {
+    await createNotification(c.env, {
+      user_id: comment.author_id,
+      type: 'accepted',
+      ref_id: postId,
+      actor_id: userId,
+      message: `你的回答已被采纳${post.bounty > 0 ? `，获得 ${post.bounty} 论坛币悬赏` : ''}`,
+    });
+  } catch (error) {}
   return ok(c, { accepted: true, bounty_transferred: post.bounty || 0 });
 });
 

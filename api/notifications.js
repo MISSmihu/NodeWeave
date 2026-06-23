@@ -38,12 +38,52 @@ notificationsRouter.post('/read-all', requireLogin, async (c) => {
   return ok(c, { message: 'ok' });
 });
 
+// POST /api/notifications/:id/read - 单条已读
+notificationsRouter.post('/:id/read', requireLogin, async (c) => {
+  const userId = c.get('userId');
+  const id = c.req.param('id');
+  await c.env.DB.prepare('UPDATE notifications SET is_read=1 WHERE id=? AND user_id=?').bind(id, userId).run();
+  return ok(c, { message: 'ok' });
+});
+
 // 工具函数：创建通知
 async function createNotification(env, { user_id, type, ref_id, actor_id, message }) {
+  if (!user_id || user_id === actor_id) return null;
   const id = 'notif_' + generateId(10);
   await env.DB.prepare(
     'INSERT INTO notifications(id,user_id,type,ref_id,actor_id,message,created_at) VALUES(?,?,?,?,?,?,?)'
   ).bind(id, user_id, type, ref_id || '', actor_id || '', message, Date.now()).run();
+  return id;
 }
 
-export { notificationsRouter, createNotification };
+function extractMentions(text) {
+  const names = new Set();
+  const re = /@([a-zA-Z0-9_]{3,20})/g;
+  let match;
+  while ((match = re.exec(String(text || ''))) !== null) names.add(match[1]);
+  return [...names].slice(0, 10);
+}
+
+async function notifyMentions(env, { text, actor_id, ref_id, message }) {
+  const names = extractMentions(text);
+  if (!names.length) return [];
+  const placeholders = names.map(() => '?').join(',');
+  const rows = await env.DB.prepare(
+    `SELECT id, username FROM users WHERE username IN (${placeholders})`
+  ).bind(...names).all();
+  const sent = [];
+  for (const user of rows.results || []) {
+    if (user.id === actor_id) continue;
+    const id = await createNotification(env, {
+      user_id: user.id,
+      type: 'mention',
+      ref_id,
+      actor_id,
+      message: message || `有人在内容中 @ 了你`,
+    });
+    if (id) sent.push(id);
+  }
+  return sent;
+}
+
+export { notificationsRouter, createNotification, notifyMentions };

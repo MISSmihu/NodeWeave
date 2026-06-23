@@ -120,15 +120,29 @@
           : '';
         el.innerHTML = `
           ${adminLink}
+          <a class="btn-ghost" href="${assetUrl('notifications.html')}" title="站内通知">通知<span data-notif-badge style="display:none;margin-left:5px;color:var(--magenta)"></span></a>
           <a class="btn-ghost" href="${assetUrl('account/settings.html')}" title="账号设置">${escapeHtml(user.display_name || user.username || '我的账号')}</a>
           <button class="btn-ghost" type="button" data-logout>退出</button>
           <a class="btn-primary" href="${assetUrl('editor.html')}">+ 发帖</a>`;
+        updateNotificationBadge();
       } else {
         el.innerHTML = `
           <a class="btn-ghost" href="${assetUrl('login.html')}">登录</a>
           <a class="btn-primary" href="${assetUrl('login.html?tab=register')}">注册</a>`;
       }
     });
+  }
+
+  async function updateNotificationBadge() {
+    if (!state.user) return;
+    try {
+      const json = await apiJson('/api/notifications?pageSize=1');
+      const count = Number(json?.data?.unread || 0);
+      document.querySelectorAll('[data-notif-badge]').forEach(el => {
+        el.textContent = count > 99 ? '99+' : String(count || '');
+        el.style.display = count ? '' : 'none';
+      });
+    } catch (error) {}
   }
 
   async function logout() {

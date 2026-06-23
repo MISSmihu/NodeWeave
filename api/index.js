@@ -369,6 +369,7 @@ async function runMigrations(db) {
   await db.prepare(`CREATE TABLE IF NOT EXISTS coin_logs (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, amount INTEGER NOT NULL, type TEXT NOT NULL, ref_id TEXT, balance_after INTEGER DEFAULT 0, created_at INTEGER NOT NULL)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS signin_records (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, signin_date TEXT NOT NULL, streak INTEGER DEFAULT 1, reward INTEGER DEFAULT 0, created_at INTEGER NOT NULL, UNIQUE(user_id, signin_date))`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS post_likes (post_id TEXT NOT NULL, user_id TEXT NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY (post_id, user_id))`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS comment_likes (comment_id TEXT NOT NULL, user_id TEXT NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY (comment_id, user_id))`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS post_downvotes (post_id TEXT NOT NULL, user_id TEXT NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY (post_id, user_id))`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS post_tips (id TEXT PRIMARY KEY, post_id TEXT NOT NULL, from_user TEXT NOT NULL, to_user TEXT NOT NULL, amount INTEGER NOT NULL, message TEXT DEFAULT '', created_at INTEGER NOT NULL)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS post_ratings (post_id TEXT NOT NULL, user_id TEXT NOT NULL, score INTEGER NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY (post_id, user_id))`).run();

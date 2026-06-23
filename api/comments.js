@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { authUser } from './lib/jwt.js';
 import { generateId } from './lib/id.js';
 import { ok, err, CODE } from './lib/response.js';
-import { createNotification } from './notifications.js';
+import { createNotification, notifyMentions } from './notifications.js';
 
 const comments = new Hono();
 
@@ -71,8 +71,9 @@ comments.post('/', requireLogin, async (c) => {
   if (!post) return err(c, CODE.NOT_FOUND, '帖子不存在', 404);
   if (post.is_locked) return err(c, CODE.FORBIDDEN, '帖子已锁定', 403);
 
+  let parent = null;
   if (parent_id) {
-    const parent = await c.env.DB.prepare('SELECT id FROM comments WHERE id=? AND post_id=?').bind(parent_id, post_id).first();
+    parent = await c.env.DB.prepare(`SELECT id, ${authorExpr('c')} AS author_id FROM comments c WHERE c.id=? AND c.post_id=?`).bind(parent_id, post_id).first();
     if (!parent) return err(c, CODE.NOT_FOUND, '父评论不存在', 404);
   }
 
@@ -98,6 +99,27 @@ comments.post('/', requireLogin, async (c) => {
       });
     } catch (error) {}
   }
+  if (parent?.author_id && parent.author_id !== userId && parent.author_id !== post.author_id) {
+    try {
+      const commenter = await c.env.DB.prepare('SELECT display_name, username FROM users WHERE id=?').bind(userId).first();
+      await createNotification(c.env, {
+        user_id: parent.author_id,
+        type: 'reply',
+        ref_id: post_id,
+        actor_id: userId,
+        message: `${commenter?.display_name || commenter?.username || '有人'} 回复了你的评论「${String(post.title || '').slice(0, 30)}」`,
+      });
+    } catch (error) {}
+  }
+  try {
+    const commenter = await c.env.DB.prepare('SELECT display_name, username FROM users WHERE id=?').bind(userId).first();
+    await notifyMentions(c.env, {
+      text: body,
+      actor_id: userId,
+      ref_id: post_id,
+      message: `${commenter?.display_name || commenter?.username || '有人'} 在评论中 @ 了你`,
+    });
+  } catch (error) {}
 
   return ok(c, { id: commentId }, 201);
 });
@@ -106,7 +128,7 @@ comments.delete('/:id', requireLogin, async (c) => {
   const userId = c.get('userId');
   const commentId = c.req.param('id');
   const comment = await c.env.DB.prepare(
-    `SELECT id, post_id, ${authorExpr('c')} AS author_id FROM comments c WHERE c.id=?`
+    `SELECT id, post_id, content, ${authorExpr('c')} AS author_id FROM comments c WHERE c.id=?`
   ).bind(commentId).first();
   if (!comment) return err(c, CODE.NOT_FOUND, '评论不存在', 404);
   const roleRow = await c.env.DB.prepare('SELECT role FROM users WHERE id=?').bind(userId).first();
@@ -117,6 +139,17 @@ comments.delete('/:id', requireLogin, async (c) => {
     c.env.DB.prepare('DELETE FROM comments WHERE id=?').bind(commentId),
     c.env.DB.prepare('UPDATE posts SET comment_count=MAX(0,COALESCE(comment_count,0)-1) WHERE id=?').bind(comment.post_id),
   ]);
+  if (isStaff && comment.author_id !== userId) {
+    try {
+      await createNotification(c.env, {
+        user_id: comment.author_id,
+        type: 'moderation',
+        ref_id: comment.post_id,
+        actor_id: userId,
+        message: `你的评论「${String(comment.content || '').slice(0, 30)}」已被管理组删除`,
+      });
+    } catch (error) {}
+  }
   return ok(c, { message: '已删除' });
 });
 
@@ -126,23 +159,85 @@ comments.put('/:id', requireStaff, async (c) => {
   const content = String(body.content || '').trim();
   if (!content) return err(c, CODE.VALIDATION, '评论内容不能为空');
   if (content.length > 5000) return err(c, CODE.VALIDATION, '评论最长 5000 字符');
-  const comment = await c.env.DB.prepare('SELECT id FROM comments WHERE id=?').bind(commentId).first();
+  const comment = await c.env.DB.prepare(`SELECT id, post_id, ${authorExpr('c')} AS author_id FROM comments c WHERE c.id=?`).bind(commentId).first();
   if (!comment) return err(c, CODE.NOT_FOUND, '评论不存在', 404);
   await c.env.DB.prepare('UPDATE comments SET content=?, updated_at=? WHERE id=?').bind(content, Date.now(), commentId).run();
+  if (comment.author_id !== c.get('userId')) {
+    try {
+      await createNotification(c.env, {
+        user_id: comment.author_id,
+        type: 'moderation',
+        ref_id: comment.post_id,
+        actor_id: c.get('userId'),
+        message: '你的评论已被管理组编辑',
+      });
+    } catch (error) {}
+  }
   return ok(c, { message: '评论已更新' });
 });
 
 comments.post('/:id/moderate', requireStaff, async (c) => {
   const commentId = c.req.param('id');
   const { action, value } = await c.req.json().catch(() => ({}));
-  const comment = await c.env.DB.prepare('SELECT id FROM comments WHERE id=?').bind(commentId).first();
+  const comment = await c.env.DB.prepare(`SELECT id, post_id, ${authorExpr('c')} AS author_id FROM comments c WHERE c.id=?`).bind(commentId).first();
   if (!comment) return err(c, CODE.NOT_FOUND, '评论不存在', 404);
   if (action === 'hide') {
     const hidden = value ? 1 : 0;
     await c.env.DB.prepare('UPDATE comments SET is_hidden=? WHERE id=?').bind(hidden, commentId).run();
+    if (comment.author_id !== c.get('userId')) {
+      try {
+        await createNotification(c.env, {
+          user_id: comment.author_id,
+          type: 'moderation',
+          ref_id: comment.post_id,
+          actor_id: c.get('userId'),
+          message: hidden ? '你的评论已被管理组隐藏' : '你的评论已恢复显示',
+        });
+      } catch (error) {}
+    }
     return ok(c, { is_hidden: hidden });
   }
   return err(c, CODE.VALIDATION, '无效操作');
+});
+
+comments.post('/:id/like', requireLogin, async (c) => {
+  const userId = c.get('userId');
+  const commentId = c.req.param('id');
+  const comment = await c.env.DB.prepare(
+    `SELECT c.id, c.post_id, c.content, ${authorExpr('c')} AS author_id, p.title
+       FROM comments c
+       LEFT JOIN posts p ON p.id=c.post_id
+      WHERE c.id=? AND COALESCE(c.is_hidden,0)=0`
+  ).bind(commentId).first();
+  if (!comment) return err(c, CODE.NOT_FOUND, '评论不存在', 404);
+
+  const existing = await c.env.DB.prepare('SELECT 1 FROM comment_likes WHERE comment_id=? AND user_id=?')
+    .bind(commentId, userId).first();
+  if (existing) {
+    await c.env.DB.batch([
+      c.env.DB.prepare('DELETE FROM comment_likes WHERE comment_id=? AND user_id=?').bind(commentId, userId),
+      c.env.DB.prepare('UPDATE comments SET like_count=MAX(0,COALESCE(like_count,0)-1) WHERE id=?').bind(commentId),
+    ]);
+    return ok(c, { liked: false });
+  }
+
+  await c.env.DB.batch([
+    c.env.DB.prepare('INSERT OR IGNORE INTO comment_likes(comment_id,user_id,created_at) VALUES(?,?,?)').bind(commentId, userId, Date.now()),
+    c.env.DB.prepare('UPDATE comments SET like_count=COALESCE(like_count,0)+1 WHERE id=?').bind(commentId),
+  ]);
+  if (comment.author_id !== userId) {
+    try {
+      const actor = await c.env.DB.prepare('SELECT display_name, username FROM users WHERE id=?').bind(userId).first();
+      await createNotification(c.env, {
+        user_id: comment.author_id,
+        type: 'comment_like',
+        ref_id: comment.post_id,
+        actor_id: userId,
+        message: `${actor?.display_name || actor?.username || '有人'} 点赞了你的评论「${String(comment.content || '').slice(0, 30)}」`,
+      });
+    } catch (error) {}
+  }
+  return ok(c, { liked: true });
 });
 
 export { comments };

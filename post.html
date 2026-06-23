@@ -53,6 +53,8 @@
 .comment-body{color:var(--text-dim);font-size:14px;line-height:1.7;white-space:pre-wrap}
 .accepted{display:inline-flex;padding:2px 7px;border-radius:999px;border:1px solid rgba(127,255,0,.25);color:var(--green);font-size:10px;font-family:var(--font-mono)}
 .accept-btn{margin-left:auto;padding:5px 8px;border:1px solid rgba(127,255,0,.25);background:rgba(127,255,0,.06);border-radius:6px;color:var(--green);font-family:var(--font-mono);font-size:11px}
+.comment-like{margin-top:8px;padding:4px 8px;border:1px solid var(--border);background:var(--surface-2);border-radius:6px;color:var(--text-mute);font-family:var(--font-mono);font-size:11px}
+.comment-like:hover{border-color:var(--cyan);color:var(--cyan)}
 .tip-modal{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.72);align-items:center;justify-content:center;padding:18px}
 .tip-modal.show{display:flex}
 .tip-card{width:min(420px,100%);background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;box-shadow:0 20px 80px rgba(0,0,0,.45)}
@@ -334,6 +336,7 @@ async function loadComments() {
         ${canAccept ? `<button class="accept-btn" type="button" onclick="acceptAnswer('${esc(comment.id)}')">采纳并发放悬赏</button>` : ''}
       </div>
       <div class="comment-body">${esc(comment.content)}</div>
+      <button class="comment-like" type="button" onclick="likeComment('${esc(comment.id)}')">👍 ${comment.like_count || 0}</button>
       ${isStaff ? `<div class="comment-mod">
         <button type="button" onclick="editComment('${esc(comment.id)}')">编辑评论</button>
         <button type="button" onclick="hideComment('${esc(comment.id)}')">隐藏评论</button>
@@ -435,6 +438,16 @@ async function deleteComment(commentId) {
     return;
   }
   loadPost();
+}
+
+async function likeComment(commentId) {
+  if (!(await requireLoginAction())) return;
+  const json = await apiJson('/api/comments/' + encodeURIComponent(commentId) + '/like', { method: 'POST' });
+  if (json.code !== 0) {
+    alert(json.msg || '点赞失败');
+    return;
+  }
+  loadComments();
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
