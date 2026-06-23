@@ -11,6 +11,7 @@
 <style id="customStyles"></style>
 <style>
 .canvas-bg{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
+.profile-bg-layer{position:fixed;inset:0;z-index:-2;pointer-events:none;background:transparent;background-size:cover;background-position:center;opacity:.82}
 .profile-page{max-width:920px;margin:0 auto;padding:84px 24px 110px;position:relative;z-index:1}
 .profile-card{background:rgba(18,18,30,.78);border:1px solid var(--border);border-radius:16px;padding:26px;box-shadow:0 22px 80px rgba(0,0,0,.24)}
 .profile-head{display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin-bottom:24px}
@@ -18,11 +19,20 @@
 .profile-info h1{font-family:var(--font-display);font-size:26px;margin:0;color:var(--text)}
 .profile-info .username{font-family:var(--font-mono);font-size:13px;color:var(--text-mute);margin:4px 0 8px}
 .profile-info .bio{color:var(--text-dim);line-height:1.7;max-width:620px}
-.level-badge{display:inline-flex;margin-top:10px;padding:5px 11px;border-radius:999px;border:1px solid var(--border);font-family:var(--font-mono);font-size:12px}
+.level-badge{display:inline-flex;margin-top:10px;padding:5px 11px;border-radius:999px;border:1px solid var(--border);font-family:var(--font-mono);font-size:12px;cursor:pointer;background:rgba(0,240,255,.05)}
 .stats-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:20px 0}
 .stat-box{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:15px;text-align:center}
 .stat-box .num{font-family:var(--font-display);font-size:22px;color:var(--cyan)}
 .stat-box .label{font-family:var(--font-mono);font-size:11px;color:var(--text-mute);margin-top:4px}
+.asset-panel{display:grid;grid-template-columns:1.1fr .9fr .9fr;gap:14px;margin:20px 0}
+.asset-card{background:linear-gradient(135deg,rgba(0,240,255,.055),rgba(157,0,255,.035)),var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px}
+.asset-card h3{font-family:var(--font-display);font-size:14px;color:var(--cyan);margin-bottom:10px}
+.progress-bar{height:9px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;border:1px solid var(--border)}
+.progress-fill{height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--purple));box-shadow:var(--glow-cyan)}
+.perm-list{display:grid;gap:7px;margin-top:10px}
+.perm-list span{font-size:12px;color:var(--text-dim);line-height:1.55}
+.perm-list span::before{content:'✓ ';color:var(--green)}
+.asset-meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;font-family:var(--font-mono);font-size:11px;color:var(--text-mute)}
 .section-title{font-family:var(--font-display);font-size:16px;color:var(--cyan);margin:26px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--border)}
 .badge-wall{display:flex;flex-wrap:wrap;gap:12px}
 .badge-item{width:58px;height:58px;border-radius:12px;border:1px solid var(--border);background:var(--bg);display:grid;place-items:center}
@@ -41,10 +51,11 @@
 .bg-preset{width:44px;height:44px;border-radius:10px;border:2px solid transparent;cursor:pointer}
 .bg-preset.active{border-color:var(--cyan);box-shadow:var(--glow-cyan)}
 .empty{color:var(--text-mute);font-size:13px;padding:14px;border:1px dashed var(--border);border-radius:10px}
-@media(max-width:720px){.stats-row{grid-template-columns:repeat(2,1fr)}.profile-card{padding:18px}}
+@media(max-width:720px){.stats-row{grid-template-columns:repeat(2,1fr)}.asset-panel{grid-template-columns:1fr}.profile-card{padding:18px}}
 </style>
 </head>
 <body>
+<div class="profile-bg-layer" id="profileBgLayer"></div>
 <canvas class="canvas-bg" id="bgCanvas"></canvas>
 <div class="bg-grid"></div><div class="bg-scanlines"></div><div class="bg-glow"></div>
 <header class="nav">
@@ -71,9 +82,10 @@
         <h1 id="displayName">加载中...</h1>
         <div class="username" id="username">@loading</div>
         <div class="bio" id="bio"></div>
-        <span class="level-badge" id="levelBadge">Lv0 新人</span>
+        <span class="level-badge" id="levelBadge" onclick="location.href='levels.html?user='+encodeURIComponent(userId||'')">Lv0 新人</span>
         <div style="margin-top:12px">
           <button class="btn-primary" id="btnEdit" type="button" style="display:none" onclick="toggleCustomize()">装扮设置</button>
+          <a class="btn-ghost" id="btnBlogHome" href="#" style="margin-left:8px">博客主页</a>
         </div>
       </div>
     </div>
@@ -83,6 +95,26 @@
       <div class="stat-box"><div class="num" id="statComments">0</div><div class="label">评论</div></div>
       <div class="stat-box"><div class="num" id="statReputation">0</div><div class="label">声望</div></div>
       <div class="stat-box"><div class="num" id="statCoins">0</div><div class="label">论坛币</div></div>
+      <div class="stat-box"><div class="num" id="statExp">0</div><div class="label">经验</div></div>
+    </div>
+
+    <div class="asset-panel">
+      <div class="asset-card">
+        <h3>等级进度</h3>
+        <div class="progress-bar"><div class="progress-fill" id="levelProgress"></div></div>
+        <div class="asset-meta">
+          <span id="levelNeed">升级数据加载中</span>
+          <a href="levels.html" style="color:var(--cyan);text-decoration:none">查看全部用户组权限 →</a>
+        </div>
+      </div>
+      <div class="asset-card">
+        <h3>当前权限</h3>
+        <div class="perm-list" id="currentPerms"><span>加载中</span></div>
+      </div>
+      <div class="asset-card">
+        <h3>下一等级权限</h3>
+        <div class="perm-list" id="nextPerms"><span>加载中</span></div>
+      </div>
     </div>
 
     <div class="customize-panel" id="customizePanel">
@@ -137,17 +169,26 @@ async function loadProfile() {
   document.getElementById('bio').textContent = user.bio || '这个用户还没有写简介。';
   document.getElementById('profileAvatar').textContent = (user.display_name || user.username || '?').slice(0, 2).toUpperCase();
   document.getElementById('profileAvatar').style.background = user.avatar_color || '#00f0ff';
+  document.getElementById('btnBlogHome').href = 'blog.html?user=' + encodeURIComponent(user.id);
   document.getElementById('statPosts').textContent = user.post_count || 0;
   document.getElementById('statComments').textContent = user.comment_count || 0;
   document.getElementById('statReputation').textContent = user.reputation || 0;
   document.getElementById('statCoins').textContent = user.coins || 0;
+  document.getElementById('statExp').textContent = user.exp || 0;
   if (user.level) {
     const level = document.getElementById('levelBadge');
     level.textContent = `${user.level.icon || ''} Lv${user.level.level} ${user.level.name}`;
     level.style.color = user.level.color || 'var(--cyan)';
+    document.getElementById('levelProgress').style.width = (user.level.progress || 0) + '%';
+    document.getElementById('levelNeed').textContent = user.level.next_level
+      ? `距离 Lv${user.level.next_level.level} ${user.level.next_level.name} 还差 ${user.level.need} 声望`
+      : '已达到最高用户组';
+    document.getElementById('currentPerms').innerHTML = (user.level.permissions || []).map(item => `<span>${esc(item)}</span>`).join('');
+    document.getElementById('nextPerms').innerHTML = user.level.next_level
+      ? (user.level.next_level.permissions || []).map(item => `<span>${esc(item)}</span>`).join('')
+      : '<span>已解锁全部用户组权限</span>';
   }
-  document.getElementById('customStyles').textContent = user.profile_css || '';
-  initBgCanvas(user.profile_bg_type || '');
+  applyProfileAppearance(user.profile_bg_type || '', user.profile_bg_value || '', user.profile_css || '');
   if (currentUser && currentUser.id === user.id) {
     document.getElementById('btnEdit').style.display = '';
     document.getElementById('customCSS').value = user.profile_css || '';
@@ -199,8 +240,7 @@ async function saveCustomize() {
     alert(json.msg || '保存失败');
     return;
   }
-  document.getElementById('customStyles').textContent = profile_css;
-  initBgCanvas(profile_bg_type);
+  applyProfileAppearance(profile_bg_type, '', profile_css);
   document.getElementById('customizeMsg').style.display = 'inline';
   setTimeout(() => document.getElementById('customizeMsg').style.display = 'none', 1800);
 }
@@ -224,6 +264,22 @@ function initBgCanvas(type) {
   if (type === 'matrix') drawMatrix(ctx, canvas);
   if (type === 'particles') drawParticles(ctx, canvas);
   if (type === 'stars') drawStars(ctx, canvas);
+}
+
+function applyProfileAppearance(type, value, css) {
+  document.getElementById('customStyles').textContent = css || '';
+  const layer = document.getElementById('profileBgLayer');
+  layer.style.background = '';
+  layer.style.backgroundImage = '';
+  const parts = String(value || '').split('|||');
+  if (type === 'color') {
+    layer.style.background = parts[0] || '#0a0a0f';
+  } else if (type === 'gradient') {
+    layer.style.background = `linear-gradient(135deg, ${parts[0] || '#0a0a0f'}, ${parts[1] || '#1a0033'})`;
+  } else if (type === 'image' && parts[0]) {
+    layer.style.backgroundImage = `linear-gradient(rgba(10,10,15,.42),rgba(10,10,15,.64)), url("${parts[0].replace(/"/g, '%22')}")`;
+  }
+  initBgCanvas(['matrix', 'particles', 'stars'].includes(type) ? type : '');
 }
 
 function drawMatrix(ctx, canvas) {

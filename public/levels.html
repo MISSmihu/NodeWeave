@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>等级与权限 // NodeWeave</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+.levels-page{max-width:1180px;margin:0 auto;padding:84px 24px 110px}
+.levels-hero{position:relative;overflow:hidden;border:1px solid rgba(0,240,255,.16);border-radius:10px;background:linear-gradient(135deg,rgba(0,240,255,.10),rgba(157,0,255,.055)),rgba(18,18,30,.78);padding:28px;margin-bottom:22px}
+.levels-hero::after{content:'LV0-LV5';position:absolute;right:24px;top:18px;font-family:var(--font-display);font-size:12px;letter-spacing:.22em;color:rgba(0,240,255,.32)}
+.levels-hero h1{font-family:var(--font-display);font-size:clamp(28px,5vw,52px);color:var(--cyan);text-shadow:var(--glow-cyan);margin:0 0 10px}
+.levels-hero p{max-width:760px;color:var(--text-dim);line-height:1.9;margin:0}
+.my-progress{display:none;border:1px solid var(--border);border-radius:10px;background:rgba(18,18,30,.78);padding:20px;margin-bottom:22px}
+.my-progress.show{display:block}
+.my-progress h2{font-family:var(--font-display);font-size:17px;color:var(--cyan);margin-bottom:12px}
+.progress-track{height:12px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid var(--border);overflow:hidden}
+.progress-fill{height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--purple));box-shadow:var(--glow-cyan)}
+.progress-meta{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;font-family:var(--font-mono);font-size:12px;color:var(--text-mute)}
+.levels-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.level-card{position:relative;overflow:hidden;border:1px solid var(--border);border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,.018),transparent),rgba(18,18,30,.78);padding:20px}
+.level-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--level-color,var(--cyan));box-shadow:0 0 20px var(--level-color,var(--cyan))}
+.level-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}
+.level-name{font-family:var(--font-display);font-size:20px;color:var(--text)}
+.level-icon{font-size:28px;color:var(--level-color,var(--cyan));text-shadow:0 0 18px var(--level-color,var(--cyan))}
+.level-rep{font-family:var(--font-mono);font-size:12px;color:var(--text-mute);margin-top:4px}
+.level-section{margin-top:14px}
+.level-section strong{display:block;font-family:var(--font-mono);font-size:11px;color:var(--cyan);margin-bottom:7px;text-transform:uppercase}
+.perm-list{display:grid;gap:6px}
+.perm-list span{font-size:13px;color:var(--text-dim);line-height:1.6}
+.perm-list span::before{content:'✓ ';color:var(--green)}
+.reward{font-size:13px;color:var(--text);line-height:1.7}
+@media(max-width:940px){.levels-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){.levels-page{padding-left:16px;padding-right:16px}.levels-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div><div class="bg-scanlines"></div><div class="bg-glow"></div>
+<header class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo"><span class="logo-mark">◈</span><span class="logo-text">Node<span class="x">Weave</span></span><span class="logo-sub">// LEVELS</span></a>
+    <nav class="nav-links">
+      <a href="index.html">动态</a>
+      <a href="boards.html">论坛</a>
+      <a href="blog.html">博客</a>
+      <a href="board.html?board=qa">问答</a>
+    </nav>
+    <div class="nav-actions" data-auth-actions>
+      <a class="btn-ghost" href="login.html">登录</a>
+      <a class="btn-primary" href="editor.html">+ 发帖</a>
+    </div>
+  </div>
+</header>
+
+<main class="levels-page">
+  <section class="levels-hero">
+    <h1>等级、权限与升级路径</h1>
+    <p>用户等级由声望自动计算，和站长/管理员/版主角色互相独立。声望来自发帖、回复、被点赞、采纳、加精、签到等真实互动。</p>
+  </section>
+
+  <section class="my-progress" id="myProgress">
+    <h2 id="myLevelTitle">当前等级</h2>
+    <div class="progress-track"><div class="progress-fill" id="myProgressFill"></div></div>
+    <div class="progress-meta" id="myProgressMeta"></div>
+  </section>
+
+  <section class="levels-grid" id="levelsGrid"></section>
+</main>
+
+<script src="script.js"></script>
+<script>
+const esc = (value) => window.NodeWeave.escapeHtml(value);
+const params = new URLSearchParams(location.search);
+const targetUser = params.get('user');
+
+function renderLevelCard(level) {
+  return `
+    <article class="level-card" style="--level-color:${esc(level.color || '#00f0ff')}">
+      <div class="level-top">
+        <div>
+          <div class="level-name">Lv${level.level} ${esc(level.name)}</div>
+          <div class="level-rep">声望 ≥ ${Number(level.minRep || 0).toLocaleString()}</div>
+        </div>
+        <div class="level-icon">${esc(level.icon || '◈')}</div>
+      </div>
+      <div class="level-section">
+        <strong>升级奖励</strong>
+        <div class="reward">${esc(level.reward || '无额外奖励')}</div>
+      </div>
+      <div class="level-section">
+        <strong>可用权限</strong>
+        <div class="perm-list">${(level.permissions || []).map(item => `<span>${esc(item)}</span>`).join('')}</div>
+      </div>
+    </article>`;
+}
+
+async function loadLevels() {
+  const json = await window.NodeWeave.apiJson('/api/level/list').catch(() => null);
+  const levels = json?.code === 0 ? json.data : [];
+  document.getElementById('levelsGrid').innerHTML = levels.length
+    ? levels.map(renderLevelCard).join('')
+    : '<div class="level-card">等级配置暂时无法读取</div>';
+}
+
+async function loadTargetProgress() {
+  let userId = targetUser;
+  if (!userId) {
+    const current = await window.NodeWeave.currentUser(true);
+    userId = current?.id || '';
+  }
+  if (!userId) return;
+  const json = await window.NodeWeave.apiJson('/api/level/' + encodeURIComponent(userId)).catch(() => null);
+  if (!json || json.code !== 0) return;
+  const data = json.data;
+  document.getElementById('myProgress').classList.add('show');
+  document.getElementById('myLevelTitle').textContent = `当前：${data.icon || ''} Lv${data.level} ${data.name}`;
+  document.getElementById('myProgressFill').style.width = (data.progress || 0) + '%';
+  document.getElementById('myProgressMeta').innerHTML = data.next_level
+    ? `<span>当前声望 ${Number(data.reputation || 0).toLocaleString()}</span><span>距离 Lv${data.next_level.level} ${esc(data.next_level.name)} 还差 ${Number(data.need || 0).toLocaleString()} 声望</span><span>下一等级奖励：${esc(data.next_level.reward || '')}</span>`
+    : `<span>当前声望 ${Number(data.reputation || 0).toLocaleString()}</span><span>已达到最高等级</span>`;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadLevels();
+  loadTargetProgress();
+});
+</script>
+</body>
+</html>

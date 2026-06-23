@@ -64,7 +64,7 @@ async function sendDeleteEmail(to, link, env) {
 account.get('/me', requireLogin, async (c) => {
   const userId = c.get('userId');
   const user = await c.env.DB.prepare(
-    'SELECT id, username, email, display_name, bio, avatar_color, role, email_verified, phone_verified, real_name_status, reputation, coins, created_at FROM users WHERE id=?'
+    'SELECT id, username, email, display_name, bio, avatar_color, role, email_verified, phone_verified, real_name_status, reputation, coins, exp, created_at FROM users WHERE id=?'
   ).bind(userId).first();
   if (!user) return err(c, CODE.NOT_FOUND, '用户不存在');
   return ok(c, user);
@@ -211,19 +211,49 @@ account.post('/confirm-delete', requireLogin, async (c) => {
 
 account.put('/customize', requireLogin, async (c) => {
   const userId = c.get('userId');
-  const { profile_css, profile_bg_type, profile_bg_value } = await c.req.json().catch(() => ({}));
+  const {
+    profile_css,
+    profile_bg_type,
+    profile_bg_value,
+    blog_css,
+    blog_bg_type,
+    blog_bg_value,
+  } = await c.req.json().catch(() => ({}));
+  const current = await c.env.DB.prepare(
+    'SELECT profile_css, profile_bg_type, profile_bg_value, blog_css, blog_bg_type, blog_bg_value FROM users WHERE id=?'
+  ).bind(userId).first();
   await c.env.DB.prepare(
-    'UPDATE users SET profile_css=?, profile_bg_type=?, profile_bg_value=?, updated_at=? WHERE id=?'
-  ).bind(profile_css || '', profile_bg_type || '', profile_bg_value || '', Date.now(), userId).run();
+    `UPDATE users
+        SET profile_css=?, profile_bg_type=?, profile_bg_value=?,
+            blog_css=?, blog_bg_type=?, blog_bg_value=?,
+            updated_at=?
+      WHERE id=?`
+  ).bind(
+    profile_css ?? current?.profile_css ?? '',
+    profile_bg_type ?? current?.profile_bg_type ?? '',
+    profile_bg_value ?? current?.profile_bg_value ?? '',
+    blog_css ?? current?.blog_css ?? '',
+    blog_bg_type ?? current?.blog_bg_type ?? '',
+    blog_bg_value ?? current?.blog_bg_value ?? '',
+    Date.now(),
+    userId
+  ).run();
   return ok(c, { message: '装扮已保存' });
 });
 
 account.get('/customize', requireLogin, async (c) => {
   const userId = c.get('userId');
   const user = await c.env.DB.prepare(
-    'SELECT profile_css, profile_bg_type, profile_bg_value FROM users WHERE id=?'
+    'SELECT profile_css, profile_bg_type, profile_bg_value, blog_css, blog_bg_type, blog_bg_value FROM users WHERE id=?'
   ).bind(userId).first();
-  return ok(c, user || { profile_css: '', profile_bg_type: '', profile_bg_value: '' });
+  return ok(c, user || {
+    profile_css: '',
+    profile_bg_type: '',
+    profile_bg_value: '',
+    blog_css: '',
+    blog_bg_type: '',
+    blog_bg_value: '',
+  });
 });
 
 export { account };

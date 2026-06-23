@@ -62,6 +62,7 @@
   <div class="tabs-row">
     <button class="active" data-tab="profile">基本资料</button>
     <button data-tab="appearance">个人装扮</button>
+    <button data-tab="blog">博客装扮</button>
     <button data-tab="security">账号安全</button>
   </div>
 
@@ -124,6 +125,38 @@
         <button class="btn-ghost" type="button" onclick="previewLive()">预览主页</button>
       </div>
       <div class="msg" id="appearanceMsg"></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" id="tabBlog">
+    <div class="panel">
+      <h3>博客主页装扮</h3>
+      <p>只应用到你的个人博客主页，不会影响帖子详情页，避免破坏站点阅读主题。</p>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="blogBgType">背景类型</label>
+          <select id="blogBgType" onchange="updateBlogBgOptions();updateBlogBgPreview()">
+            <option value="">默认背景</option>
+            <option value="color">纯色背景</option>
+            <option value="gradient">渐变背景</option>
+            <option value="image">图片背景</option>
+            <option value="matrix">代码雨 Matrix</option>
+            <option value="particles">动态粒子</option>
+            <option value="stars">星空背景</option>
+          </select>
+        </div>
+        <div class="form-group" id="blogBgOptions"></div>
+        <div class="form-group full">
+          <label for="blogCustomCss">博客主页 CSS</label>
+          <textarea id="blogCustomCss" placeholder="/* 建议把选择器限定在 .blog-hero、.blog-layout 内 */"></textarea>
+        </div>
+      </div>
+      <div class="preview-box" id="blogBgPreview"><span class="label" id="blogPreviewLabel">默认背景</span></div>
+      <div class="actions">
+        <button class="btn-primary" type="button" onclick="saveBlogAppearance()">保存博客装扮</button>
+        <button class="btn-ghost" type="button" onclick="previewBlogLive()">预览博客主页</button>
+      </div>
+      <div class="msg" id="blogAppearanceMsg"></div>
     </div>
   </section>
 
@@ -206,6 +239,18 @@ async function loadAppearance() {
   }
   if (data.profile_bg_type === 'image' && document.getElementById('bgMediaUrl')) document.getElementById('bgMediaUrl').value = parts[0] || '';
   updateBgPreview();
+
+  document.getElementById('blogBgType').value = data.blog_bg_type || '';
+  document.getElementById('blogCustomCss').value = data.blog_css || '';
+  updateBlogBgOptions();
+  const blogParts = String(data.blog_bg_value || '').split('|||');
+  if (data.blog_bg_type === 'color' && document.getElementById('blogBgColorVal')) document.getElementById('blogBgColorVal').value = blogParts[0] || '#0a0a0f';
+  if (data.blog_bg_type === 'gradient') {
+    if (document.getElementById('blogBgGrad1')) document.getElementById('blogBgGrad1').value = blogParts[0] || '#0a0a0f';
+    if (document.getElementById('blogBgGrad2')) document.getElementById('blogBgGrad2').value = blogParts[1] || '#1a0033';
+  }
+  if (data.blog_bg_type === 'image' && document.getElementById('blogBgMediaUrl')) document.getElementById('blogBgMediaUrl').value = blogParts[0] || '';
+  updateBlogBgPreview();
 }
 
 function updateBgOptions() {
@@ -250,6 +295,48 @@ function getBgValue() {
   return '';
 }
 
+function updateBlogBgOptions() {
+  const type = document.getElementById('blogBgType').value;
+  const box = document.getElementById('blogBgOptions');
+  if (type === 'color') box.innerHTML = '<label>背景颜色</label><input type="color" id="blogBgColorVal" value="#0a0a0f" oninput="updateBlogBgPreview()">';
+  else if (type === 'gradient') box.innerHTML = '<label>渐变颜色</label><div style="display:flex;gap:10px"><input type="color" id="blogBgGrad1" value="#0a0a0f" oninput="updateBlogBgPreview()"><input type="color" id="blogBgGrad2" value="#1a0033" oninput="updateBlogBgPreview()"></div>';
+  else if (type === 'image') box.innerHTML = '<label>图片 URL</label><input type="text" id="blogBgMediaUrl" placeholder="https://example.com/blog-bg.webp" oninput="updateBlogBgPreview()">';
+  else if (['matrix','particles','stars'].includes(type)) box.innerHTML = '<label>动态背景</label><p style="color:var(--text-mute);font-size:12px">该特效无需额外配置。</p>';
+  else box.innerHTML = '';
+}
+
+function updateBlogBgPreview() {
+  const type = document.getElementById('blogBgType').value;
+  const preview = document.getElementById('blogBgPreview');
+  const label = document.getElementById('blogPreviewLabel');
+  preview.style.background = 'var(--bg)';
+  if (type === 'color') {
+    const color = document.getElementById('blogBgColorVal')?.value || '#0a0a0f';
+    preview.style.background = color;
+    label.textContent = color;
+  } else if (type === 'gradient') {
+    const first = document.getElementById('blogBgGrad1')?.value || '#0a0a0f';
+    const second = document.getElementById('blogBgGrad2')?.value || '#1a0033';
+    preview.style.background = `linear-gradient(135deg,${first},${second})`;
+    label.textContent = '博客渐变背景';
+  } else if (type === 'image') {
+    const url = document.getElementById('blogBgMediaUrl')?.value || '';
+    preview.style.background = url ? `url("${url}") center/cover` : 'var(--bg)';
+    label.textContent = url ? '博客图片背景' : '未设置图片';
+  } else if (type === 'matrix') label.textContent = '博客代码雨';
+  else if (type === 'particles') label.textContent = '博客动态粒子';
+  else if (type === 'stars') label.textContent = '博客星空背景';
+  else label.textContent = '默认背景';
+}
+
+function getBlogBgValue() {
+  const type = document.getElementById('blogBgType').value;
+  if (type === 'color') return document.getElementById('blogBgColorVal')?.value || '#0a0a0f';
+  if (type === 'gradient') return (document.getElementById('blogBgGrad1')?.value || '#0a0a0f') + '|||' + (document.getElementById('blogBgGrad2')?.value || '#1a0033');
+  if (type === 'image') return document.getElementById('blogBgMediaUrl')?.value || '';
+  return '';
+}
+
 async function saveProfile() {
   const json = await window.NodeWeave.apiJson('/api/account/me', {
     method: 'PUT',
@@ -281,6 +368,24 @@ function previewLive() {
   saveAppearance().then(() => window.open('../profile.html', '_blank'));
 }
 
+async function saveBlogAppearance() {
+  const json = await window.NodeWeave.apiJson('/api/account/customize', {
+    method: 'PUT',
+    body: JSON.stringify({
+      blog_css: document.getElementById('blogCustomCss').value,
+      blog_bg_type: document.getElementById('blogBgType').value,
+      blog_bg_value: getBlogBgValue(),
+    }),
+  }).catch(() => ({ code: 1, msg: '网络错误，请稍后重试' }));
+  if (redirectLoginIfNeeded(json)) return;
+  showMsg('blogAppearanceMsg', json, '博客装扮已保存');
+}
+
+function previewBlogLive() {
+  const target = currentUser ? '../blog.html?user=' + encodeURIComponent(currentUser.id) : '../blog.html';
+  saveBlogAppearance().then(() => window.open(target, '_blank'));
+}
+
 async function changePassword() {
   const json = await window.NodeWeave.apiJson('/api/account/change-password', {
     method: 'POST',
@@ -299,6 +404,7 @@ async function changePassword() {
 
 document.addEventListener('DOMContentLoaded', () => {
   updateBgOptions();
+  updateBlogBgOptions();
   loadProfile();
   loadAppearance();
 });

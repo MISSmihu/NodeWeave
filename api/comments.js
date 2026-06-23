@@ -14,6 +14,16 @@ async function requireLogin(c, next) {
   return next();
 }
 
+async function requireStaff(c, next) {
+  const user = await authUser(c, c.env);
+  if (!user) return err(c, CODE.UNAUTHORIZED, '请先登录', 401);
+  const row = await c.env.DB.prepare('SELECT role FROM users WHERE id=?').bind(user.sub).first();
+  if (!row || !['owner', 'admin', 'moderator'].includes(row.role)) return err(c, CODE.FORBIDDEN, '无权限', 403);
+  c.set('userId', user.sub);
+  c.set('userRole', row.role);
+  return next();
+}
+
 function asInt(value, fallback = 0) {
   const parsed = parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -99,13 +109,40 @@ comments.delete('/:id', requireLogin, async (c) => {
     `SELECT id, post_id, ${authorExpr('c')} AS author_id FROM comments c WHERE c.id=?`
   ).bind(commentId).first();
   if (!comment) return err(c, CODE.NOT_FOUND, '评论不存在', 404);
-  if (comment.author_id !== userId) return err(c, CODE.FORBIDDEN, '只能删除自己的评论', 403);
+  const roleRow = await c.env.DB.prepare('SELECT role FROM users WHERE id=?').bind(userId).first();
+  const isStaff = roleRow && ['owner', 'admin', 'moderator'].includes(roleRow.role);
+  if (comment.author_id !== userId && !isStaff) return err(c, CODE.FORBIDDEN, '只能删除自己的评论', 403);
 
   await c.env.DB.batch([
     c.env.DB.prepare('DELETE FROM comments WHERE id=?').bind(commentId),
     c.env.DB.prepare('UPDATE posts SET comment_count=MAX(0,COALESCE(comment_count,0)-1) WHERE id=?').bind(comment.post_id),
   ]);
   return ok(c, { message: '已删除' });
+});
+
+comments.put('/:id', requireStaff, async (c) => {
+  const commentId = c.req.param('id');
+  const body = await c.req.json().catch(() => ({}));
+  const content = String(body.content || '').trim();
+  if (!content) return err(c, CODE.VALIDATION, '评论内容不能为空');
+  if (content.length > 5000) return err(c, CODE.VALIDATION, '评论最长 5000 字符');
+  const comment = await c.env.DB.prepare('SELECT id FROM comments WHERE id=?').bind(commentId).first();
+  if (!comment) return err(c, CODE.NOT_FOUND, '评论不存在', 404);
+  await c.env.DB.prepare('UPDATE comments SET content=?, updated_at=? WHERE id=?').bind(content, Date.now(), commentId).run();
+  return ok(c, { message: '评论已更新' });
+});
+
+comments.post('/:id/moderate', requireStaff, async (c) => {
+  const commentId = c.req.param('id');
+  const { action, value } = await c.req.json().catch(() => ({}));
+  const comment = await c.env.DB.prepare('SELECT id FROM comments WHERE id=?').bind(commentId).first();
+  if (!comment) return err(c, CODE.NOT_FOUND, '评论不存在', 404);
+  if (action === 'hide') {
+    const hidden = value ? 1 : 0;
+    await c.env.DB.prepare('UPDATE comments SET is_hidden=? WHERE id=?').bind(hidden, commentId).run();
+    return ok(c, { is_hidden: hidden });
+  }
+  return err(c, CODE.VALIDATION, '无效操作');
 });
 
 export { comments };

@@ -41,6 +41,12 @@
 .input-row .info .desc{font-size:12px;color:var(--text-mute);margin-top:2px}
 .input-row input{padding:6px 12px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--font-mono);font-size:13px;outline:none;width:180px;text-align:right}
 .input-row input:focus{border-color:var(--cyan)}
+.reward-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px}
+.reward-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px}
+.reward-card h4{font-family:var(--font-display);font-size:13px;color:var(--cyan);margin-bottom:10px}
+.reward-card label{display:block;font-family:var(--font-mono);font-size:10px;color:var(--text-mute);margin:8px 0 4px}
+.reward-card select,.reward-card input{width:100%;padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:12px}
+.reward-range{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .save-bar{position:fixed;bottom:0;left:200px;right:0;background:var(--surface);border-top:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:16px;z-index:50}
 .save-bar .changes-count{font-family:var(--font-mono);font-size:12px;color:var(--text-mute)}
 .save-bar button{padding:10px 24px;border-radius:4px;font-family:var(--font-display);font-size:14px;cursor:pointer;font-weight:700;border:none}
@@ -54,6 +60,7 @@
 .msg-err{background:rgba(255,0,60,.1);color:var(--magenta);border:1px solid rgba(255,0,60,.2)}
 .highlight-changed{animation:highlightPulse .6s ease}
 @keyframes highlightPulse{50%{background:rgba(0,240,255,.06)}}
+@media(max-width:860px){.reward-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -124,6 +131,41 @@
       <div class="toggle-row"><div class="info"><div class="name">签到奖励</div><div class="desc">每日签到获得论坛币</div></div><label class="toggle"><input type="checkbox" id="cfg_signin_reward_enabled" onchange="markChanged()"><span class="slider"></span></label></div>
       <div class="toggle-row"><div class="info"><div class="name">论坛币系统</div><div class="desc">关闭后所有论坛币功能禁用</div></div><label class="toggle"><input type="checkbox" id="cfg_coin_enabled" onchange="markChanged()"><span class="slider"></span></label></div>
       <div class="toggle-row"><div class="info"><div class="name">用户等级组</div><div class="desc">关闭后所有用户平等权限</div></div><label class="toggle"><input type="checkbox" id="cfg_user_level_enabled" onchange="markChanged()"><span class="slider"></span></label></div>
+      <div class="reward-grid">
+        <div class="reward-card">
+          <h4>论坛币奖励</h4>
+          <label>模式</label>
+          <select id="cfg_signin_coin_mode" onchange="markChanged()"><option value="fixed">固定</option><option value="random">随机</option></select>
+          <label>固定数量</label>
+          <input type="number" id="cfg_signin_coin_fixed" min="0" onchange="markChanged()">
+          <div class="reward-range">
+            <div><label>随机最小</label><input type="number" id="cfg_signin_coin_min" min="0" onchange="markChanged()"></div>
+            <div><label>随机最大</label><input type="number" id="cfg_signin_coin_max" min="0" onchange="markChanged()"></div>
+          </div>
+        </div>
+        <div class="reward-card">
+          <h4>声望奖励</h4>
+          <label>模式</label>
+          <select id="cfg_signin_reputation_mode" onchange="markChanged()"><option value="fixed">固定</option><option value="random">随机</option></select>
+          <label>固定数量</label>
+          <input type="number" id="cfg_signin_reputation_fixed" min="0" onchange="markChanged()">
+          <div class="reward-range">
+            <div><label>随机最小</label><input type="number" id="cfg_signin_reputation_min" min="0" onchange="markChanged()"></div>
+            <div><label>随机最大</label><input type="number" id="cfg_signin_reputation_max" min="0" onchange="markChanged()"></div>
+          </div>
+        </div>
+        <div class="reward-card">
+          <h4>经验奖励</h4>
+          <label>模式</label>
+          <select id="cfg_signin_exp_mode" onchange="markChanged()"><option value="fixed">固定</option><option value="random">随机</option></select>
+          <label>固定数量</label>
+          <input type="number" id="cfg_signin_exp_fixed" min="0" onchange="markChanged()">
+          <div class="reward-range">
+            <div><label>随机最小</label><input type="number" id="cfg_signin_exp_min" min="0" onchange="markChanged()"></div>
+            <div><label>随机最大</label><input type="number" id="cfg_signin_exp_max" min="0" onchange="markChanged()"></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="page-section">
@@ -174,6 +216,18 @@ async function loadConfig() {
     setToggle('cfg_signin_reward_enabled', c.signin_reward_enabled);
     setToggle('cfg_coin_enabled', c.coin_enabled);
     setToggle('cfg_user_level_enabled', c.user_level_enabled);
+    setValue('cfg_signin_coin_mode', c.signin_coin_mode || 'fixed');
+    setValue('cfg_signin_coin_fixed', c.signin_coin_fixed ?? 3);
+    setValue('cfg_signin_coin_min', c.signin_coin_min ?? 2);
+    setValue('cfg_signin_coin_max', c.signin_coin_max ?? 8);
+    setValue('cfg_signin_reputation_mode', c.signin_reputation_mode || 'fixed');
+    setValue('cfg_signin_reputation_fixed', c.signin_reputation_fixed ?? 1);
+    setValue('cfg_signin_reputation_min', c.signin_reputation_min ?? 1);
+    setValue('cfg_signin_reputation_max', c.signin_reputation_max ?? 3);
+    setValue('cfg_signin_exp_mode', c.signin_exp_mode || 'fixed');
+    setValue('cfg_signin_exp_fixed', c.signin_exp_fixed ?? 1);
+    setValue('cfg_signin_exp_min', c.signin_exp_min ?? 1);
+    setValue('cfg_signin_exp_max', c.signin_exp_max ?? 3);
 
     // 未成年
     setToggle('cfg_teen_mode_enabled', c.teen_mode_enabled);
@@ -184,6 +238,10 @@ async function loadConfig() {
 
 function setToggle(id, val) {
   document.getElementById(id).checked = !!val;
+}
+
+function setValue(id, val) {
+  document.getElementById(id).value = val;
 }
 
 function markChanged() { changedKeys.add(event.target.id); updateChangesInfo(); }

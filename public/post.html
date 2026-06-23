@@ -30,6 +30,11 @@
 .staff-bar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0;padding:12px;border:1px dashed rgba(0,240,255,.18);border-radius:8px;background:rgba(0,240,255,.035)}
 .staff-bar button{padding:7px 10px;border:1px solid var(--border);background:var(--bg);border-radius:6px;color:var(--text-dim);font-family:var(--font-mono);font-size:11px}
 .staff-bar button:hover{border-color:var(--cyan);color:var(--cyan)}
+.staff-bar .danger{border-color:rgba(255,0,60,.35);color:var(--magenta)}
+.comment-mod{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.comment-mod button{padding:4px 8px;border:1px solid var(--border);background:var(--bg);border-radius:5px;color:var(--text-mute);font-family:var(--font-mono);font-size:10px}
+.comment-mod button:hover{border-color:var(--cyan);color:var(--cyan)}
+.comment-mod .danger{border-color:rgba(255,0,60,.35);color:var(--magenta)}
 .guest-lock{margin:16px 0;padding:16px;border:1px dashed rgba(0,240,255,.22);border-radius:8px;background:linear-gradient(135deg,rgba(0,240,255,.06),rgba(157,0,255,.035));color:var(--text-dim);font-size:13px;line-height:1.8}
 .guest-lock a{color:var(--cyan);text-decoration:none}
 .rate-stars{display:inline-flex;gap:3px;align-items:center}
@@ -185,7 +190,9 @@ function renderPost() {
       <button type="button" onclick="moderatePost('pin', ${p.is_pinned ? 0 : 1})">${p.is_pinned ? '取消置顶' : '置顶'}</button>
       <button type="button" onclick="moderatePost('feature', ${p.is_featured ? 0 : 1})">${p.is_featured ? '取消精华' : '加精'}</button>
       <button type="button" onclick="moderatePost('lock', ${p.is_locked ? 0 : 1})">${p.is_locked ? '解锁' : '锁帖'}</button>
-      <button type="button" onclick="moderatePost('hide', 1)">隐藏</button>
+      <button type="button" onclick="moderatePost('hide', ${p.is_hidden ? 0 : 1})">${p.is_hidden ? '恢复显示' : '隐藏'}</button>
+      <button type="button" onclick="location.href='editor.html?edit=${esc(p.id)}'">编辑全文</button>
+      <button class="danger" type="button" onclick="deletePost()">删除</button>
     </div>` : '';
   shell.innerHTML = `
     <div class="post-tags">${tags || `<span>${p.type === 'blog' ? '博客' : '帖子'}</span>`}</div>
@@ -318,6 +325,7 @@ async function loadComments() {
   }
   list.innerHTML = json.data.comments.map(comment => {
     const canAccept = currentUser && postData && currentUser.id === postData.author_id && comment.author_id !== postData.author_id && !postData.accepted_answer_id;
+    const isStaff = currentUser && ['owner', 'admin', 'moderator'].includes(currentUser.role);
     return `<div class="comment-item">
       <div class="comment-head">
         <span class="comment-author">@${esc(comment.display_name || comment.username || '匿名用户')}</span>
@@ -326,6 +334,11 @@ async function loadComments() {
         ${canAccept ? `<button class="accept-btn" type="button" onclick="acceptAnswer('${esc(comment.id)}')">采纳并发放悬赏</button>` : ''}
       </div>
       <div class="comment-body">${esc(comment.content)}</div>
+      ${isStaff ? `<div class="comment-mod">
+        <button type="button" onclick="editComment('${esc(comment.id)}')">编辑评论</button>
+        <button type="button" onclick="hideComment('${esc(comment.id)}')">隐藏评论</button>
+        <button class="danger" type="button" onclick="deleteComment('${esc(comment.id)}')">删除评论</button>
+      </div>` : ''}
     </div>`;
   }).join('');
 }
@@ -369,6 +382,56 @@ async function moderatePost(action, value) {
   });
   if (json.code !== 0) {
     alert(json.msg || '操作失败');
+    return;
+  }
+  loadPost();
+}
+
+async function deletePost() {
+  if (!(await requireLoginAction())) return;
+  if (!confirm('确定删除这篇内容？删除后不可恢复。')) return;
+  const json = await apiJson('/api/posts/' + encodeURIComponent(postId), { method: 'DELETE' });
+  if (json.code !== 0) {
+    alert(json.msg || '删除失败');
+    return;
+  }
+  location.href = postData?.type === 'blog' ? 'blog.html' : 'boards.html';
+}
+
+async function editComment(commentId) {
+  if (!(await requireLoginAction())) return;
+  const next = prompt('输入新的评论内容：');
+  if (!next || !next.trim()) return;
+  const json = await apiJson('/api/comments/' + encodeURIComponent(commentId), {
+    method: 'PUT',
+    body: JSON.stringify({ content: next.trim() }),
+  });
+  if (json.code !== 0) {
+    alert(json.msg || '编辑失败');
+    return;
+  }
+  loadComments();
+}
+
+async function hideComment(commentId) {
+  if (!(await requireLoginAction())) return;
+  const json = await apiJson('/api/comments/' + encodeURIComponent(commentId) + '/moderate', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'hide', value: 1 }),
+  });
+  if (json.code !== 0) {
+    alert(json.msg || '隐藏失败');
+    return;
+  }
+  loadComments();
+}
+
+async function deleteComment(commentId) {
+  if (!(await requireLoginAction())) return;
+  if (!confirm('确定删除这条评论？')) return;
+  const json = await apiJson('/api/comments/' + encodeURIComponent(commentId), { method: 'DELETE' });
+  if (json.code !== 0) {
+    alert(json.msg || '删除失败');
     return;
   }
   loadPost();

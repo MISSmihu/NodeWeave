@@ -1,8 +1,9 @@
 ﻿// api/users.js - 用户公共信息
 import { Hono } from 'hono';
 import { ok, err, CODE } from './lib/response.js';
-import { getLevel } from './level.js';
+import { levelProgress } from './level.js';
 import { authUser } from './lib/jwt.js';
+import { generateId } from './lib/id.js';
 
 const users = new Hono();
 
@@ -12,6 +13,16 @@ async function requireOwner(c, next) {
   const row = await c.env.DB.prepare('SELECT role FROM users WHERE id=?').bind(user.sub).first();
   if (!row || row.role !== 'owner') return err(c, CODE.FORBIDDEN, '仅站长可操作', 403);
   c.set('userId', user.sub);
+  return next();
+}
+
+async function requireStaff(c, next) {
+  const user = await authUser(c, c.env);
+  if (!user) return err(c, CODE.UNAUTHORIZED, '请先登录', 401);
+  const row = await c.env.DB.prepare('SELECT role FROM users WHERE id=?').bind(user.sub).first();
+  if (!row || !['owner', 'admin', 'moderator'].includes(row.role)) return err(c, CODE.FORBIDDEN, '无权限', 403);
+  c.set('userId', user.sub);
+  c.set('userRole', row.role);
   return next();
 }
 
@@ -29,15 +40,15 @@ users.get("/search", async (c) => {
 users.get('/:id', async (c) => {
   const userId = c.req.param('id');
   const user = await c.env.DB.prepare(
-    'SELECT id, username, display_name, bio, avatar_color, role, reputation, coins, created_at, profile_css, profile_bg_type, profile_bg_value FROM users WHERE id=?'
+    'SELECT id, username, display_name, bio, avatar_color, role, reputation, coins, exp, created_at, profile_css, profile_bg_type, profile_bg_value, blog_css, blog_bg_type, blog_bg_value FROM users WHERE id=?'
   ).bind(userId).first();
   const finalUser = user || await c.env.DB.prepare(
-    'SELECT id, username, display_name, bio, avatar_color, role, reputation, coins, created_at, profile_css, profile_bg_type, profile_bg_value FROM users WHERE username=?'
+    'SELECT id, username, display_name, bio, avatar_color, role, reputation, coins, exp, created_at, profile_css, profile_bg_type, profile_bg_value, blog_css, blog_bg_type, blog_bg_value FROM users WHERE username=?'
   ).bind(userId).first();
 
   if (!finalUser) return err(c, CODE.NOT_FOUND, '用户不存在');
 
-  const lv = getLevel(finalUser.reputation);
+  const levelInfo = levelProgress(finalUser.reputation || 0);
 
   // 统计帖子/评论数
   const postCount = await c.env.DB.prepare(
@@ -55,7 +66,18 @@ users.get('/:id', async (c) => {
 
   return ok(c, {
     ...finalUser,
-    level: { level: lv.level, name: lv.name, color: lv.color, icon: lv.icon },
+    level: {
+      level: levelInfo.current.level,
+      name: levelInfo.current.name,
+      color: levelInfo.current.color,
+      icon: levelInfo.current.icon,
+      minRep: levelInfo.current.minRep,
+      reward: levelInfo.current.reward,
+      permissions: levelInfo.current.permissions,
+      progress: levelInfo.progress,
+      need: levelInfo.need,
+      next_level: levelInfo.next ? { ...levelInfo.next, need: levelInfo.need } : null,
+    },
     post_count: postCount.cnt,
     comment_count: commentCount.cnt,
     recent_posts: recentPosts.results,
@@ -65,17 +87,32 @@ users.get('/:id', async (c) => {
 // GET /api/users/:id/posts - 用户帖子列表
 users.get('/:id/posts', async (c) => {
   const userId = c.req.param('id');
+  const type = c.req.query('type');
+  const sort = c.req.query('sort') === 'hot' ? 'hot' : 'latest';
+  const resolved = await c.env.DB.prepare('SELECT id FROM users WHERE id=? OR username=?').bind(userId, userId).first();
+  if (!resolved) return err(c, CODE.NOT_FOUND, '用户不存在', 404);
   const page = Math.max(1, parseInt(c.req.query('page') || '1'));
-  const pageSize = 20;
+  const pageSize = Math.min(50, Math.max(1, parseInt(c.req.query('pageSize') || '20')));
   const offset = (page - 1) * pageSize;
+  let where = "WHERE COALESCE(NULLIF(author_id,''), user_id)=? AND COALESCE(is_hidden,0)=0";
+  const params = [resolved.id];
+  if (type === 'blog' || type === 'post') {
+    where += ' AND type=?';
+    params.push(type);
+  }
+  const orderBy = sort === 'hot'
+    ? 'ORDER BY (COALESCE(view_count,0) + COALESCE(like_count,0) * 3 + COALESCE(comment_count,0) * 5 + COALESCE(tip_total,0) * 2 + COALESCE(rating_avg,0) * COALESCE(rating_count,0) * 4) DESC, created_at DESC'
+    : 'ORDER BY created_at DESC';
 
   const rows = await c.env.DB.prepare(
-    "SELECT id, title, type, like_count, comment_count, view_count, created_at FROM posts WHERE COALESCE(NULLIF(author_id,''), user_id)=? AND COALESCE(is_hidden,0)=0 ORDER BY created_at DESC LIMIT ? OFFSET ?"
-  ).bind(userId, pageSize, offset).all();
+    `SELECT id, title, content, type, board_id, like_count, comment_count, view_count, downvote_count, tip_count, tip_total, rating_avg, rating_count, created_at
+       FROM posts ${where}
+      ${orderBy} LIMIT ? OFFSET ?`
+  ).bind(...params, pageSize, offset).all();
 
   const total = await c.env.DB.prepare(
-    "SELECT COUNT(*) as cnt FROM posts WHERE COALESCE(NULLIF(author_id,''), user_id)=? AND COALESCE(is_hidden,0)=0"
-  ).bind(userId).first();
+    `SELECT COUNT(*) as cnt FROM posts ${where}`
+  ).bind(...params).first();
 
   return ok(c, { posts: rows.results, total: total.cnt, page, pageSize });
 });
@@ -95,6 +132,49 @@ users.put('/:id/role', requireOwner, async (c) => {
 
   await c.env.DB.prepare('UPDATE users SET role=?, updated_at=? WHERE id=?').bind(role, Date.now(), user.id).run();
   return ok(c, { id: user.id, role });
+});
+
+// PUT /api/users/:id/admin-profile - 站长/管理员编辑用户资料
+users.put('/:id/admin-profile', requireStaff, async (c) => {
+  const target = c.req.param('id');
+  const role = c.get('userRole');
+  const user = await c.env.DB.prepare('SELECT id, role FROM users WHERE id=? OR username=?').bind(target, target).first();
+  if (!user) return err(c, CODE.NOT_FOUND, '用户不存在', 404);
+  if (user.role === 'owner' && role !== 'owner') return err(c, CODE.FORBIDDEN, '不能修改站长资料', 403);
+
+  const body = await c.req.json().catch(() => ({}));
+  const displayName = String(body.display_name || '').trim().slice(0, 24);
+  const bio = String(body.bio || '').trim().slice(0, 500);
+  const avatarColor = /^#[0-9a-fA-F]{3,8}$/.test(String(body.avatar_color || '')) ? body.avatar_color : '#00f0ff';
+  await c.env.DB.prepare('UPDATE users SET display_name=?, bio=?, avatar_color=?, updated_at=? WHERE id=?')
+    .bind(displayName, bio, avatarColor, Date.now(), user.id).run();
+  return ok(c, { id: user.id, message: '资料已更新' });
+});
+
+// PUT /api/users/:id/assets - 站长修改用户论坛币/声望
+users.put('/:id/assets', requireOwner, async (c) => {
+  const actorId = c.get('userId');
+  const target = c.req.param('id');
+  const body = await c.req.json().catch(() => ({}));
+  const user = await c.env.DB.prepare('SELECT id, coins, reputation, exp FROM users WHERE id=? OR username=?').bind(target, target).first();
+  if (!user) return err(c, CODE.NOT_FOUND, '用户不存在', 404);
+
+  const coins = Number.isFinite(Number(body.coins)) ? Math.max(0, Math.floor(Number(body.coins))) : Number(user.coins || 0);
+  const reputation = Number.isFinite(Number(body.reputation)) ? Math.max(0, Math.floor(Number(body.reputation))) : Number(user.reputation || 0);
+  const exp = Number.isFinite(Number(body.exp)) ? Math.max(0, Math.floor(Number(body.exp))) : Number(user.exp || 0);
+  const now = Date.now();
+  const deltaCoins = coins - Number(user.coins || 0);
+  const statements = [
+    c.env.DB.prepare('UPDATE users SET coins=?, reputation=?, exp=?, updated_at=? WHERE id=?').bind(coins, reputation, exp, now, user.id),
+  ];
+  if (deltaCoins !== 0) {
+    statements.push(
+      c.env.DB.prepare('INSERT INTO coin_logs(id,user_id,amount,type,ref_id,balance_after,created_at) VALUES(?,?,?,?,?,?,?)')
+        .bind('cl_' + generateId(8), user.id, deltaCoins, 'admin_adjust', actorId, coins, now)
+    );
+  }
+  await c.env.DB.batch(statements);
+  return ok(c, { id: user.id, coins, reputation, exp });
 });
 
 export { users };

@@ -7,7 +7,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<style id="blogCustomStyles"></style>
 <style>
+.blog-bg-layer{position:fixed;inset:0;z-index:-2;pointer-events:none;background:transparent;background-size:cover;background-position:center;opacity:.82}
+.blog-canvas-bg{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
 .blog-hero{position:relative;max-width:1400px;margin:0 auto;padding:88px 28px 44px;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:34px;align-items:stretch}
 .blog-hero::before{content:'';position:absolute;left:28px;right:28px;top:42px;bottom:8px;border:1px solid rgba(0,240,255,.08);background:linear-gradient(135deg,rgba(0,240,255,.055),transparent 36%,rgba(157,0,255,.06));clip-path:polygon(0 0,calc(100% - 34px) 0,100% 34px,100% 100%,34px 100%,0 calc(100% - 34px));pointer-events:none}
 .blog-hero-main{position:relative;z-index:1;padding:34px 0 18px}
@@ -62,6 +65,8 @@
 </style>
 </head>
 <body>
+<div class="blog-bg-layer" id="blogBgLayer"></div>
+<canvas class="blog-canvas-bg" id="blogBgCanvas"></canvas>
 <div class="bg-grid"></div><div class="bg-scanlines"></div><div class="bg-glow"></div>
 
 <header class="nav">
@@ -152,6 +157,8 @@
 <script>
 let blogPage = 1;
 let blogSort = 'latest';
+let blogUserId = new URLSearchParams(location.search).get('user');
+let blogBgAnimationId = null;
 const esc = (value) => window.NodeWeave.escapeHtml(value);
 const timeAgo = (value) => window.NodeWeave.timeAgo(value);
 
@@ -185,10 +192,12 @@ function renderFeature(post) {
   card.classList.add('show');
 }
 
-function renderArticles(posts, reset) {
+function renderArticles(posts, reset, hasFeature = false) {
   const list = document.getElementById('articleList');
   if (!posts.length && reset) {
-    list.innerHTML = `
+    list.innerHTML = hasFeature
+      ? ''
+      : `
       <div class="empty-blog" style="grid-column:1/-1">
         <div class="icon">📭</div>
         <h3>还没有博客</h3>
@@ -217,7 +226,10 @@ async function loadBlogs(reset) {
   const list = document.getElementById('articleList');
   if (reset) list.innerHTML = '<div class="empty-blog" style="grid-column:1/-1"><div class="icon">⌁</div><h3>正在同步博客节点...</h3><p>正在读取 NodeWeave 的原创长文。</p></div>';
   const params = new URLSearchParams({ type: 'blog', sort: blogSort, page: String(blogPage), pageSize: '9' });
-  const json = await window.NodeWeave.apiJson('/api/posts?' + params.toString()).catch(() => null);
+  const endpoint = blogUserId
+    ? '/api/users/' + encodeURIComponent(blogUserId) + '/posts?' + new URLSearchParams({ type: 'blog', sort: blogSort, page: String(blogPage), pageSize: '9' }).toString()
+    : '/api/posts?' + params.toString();
+  const json = await window.NodeWeave.apiJson(endpoint).catch(() => null);
   if (!json || json.code !== 0) {
     list.innerHTML = '<div class="empty-blog" style="grid-column:1/-1"><div class="icon">⚠</div><h3>博客加载失败</h3><p>请稍后刷新页面。</p></div>';
     return;
@@ -226,12 +238,123 @@ async function loadBlogs(reset) {
   document.getElementById('blogCount').textContent = Number(json.data.total || 0).toLocaleString();
   const heat = posts.length ? Math.round(posts.reduce((sum, post) => sum + Number(post.view_count || 0) + Number(post.like_count || 0) * 3 + Number(post.comment_count || 0) * 5, 0) / posts.length) : 0;
   document.getElementById('avgHeat').textContent = heat || '--';
-  renderFeature(reset ? posts[0] : null);
-  renderArticles(reset ? posts.slice(1) : posts, reset);
+  const feature = reset ? posts[0] : null;
+  renderFeature(feature);
+  renderArticles(reset ? posts.slice(1) : posts, reset, !!feature);
   document.getElementById('btnLoadmore').style.display = posts.length >= 9 ? '' : 'none';
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function initBlogCanvas(type) {
+  const canvas = document.getElementById('blogBgCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.dataset.type = type || '';
+  if (blogBgAnimationId) cancelAnimationFrame(blogBgAnimationId);
+  blogBgAnimationId = null;
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (type === 'matrix') drawBlogMatrix(ctx, canvas);
+  if (type === 'particles') drawBlogParticles(ctx, canvas);
+  if (type === 'stars') drawBlogStars(ctx, canvas);
+}
+
+function applyBlogAppearance(type, value, css) {
+  document.getElementById('blogCustomStyles').textContent = css || '';
+  const layer = document.getElementById('blogBgLayer');
+  layer.style.background = '';
+  layer.style.backgroundImage = '';
+  const parts = String(value || '').split('|||');
+  if (type === 'color') {
+    layer.style.background = parts[0] || '#0a0a0f';
+  } else if (type === 'gradient') {
+    layer.style.background = `linear-gradient(135deg, ${parts[0] || '#0a0a0f'}, ${parts[1] || '#1a0033'})`;
+  } else if (type === 'image' && parts[0]) {
+    layer.style.backgroundImage = `linear-gradient(rgba(10,10,15,.45),rgba(10,10,15,.68)), url("${parts[0].replace(/"/g, '%22')}")`;
+  }
+  initBlogCanvas(['matrix', 'particles', 'stars'].includes(type) ? type : '');
+}
+
+function drawBlogMatrix(ctx, canvas) {
+  const chars = 'NODEWEAVE0123456789<>/{}[]';
+  const drops = Array(Math.ceil(canvas.width / 18)).fill(1);
+  function draw() {
+    ctx.fillStyle = 'rgba(10,10,15,.12)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#00f0ff';
+    ctx.font = '14px monospace';
+    drops.forEach((drop, index) => {
+      ctx.fillText(chars[Math.floor(Math.random() * chars.length)], index * 18, drop * 18);
+      if (drop * 18 > canvas.height && Math.random() > .975) drops[index] = 0;
+      drops[index]++;
+    });
+    blogBgAnimationId = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+function drawBlogParticles(ctx, canvas) {
+  const particles = Array.from({ length: 90 }, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    vx: (Math.random() - .5) * 1.2,
+    vy: (Math.random() - .5) * 1.2,
+    r: Math.random() * 2 + 1,
+  }));
+  function draw() {
+    ctx.fillStyle = 'rgba(10,10,15,.16)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#9d00ff';
+    particles.forEach(p => {
+      p.x = (p.x + p.vx + canvas.width) % canvas.width;
+      p.y = (p.y + p.vy + canvas.height) % canvas.height;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    blogBgAnimationId = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+function drawBlogStars(ctx, canvas) {
+  const stars = Array.from({ length: 160 }, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, r: Math.random() * 1.5 + .4, a: Math.random() }));
+  function draw() {
+    ctx.fillStyle = 'rgba(5,5,20,.18)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    stars.forEach(s => {
+      s.a += (Math.random() - .5) * .05;
+      s.a = Math.max(.2, Math.min(1, s.a));
+      ctx.fillStyle = `rgba(255,255,255,${s.a})`;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    blogBgAnimationId = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+async function loadBlogOwner() {
+  if (!blogUserId) return;
+  const json = await window.NodeWeave.apiJson('/api/users/' + encodeURIComponent(blogUserId)).catch(() => null);
+  if (!json || json.code !== 0) return;
+  const user = json.data;
+  blogUserId = user.id;
+  document.title = (user.display_name || user.username) + ' 的博客 // NodeWeave';
+  document.querySelector('.blog-kicker span').textContent = 'PERSONAL BLOG NODE';
+  document.querySelector('.blog-title').innerHTML = `${esc(user.display_name || user.username)}<span>的博客节点</span>`;
+  document.querySelector('.blog-desc').textContent = user.bio || '这里收纳这个用户发布的原创博客、技术笔记、复盘和观点。';
+  applyBlogAppearance(user.blog_bg_type || '', user.blog_bg_value || '', user.blog_css || '');
+}
+
+addEventListener('resize', () => {
+  if (!blogUserId) return;
+  const type = document.getElementById('blogBgCanvas').dataset.type || '';
+  initBlogCanvas(type);
+});
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadBlogOwner();
   loadBlogs(true);
   document.querySelectorAll('.sort-tabs button').forEach(button => {
     button.addEventListener('click', () => {

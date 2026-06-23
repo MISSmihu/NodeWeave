@@ -182,7 +182,12 @@ posts.get('/:id', optLogin, async (c) => {
   ).bind(postId).first();
 
   if (!post) return err(c, CODE.NOT_FOUND, '帖子不存在', 404);
-  if (post.is_hidden && !c.get('userId')) return err(c, CODE.NOT_FOUND, '帖子不存在', 404);
+  if (post.is_hidden) {
+    const viewerId = c.get('userId');
+    const roleRow = viewerId ? await c.env.DB.prepare('SELECT role FROM users WHERE id=?').bind(viewerId).first() : null;
+    const isStaff = roleRow && ['owner', 'admin', 'moderator'].includes(roleRow.role);
+    if (!viewerId || (viewerId !== post.author_id && !isStaff)) return err(c, CODE.NOT_FOUND, '帖子不存在', 404);
+  }
 
   await c.env.DB.prepare('UPDATE posts SET view_count=COALESCE(view_count,0)+1 WHERE id=?').bind(postId).run();
   const tags = await c.env.DB.prepare('SELECT tag FROM post_tags WHERE post_id=?').bind(postId).all();
@@ -259,7 +264,9 @@ posts.put('/:id', requireLogin, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const post = await c.env.DB.prepare(`SELECT ${authorExpr()} AS author_id FROM posts p WHERE p.id=?`).bind(postId).first();
   if (!post) return err(c, CODE.NOT_FOUND, '帖子不存在', 404);
-  if (post.author_id !== userId) return err(c, CODE.FORBIDDEN, '只能编辑自己的帖子', 403);
+  const roleRow = await c.env.DB.prepare('SELECT role FROM users WHERE id=?').bind(userId).first();
+  const isStaff = roleRow && ['owner', 'admin', 'moderator'].includes(roleRow.role);
+  if (post.author_id !== userId && !isStaff) return err(c, CODE.FORBIDDEN, '只能编辑自己的帖子', 403);
 
   const fields = [];
   const params = [];
@@ -329,7 +336,9 @@ posts.delete('/:id', requireLogin, async (c) => {
   const postId = c.req.param('id');
   const post = await c.env.DB.prepare(`SELECT ${authorExpr()} AS author_id, board_id FROM posts p WHERE p.id=?`).bind(postId).first();
   if (!post) return err(c, CODE.NOT_FOUND, '帖子不存在', 404);
-  if (post.author_id !== userId) return err(c, CODE.FORBIDDEN, '只能删除自己的帖子', 403);
+  const roleRow = await c.env.DB.prepare('SELECT role FROM users WHERE id=?').bind(userId).first();
+  const isStaff = roleRow && ['owner', 'admin', 'moderator'].includes(roleRow.role);
+  if (post.author_id !== userId && !isStaff) return err(c, CODE.FORBIDDEN, '只能删除自己的帖子', 403);
 
   await c.env.DB.batch([
     c.env.DB.prepare('DELETE FROM post_tags WHERE post_id=?').bind(postId),
