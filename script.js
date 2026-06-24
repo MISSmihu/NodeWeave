@@ -345,7 +345,7 @@
       .replace(/~~([\s\S]+?)~~/g, '<del>$1</del>')
       .replace(/\[u\]([\s\S]+?)\[\/u\]/g, '<u>$1</u>')
       .replace(/\[color=(cyan|blue|red|green|purple|gold|muted)\]([\s\S]+?)\[\/color\]/g, '<span class="nw-color-$1">$2</span>')
-      .replace(/\[size=(small|large|huge)\]([\s\S]+?)\[\/size\]/g, '<span class="nw-size-$1">$2</span>')
+      .replace(/\[size=(12|14|16|18|20|24|28)px\]([\s\S]+?)\[\/size\]/g, '<span class="nw-size-px" style="--nw-font-size:$1px">$2</span>')
       .replace(/\[align=(left|center|right)\]([\s\S]+?)\[\/align\]/g, '<div class="nw-align-$1">$2</div>');
 
     const lines = html.split('\n');

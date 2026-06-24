@@ -468,9 +468,7 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
 .nw-color-purple{color:var(--purple)}
 .nw-color-gold{color:var(--gold)}
 .nw-color-muted{color:var(--text-mute)}
-.nw-size-small{font-size:.86em}
-.nw-size-large{font-size:1.18em}
-.nw-size-huge{font-size:1.42em}
+.nw-size-px{font-size:var(--nw-font-size)}
 .nw-align-left{text-align:left}
 .nw-align-center{text-align:center}
 .nw-align-right{text-align:right}

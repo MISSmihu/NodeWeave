@@ -47,6 +47,16 @@
 .tool-select{height:36px;min-width:108px;padding:0 28px 0 10px;background:var(--surface);border:1px solid var(--border-2);border-radius:8px;color:var(--text);font-family:var(--font-mono);font-size:12px;font-weight:800;outline:none}
 .tool-select.is-compact{min-width:88px}
 .tool-select:hover,.tool-select:focus{border-color:var(--cyan);background:color-mix(in srgb,var(--cyan) 8%,var(--surface));color:var(--cyan);box-shadow:0 0 0 3px color-mix(in srgb,var(--cyan) 10%,transparent)}
+.color-tools{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.color-btn{width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border:1px solid color-mix(in srgb,var(--swatch) 72%,transparent);border-radius:999px;background:color-mix(in srgb,var(--swatch) 18%,var(--surface));box-shadow:inset 0 0 0 6px color-mix(in srgb,var(--swatch) 92%,transparent);transition:transform .16s,border-color .16s,box-shadow .16s}
+.color-btn:hover,.color-btn:focus-visible{transform:translateY(-1px);border-color:var(--swatch);box-shadow:inset 0 0 0 6px color-mix(in srgb,var(--swatch) 92%,transparent),0 0 0 3px color-mix(in srgb,var(--swatch) 18%,transparent)}
+.color-btn[data-color="cyan"]{--swatch:var(--cyan)}
+.color-btn[data-color="blue"]{--swatch:var(--blue)}
+.color-btn[data-color="red"]{--swatch:var(--magenta)}
+.color-btn[data-color="green"]{--swatch:var(--green)}
+.color-btn[data-color="purple"]{--swatch:var(--purple)}
+.color-btn[data-color="gold"]{--swatch:var(--gold)}
+.color-btn[data-color="muted"]{--swatch:var(--text-mute)}
 .editor-preview{display:none;margin-top:12px;padding:18px;border:1px solid var(--border);border-radius:10px;background:var(--bg)}
 .editor-preview.show{display:block}
 .editor-preview-title{font-family:var(--font-mono);font-size:11px;color:var(--text-mute);margin-bottom:10px;letter-spacing:.12em}
@@ -194,14 +204,10 @@
       <div class="toolbar-shell" aria-label="正文编辑工具栏">
         <div class="toolbar-top">
           <div class="toolbar-title">FORMAT TERMINAL</div>
-          <div class="toolbar-hint">先选中文字再点按钮；也可切到全文编辑。</div>
+          <div class="toolbar-hint">选中文字后点按钮即可套用格式；没选中时会插入示例文字。</div>
         </div>
         <div class="toolbar-row">
-          <div class="tool-group" data-label="范围">
-            <select class="tool-select" id="formatScope" title="编辑范围">
-              <option value="selection">选中编辑</option>
-              <option value="all">全文编辑</option>
-            </select>
+          <div class="tool-group" data-label="段落">
             <select class="tool-select is-compact" id="headingSelect" title="标题级别">
               <option value="">正文</option>
               <option value="# ">标题 H1</option>
@@ -217,20 +223,23 @@
             <button class="tool-btn is-icon" type="button" data-wrap="`" title="行内代码"><span class="tool-icon">&lt;/&gt;</span></button>
             <select class="tool-select is-compact" id="sizeSelect" title="字号">
               <option value="">字号</option>
-              <option value="small">小字</option>
-              <option value="large">大字</option>
-              <option value="huge">超大</option>
+              <option value="12">12px</option>
+              <option value="14">14px</option>
+              <option value="16">16px</option>
+              <option value="18">18px</option>
+              <option value="20">20px</option>
+              <option value="24">24px</option>
+              <option value="28">28px</option>
             </select>
-            <select class="tool-select is-compact" id="colorSelect" title="颜色">
-              <option value="">颜色</option>
-              <option value="cyan">青色</option>
-              <option value="blue">蓝色</option>
-              <option value="red">红色</option>
-              <option value="green">绿色</option>
-              <option value="purple">紫色</option>
-              <option value="gold">金色</option>
-              <option value="muted">灰色</option>
-            </select>
+            <div class="color-tools" aria-label="文字颜色">
+              <button class="color-btn" type="button" data-color="cyan" title="青色 #00f0ff"></button>
+              <button class="color-btn" type="button" data-color="blue" title="蓝色"></button>
+              <button class="color-btn" type="button" data-color="red" title="红色 #ff003c"></button>
+              <button class="color-btn" type="button" data-color="green" title="绿色 #7fff00"></button>
+              <button class="color-btn" type="button" data-color="purple" title="紫色 #9d00ff"></button>
+              <button class="color-btn" type="button" data-color="gold" title="金色 #ffd700"></button>
+              <button class="color-btn" type="button" data-color="muted" title="灰色"></button>
+            </div>
           </div>
           <div class="tool-group is-fluid" data-label="排版">
             <select class="tool-select is-compact" id="alignSelect" title="对齐方式">
@@ -525,7 +534,6 @@ function updateCustomDateTime() {
 
 function getEditorRange() {
   const ta = $('postContent');
-  if ($('formatScope')?.value === 'all') return { start: 0, end: ta.value.length, selected: ta.value || '文本' };
   const start = ta.selectionStart;
   const end = ta.selectionEnd;
   return { start, end, selected: ta.value.slice(start, end) || '文本' };
@@ -564,12 +572,11 @@ function applyHeading(prefix) {
 function applyColor(color) {
   if (!color) return;
   applyEditorWrap(`[color=${color}]`, '[/color]');
-  $('colorSelect').value = '';
 }
 
 function applySize(size) {
   if (!size) return;
-  applyEditorWrap(`[size=${size}]`, '[/size]');
+  applyEditorWrap(`[size=${size}px]`, '[/size]');
   $('sizeSelect').value = '';
 }
 
@@ -817,8 +824,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.querySelectorAll('.tool-btn[data-wrap]').forEach(button => button.addEventListener('click', () => applyEditorWrap(button.dataset.wrap)));
   document.querySelectorAll('.tool-btn[data-before]').forEach(button => button.addEventListener('click', () => applyEditorWrap(button.dataset.before, button.dataset.after)));
   document.querySelectorAll('.tool-btn[data-prefix]').forEach(button => button.addEventListener('click', () => applyEditorPrefix(button.dataset.prefix)));
+  document.querySelectorAll('.color-btn[data-color]').forEach(button => button.addEventListener('click', () => applyColor(button.dataset.color)));
   $('headingSelect').addEventListener('change', (event) => applyHeading(event.target.value));
-  $('colorSelect').addEventListener('change', (event) => applyColor(event.target.value));
   $('sizeSelect').addEventListener('change', (event) => applySize(event.target.value));
   $('alignSelect').addEventListener('change', (event) => applyAlign(event.target.value));
   $('btnLink').addEventListener('click', insertLink);
