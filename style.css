@@ -315,6 +315,7 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
 .logo-sub{
   font-family:var(--font-mono);font-size:9px;color:var(--text-mute);
   letter-spacing:.15em;
+  display:none;
 }
 .nav-links{display:flex;gap:4px;margin-left:4px;flex:0 0 auto}
 .nav-links a{
