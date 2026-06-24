@@ -211,7 +211,14 @@ body{
   font-family:var(--font-body);
   background:var(--bg);
   color:var(--text);
-  line-height:1.6;
+  line-height:1.68;
+  font-size:15px;
+  font-weight:500;
+  letter-spacing:.012em;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  text-rendering:optimizeLegibility;
+  text-shadow:0 0 1px color-mix(in srgb,var(--text) 14%,transparent);
   overflow-x:hidden;
   position:relative;
   min-height:100vh;
@@ -244,7 +251,7 @@ body{
 button{font-family:inherit;cursor:pointer;border:none;outline:none}
 .btn-primary{
   font-family:var(--font-display);
-  font-weight:700;font-size:13px;letter-spacing:.08em;
+  font-weight:800;font-size:13px;letter-spacing:.06em;
   color:#001018;
   background:linear-gradient(135deg,var(--cyan),#00b8d4);
   padding:10px 20px;border-radius:4px;
@@ -260,7 +267,7 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
 
 .btn-outline{
   font-family:var(--font-display);
-  font-weight:600;font-size:13px;letter-spacing:.08em;
+  font-weight:800;font-size:13px;letter-spacing:.06em;
   color:var(--text);
   background:transparent;
   padding:10px 20px;border-radius:4px;
@@ -271,7 +278,7 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
 .btn-lg{padding:14px 30px;font-size:14px}
 
 .btn-ghost{
-  font-family:var(--font-display);font-weight:600;font-size:13px;
+  font-family:var(--font-display);font-weight:800;font-size:13px;
   color:var(--text-dim);background:transparent;
   padding:10px 16px;border-radius:4px;
   transition:color .2s;
@@ -311,7 +318,7 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
 }
 .nav-links{display:flex;gap:4px;margin-left:4px;flex:0 0 auto}
 .nav-links a{
-  font-size:14px;font-weight:500;color:var(--text-dim);
+  font-size:14px;font-weight:800;color:color-mix(in srgb,var(--text) 78%,var(--text-dim));
   text-decoration:none;padding:8px 14px;border-radius:4px;
   position:relative;transition:color .2s;white-space:nowrap;
 }
@@ -331,11 +338,11 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
 .search-ico{color:var(--text-mute);font-size:15px}
 .nav-search input{
   flex:1;background:transparent;border:none;outline:none;
-  color:var(--text);font-family:var(--font-mono);font-size:13px;
+  color:var(--text);font-family:var(--font-mono);font-size:13px;font-weight:600;
 }
 .nav-search input::placeholder{color:var(--text-mute)}
 .nav-search kbd{
-  font-family:var(--font-mono);font-size:11px;
+  font-family:var(--font-mono);font-size:11px;font-weight:700;
   background:var(--surface-2);color:var(--text-dim);
   padding:2px 7px;border-radius:3px;border:1px solid var(--border-2);
 }
@@ -389,6 +396,7 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
   color:var(--text-dim);
   font-family:var(--font-mono);
   font-size:12px;
+  font-weight:700;
   padding:0 28px 0 10px;
   outline:none;
   cursor:pointer;
@@ -436,14 +444,18 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
 .theme-fab .theme-picker{height:32px;min-width:98px;background:transparent;border-color:transparent;padding-left:4px}
 
 .nw-rich-content p{margin:0 0 14px}
+.nw-rich-content{font-weight:500;color:var(--text);line-height:1.82}
 .nw-rich-content h2,.nw-rich-content h3{font-family:var(--font-display);color:var(--cyan);line-height:1.45;margin:18px 0 10px}
 .nw-rich-content h2{font-size:20px}
 .nw-rich-content h3{font-size:16px}
 .nw-rich-content ul,.nw-rich-content ol{margin:10px 0 16px 24px;color:var(--text)}
 .nw-rich-content li{margin:5px 0}
 .nw-rich-content blockquote{margin:12px 0;padding:12px 14px;border-left:3px solid var(--cyan);background:rgba(0,240,255,.055);color:var(--text-dim)}
+.nw-rich-content strong{font-weight:900;color:color-mix(in srgb,var(--text) 92%,var(--cyan))}
+.nw-rich-content em{color:color-mix(in srgb,var(--text) 86%,var(--cyan));font-style:italic}
 .nw-rich-content a{color:var(--cyan);text-decoration:none;border-bottom:1px dashed var(--border)}
 .nw-rich-content a:hover{border-color:var(--cyan)}
+.nw-rich-hr{height:1px;border:0;margin:18px 0;background:linear-gradient(90deg,transparent,var(--cyan),var(--purple),transparent);box-shadow:var(--glow-cyan)}
 .nw-inline-code{padding:2px 6px;border:1px solid var(--border);border-radius:5px;background:var(--surface-2);color:var(--green);font-family:var(--font-mono);font-size:.92em}
 .nw-code-block{margin:14px 0;padding:14px 16px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);overflow:auto}
 .nw-code-block code{font-family:var(--font-mono);font-size:13px;color:var(--text);white-space:pre}
@@ -613,19 +625,19 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
   margin-bottom:10px;
 }
 .tag{
-  font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;
+  font-size:11px;font-weight:800;padding:2px 8px;border-radius:3px;
 }
 .tag-cyan{color:var(--cyan);background:rgba(0,240,255,.1)}
 .tag-magenta{color:var(--magenta);background:rgba(255,0,60,.1)}
 .card-type{color:var(--text-dim)}
 .dot-sep{color:var(--text-mute);opacity:.6}
 .card-title{
-  font-size:19px;font-weight:700;color:var(--text);
-  line-height:1.35;margin-bottom:10px;
+  font-size:19px;font-weight:800;color:var(--text);
+  line-height:1.42;margin-bottom:10px;
   transition:color .2s;
 }
 .card:hover .card-title{color:var(--cyan)}
-.card-excerpt{font-size:14px;color:var(--text-dim);line-height:1.7;margin-bottom:14px}
+.card-excerpt{font-size:14px;font-weight:500;color:var(--text-dim);line-height:1.85;margin-bottom:14px}
 .card-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
 .chip{
   font-family:var(--font-mono);font-size:11px;

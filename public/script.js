@@ -169,8 +169,8 @@
         updateMessageBadge();
       } else {
         el.innerHTML = `
-          ${themePickerMarkup()}
           <a class="btn-ghost" href="${assetUrl('themes.html')}" title="Theme Center">主题</a>
+          ${themePickerMarkup()}
           <a class="btn-ghost" href="${assetUrl('login.html')}">登录</a>
           <a class="btn-primary" href="${assetUrl('login.html?tab=register')}">注册</a>`;
       }
@@ -256,7 +256,9 @@
   function setupThemePicker() {
     document.querySelectorAll('[data-auth-actions]').forEach(el => {
       if (!el.querySelector('[data-theme-picker]')) {
-        el.insertAdjacentHTML('afterbegin', themePickerMarkup());
+        const notificationLink = el.querySelector('a[href*="notifications.html"]');
+        if (notificationLink) notificationLink.insertAdjacentHTML('afterend', themePickerMarkup());
+        else el.insertAdjacentHTML('afterbegin', themePickerMarkup());
       }
     });
     if (!document.querySelector('[data-auth-actions]') && !document.querySelector('.theme-fab')) {
@@ -339,6 +341,7 @@
       })
       .replace(/`([^`\n]+)`/g, '<code class="nw-inline-code">$1</code>')
       .replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*([^*\n]+)\*/g, '<em>$1</em>')
       .replace(/~~([\s\S]+?)~~/g, '<del>$1</del>')
       .replace(/\[u\]([\s\S]+?)\[\/u\]/g, '<u>$1</u>')
       .replace(/\[color=(cyan|blue|red|green|purple|gold|muted)\]([\s\S]+?)\[\/color\]/g, '<span class="nw-color-$1">$2</span>')
@@ -371,6 +374,9 @@
       } else if (/^&gt;\s?/.test(line)) {
         closeList();
         rendered.push(`<blockquote>${line.replace(/^&gt;\s?/, '')}</blockquote>`);
+      } else if (/^---+$/.test(line.trim())) {
+        closeList();
+        rendered.push('<hr class="nw-rich-hr">');
       } else if (/^\d+\.\s+/.test(line)) {
         if (listType !== 'ol') {
           closeList();
