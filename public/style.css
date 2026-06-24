@@ -297,7 +297,6 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
   display:flex;align-items:center;gap:18px;flex-wrap:nowrap;
   overflow-x:auto;overflow-y:hidden;scrollbar-width:none;
 }
-.nav-inner::after{content:'';flex:0 0 10px;height:1px}
 .nav-inner::-webkit-scrollbar{display:none}
 .nav-inner > *{min-width:0}
 .logo{display:flex;align-items:baseline;gap:6px;text-decoration:none;flex:0 0 auto}
@@ -330,9 +329,9 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
   background:var(--cyan);box-shadow:var(--glow-cyan);
 }
 .nav-search{
-  margin-left:auto;display:flex;align-items:center;gap:8px;
+  margin-left:auto;display:flex;align-items:center;gap:6px;
   background:var(--surface);border:1px solid var(--border);
-  padding:7px 12px;border-radius:6px;width:240px;flex:0 1 240px;min-width:190px;
+  padding:7px 9px;border-radius:6px;width:150px;flex:0 0 150px;min-width:140px;
   transition:border-color .2s, box-shadow .2s;
 }
 .nav-search:focus-within{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,240,255,.1)}
@@ -343,6 +342,7 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
 }
 .nav-search input::placeholder{color:var(--text-mute)}
 .nav-search kbd{
+  display:none;
   font-family:var(--font-mono);font-size:11px;font-weight:700;
   background:var(--surface-2);color:var(--text-dim);
   padding:2px 7px;border-radius:3px;border:1px solid var(--border-2);
@@ -361,6 +361,7 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
 .nav-actions .btn-ghost{padding:10px 11px}
 .nav-actions .btn-primary{padding:10px 16px}
 .nav-actions .theme-picker{min-width:82px}
+.nav-actions .account-chip{max-width:92px;overflow:hidden;text-overflow:ellipsis}
 .nav-toggle{
   display:none;
   width:42px;
@@ -407,9 +408,10 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  min-width:44px;
+  width:48px;
+  min-width:48px;
   height:34px;
-  padding:0 10px;
+  padding:0 8px;
   border:1px solid color-mix(in srgb,var(--level-color,var(--cyan)) 62%,transparent);
   border-radius:999px;
   background:linear-gradient(135deg,rgba(255,255,255,.055),rgba(255,255,255,.015));
@@ -421,7 +423,6 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
   text-decoration:none;
   text-shadow:0 0 12px color-mix(in srgb,var(--level-color,var(--cyan)) 42%,transparent);
   box-shadow:0 0 18px color-mix(in srgb,var(--level-color,var(--cyan)) 18%,transparent);
-  margin-right:8px;
 }
 .level-chip:hover{
   transform:translateY(-1px);
@@ -778,13 +779,13 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
 }
 @media (max-width:1360px){
   .nav-inner{gap:12px;padding:0 18px}
-  .nav-inner::after{flex-basis:14px}
   .nav-links a{padding:8px 10px}
   .nav-search{display:none}
   .nav-actions{gap:6px}
   .nav-actions .btn-ghost{padding:10px 8px}
   .nav-actions .btn-primary{padding:10px 13px}
   .nav-actions .theme-picker{min-width:78px}
+  .nav-actions .account-chip{max-width:70px}
 }
 @media (max-width:900px){
   .nav-inner{height:60px;padding:0 16px;gap:10px}
