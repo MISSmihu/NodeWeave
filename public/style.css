@@ -297,6 +297,7 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
   display:flex;align-items:center;gap:18px;flex-wrap:nowrap;
   overflow-x:auto;overflow-y:hidden;scrollbar-width:none;
 }
+.nav-inner::after{content:'';flex:0 0 10px;height:1px}
 .nav-inner::-webkit-scrollbar{display:none}
 .nav-inner > *{min-width:0}
 .logo{display:flex;align-items:baseline;gap:6px;text-decoration:none;flex:0 0 auto}
@@ -420,6 +421,7 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
   text-decoration:none;
   text-shadow:0 0 12px color-mix(in srgb,var(--level-color,var(--cyan)) 42%,transparent);
   box-shadow:0 0 18px color-mix(in srgb,var(--level-color,var(--cyan)) 18%,transparent);
+  margin-right:8px;
 }
 .level-chip:hover{
   transform:translateY(-1px);
@@ -776,6 +778,7 @@ button{font-family:inherit;cursor:pointer;border:none;outline:none}
 }
 @media (max-width:1360px){
   .nav-inner{gap:12px;padding:0 18px}
+  .nav-inner::after{flex-basis:14px}
   .nav-links a{padding:8px 10px}
   .nav-search{display:none}
   .nav-actions{gap:6px}
