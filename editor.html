@@ -27,9 +27,15 @@
 .tag-box{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .tag-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border:1px solid rgba(0,240,255,.18);background:rgba(0,240,255,.06);border-radius:999px;color:var(--cyan);font-family:var(--font-mono);font-size:11px}
 .tag-pill button{background:none;color:var(--magenta);font-size:13px}
-.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;align-items:center}
 .tool-btn{padding:7px 10px;background:var(--surface-2);border:1px solid var(--border);border-radius:5px;color:var(--text-dim);font-family:var(--font-mono);font-size:12px}
 .tool-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.tool-select{height:32px;padding:0 28px 0 10px;background:var(--surface-2);border:1px solid var(--border);border-radius:5px;color:var(--text-dim);font-family:var(--font-mono);font-size:12px;outline:none}
+.tool-select:focus{border-color:var(--cyan);color:var(--cyan)}
+.tool-split{width:1px;height:28px;background:var(--border-2)}
+.editor-preview{display:none;margin-top:12px;padding:18px;border:1px solid var(--border);border-radius:10px;background:var(--bg)}
+.editor-preview.show{display:block}
+.editor-preview-title{font-family:var(--font-mono);font-size:11px;color:var(--text-mute);margin-bottom:10px;letter-spacing:.12em}
 .section{border:1px solid var(--border);background:linear-gradient(135deg,rgba(0,240,255,.035),rgba(157,0,255,.025));border-radius:8px;padding:16px;margin:16px 0}
 .section.locked{opacity:.72;border-color:rgba(255,0,60,.22);background:linear-gradient(135deg,rgba(255,0,60,.05),rgba(157,0,255,.025))}
 .section-title{font-family:var(--font-display);font-size:13px;color:var(--cyan);margin-bottom:12px}
@@ -160,16 +166,57 @@
     </div>
 
     <div class="form-group">
-      <label for="postContent">正文 <span>支持 Markdown</span></label>
+      <label for="postContent">正文 <span>支持 Markdown / BBCode</span></label>
       <div class="toolbar">
+        <select class="tool-select" id="formatScope" title="编辑范围">
+          <option value="selection">选中编辑</option>
+          <option value="all">全文编辑</option>
+        </select>
         <button class="tool-btn" type="button" data-wrap="**">加粗</button>
-        <button class="tool-btn" type="button" data-wrap="`">代码</button>
+        <button class="tool-btn" type="button" data-wrap="~~">删除线</button>
+        <button class="tool-btn" type="button" data-before="[u]" data-after="[/u]">下划线</button>
+        <select class="tool-select" id="headingSelect" title="标题">
+          <option value="">标题</option>
+          <option value="# ">H1</option>
+          <option value="## ">H2</option>
+          <option value="### ">H3</option>
+        </select>
+        <select class="tool-select" id="sizeSelect" title="字号">
+          <option value="">字号</option>
+          <option value="small">小字</option>
+          <option value="large">大字</option>
+          <option value="huge">超大</option>
+        </select>
+        <select class="tool-select" id="colorSelect" title="颜色">
+          <option value="">颜色</option>
+          <option value="cyan">青色</option>
+          <option value="blue">蓝色</option>
+          <option value="red">红色</option>
+          <option value="green">绿色</option>
+          <option value="purple">紫色</option>
+          <option value="gold">金色</option>
+          <option value="muted">灰色</option>
+        </select>
+        <select class="tool-select" id="alignSelect" title="对齐">
+          <option value="">对齐</option>
+          <option value="left">左对齐</option>
+          <option value="center">居中</option>
+          <option value="right">右对齐</option>
+        </select>
+        <span class="tool-split"></span>
+        <button class="tool-btn" type="button" data-wrap="`">行内代码</button>
+        <button class="tool-btn" type="button" id="btnCodeBlock">代码块</button>
         <button class="tool-btn" type="button" data-prefix="> ">引用</button>
         <button class="tool-btn" type="button" data-prefix="- ">列表</button>
+        <button class="tool-btn" type="button" data-prefix="1. ">编号</button>
+        <button class="tool-btn" type="button" id="btnLink">链接</button>
         <button class="tool-btn" type="button" id="btnInlineImage">插入图片</button>
+        <button class="tool-btn" type="button" id="btnPreview">预览</button>
+        <button class="tool-btn" type="button" id="btnClearFormat">清格式</button>
       </div>
       <input id="imageUpload" type="file" accept="image/*" style="display:none">
       <textarea id="postContent" placeholder="分享技术、记录思考，或者把问题讲清楚。"></textarea>
+      <div class="editor-preview" id="contentPreview"><div class="editor-preview-title">LIVE PREVIEW</div><div class="nw-rich-content" id="contentPreviewBody"></div></div>
     </div>
 
     <div class="section">
@@ -436,20 +483,97 @@ function updateCustomDateTime() {
   $('dtSelected').classList.add('show');
 }
 
-function applyEditorWrap(before, after) {
+function getEditorRange() {
   const ta = $('postContent');
+  if ($('formatScope')?.value === 'all') return { start: 0, end: ta.value.length, selected: ta.value || '文本' };
   const start = ta.selectionStart;
   const end = ta.selectionEnd;
-  const selected = ta.value.slice(start, end) || '文本';
-  ta.value = ta.value.slice(0, start) + before + selected + (after ?? before) + ta.value.slice(end);
+  return { start, end, selected: ta.value.slice(start, end) || '文本' };
+}
+
+function replaceEditorRange(text, selectOffset = 0, selectLength = text.length) {
+  const ta = $('postContent');
+  const range = getEditorRange();
+  ta.value = ta.value.slice(0, range.start) + text + ta.value.slice(range.end);
   ta.focus();
+  const cursorStart = range.start + selectOffset;
+  ta.setSelectionRange(cursorStart, cursorStart + selectLength);
+  refreshPreview();
+}
+
+function applyEditorWrap(before, after) {
+  const range = getEditorRange();
+  const text = before + range.selected + (after ?? before);
+  replaceEditorRange(text, before.length, range.selected.length);
 }
 
 function applyEditorPrefix(prefix) {
   const ta = $('postContent');
-  const start = ta.selectionStart;
-  ta.value = ta.value.slice(0, start) + prefix + ta.value.slice(start);
-  ta.focus();
+  const range = getEditorRange();
+  const selected = range.selected === '文本' ? '文本' : range.selected;
+  const text = selected.split('\n').map(line => line ? prefix + line : line).join('\n');
+  replaceEditorRange(text, prefix.length, selected.length);
+}
+
+function applyHeading(prefix) {
+  if (!prefix) return;
+  applyEditorPrefix(prefix);
+  $('headingSelect').value = '';
+}
+
+function applyColor(color) {
+  if (!color) return;
+  applyEditorWrap(`[color=${color}]`, '[/color]');
+  $('colorSelect').value = '';
+}
+
+function applySize(size) {
+  if (!size) return;
+  applyEditorWrap(`[size=${size}]`, '[/size]');
+  $('sizeSelect').value = '';
+}
+
+function applyAlign(align) {
+  if (!align) return;
+  applyEditorWrap(`[align=${align}]`, '[/align]');
+  $('alignSelect').value = '';
+}
+
+function insertLink() {
+  const url = prompt('输入链接地址（https://...）');
+  if (!url) return;
+  const range = getEditorRange();
+  const text = range.selected === '文本' ? '链接文字' : range.selected;
+  replaceEditorRange(`[${text}](${url.trim()})`, 1, text.length);
+}
+
+function insertCodeBlock() {
+  const range = getEditorRange();
+  const code = range.selected === '文本' ? '在这里粘贴代码' : range.selected;
+  replaceEditorRange('```js\n' + code + '\n```', 6, code.length);
+}
+
+function clearFormat() {
+  const range = getEditorRange();
+  const cleaned = range.selected
+    .replace(/\*\*|~~|`/g, '')
+    .replace(/\[(\/)?(u|color=[^\]]+|size=[^\]]+|align=[^\]]+)\]/g, '')
+    .replace(/^#{1,3}\s+/gm, '')
+    .replace(/^>\s?/gm, '')
+    .replace(/^[-*]\s+/gm, '')
+    .replace(/^\d+\.\s+/gm, '');
+  replaceEditorRange(cleaned, 0, cleaned.length);
+}
+
+function refreshPreview() {
+  const preview = $('contentPreview');
+  if (!preview || !preview.classList.contains('show')) return;
+  $('contentPreviewBody').innerHTML = window.NodeWeave.renderRichText($('postContent').value);
+}
+
+function togglePreview() {
+  $('contentPreview').classList.toggle('show');
+  refreshPreview();
 }
 
 function setFile(file) {
@@ -635,7 +759,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   ['hiddenDate', 'hiddenHour', 'hiddenMinute'].forEach(id => $(id).addEventListener('input', updateCustomDateTime));
   document.querySelectorAll('.tool-btn[data-wrap]').forEach(button => button.addEventListener('click', () => applyEditorWrap(button.dataset.wrap)));
+  document.querySelectorAll('.tool-btn[data-before]').forEach(button => button.addEventListener('click', () => applyEditorWrap(button.dataset.before, button.dataset.after)));
   document.querySelectorAll('.tool-btn[data-prefix]').forEach(button => button.addEventListener('click', () => applyEditorPrefix(button.dataset.prefix)));
+  $('headingSelect').addEventListener('change', (event) => applyHeading(event.target.value));
+  $('colorSelect').addEventListener('change', (event) => applyColor(event.target.value));
+  $('sizeSelect').addEventListener('change', (event) => applySize(event.target.value));
+  $('alignSelect').addEventListener('change', (event) => applyAlign(event.target.value));
+  $('btnLink').addEventListener('click', insertLink);
+  $('btnCodeBlock').addEventListener('click', insertCodeBlock);
+  $('btnPreview').addEventListener('click', togglePreview);
+  $('btnClearFormat').addEventListener('click', clearFormat);
+  $('postContent').addEventListener('input', refreshPreview);
   $('btnPickFile').addEventListener('click', () => $('attachFile').click());
   $('attachFile').addEventListener('change', (event) => setFile(event.target.files[0]));
   $('btnClearFile').addEventListener('click', () => setFile(null));

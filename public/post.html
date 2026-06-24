@@ -24,7 +24,7 @@
 .post-meta{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0 22px;color:var(--text-mute);font-size:13px}
 .post-meta a{color:var(--cyan);text-decoration:none}
 .edit-note{margin:-10px 0 16px;color:var(--text-mute);font-size:12px;line-height:1.7}
-.post-body,.hidden-reveal{white-space:pre-wrap;word-break:break-word;line-height:1.9;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:24px}
+.post-body,.hidden-reveal{word-break:break-word;line-height:1.9;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:24px}
 .hidden-reveal{margin-top:14px;background:rgba(0,240,255,.035);border-style:dashed}
 .attach-box{display:flex;align-items:center;gap:12px;margin:16px 0;padding:14px 16px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px}
 .attach-box a{color:var(--cyan);font-family:var(--font-mono);font-size:12px}
@@ -283,7 +283,7 @@ function renderPost() {
     ${editNote}
     ${staffBar}
     ${rewardPanel}
-    <div class="post-body">${esc(p.content)}</div>
+    <div class="post-body nw-rich-content">${window.NodeWeave.renderRichText(p.content)}</div>
     ${guestLock}
     ${attachment}
     ${hidden}

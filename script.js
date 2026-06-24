@@ -8,6 +8,9 @@
     { id: 'ember', name: '余烬' },
     { id: 'matrix', name: '矩阵' },
     { id: 'midnight', name: '午夜' },
+    { id: 'daylight', name: '白色' },
+    { id: 'paper', name: '米白' },
+    { id: 'ocean', name: '蓝白' },
   ];
 
   function applyTheme(themeId) {
@@ -152,13 +155,13 @@
           ? `当前 Lv${level.level} ${level.name}，距离 Lv${level.next_level.level} 还差 ${level.need || 0} 声望`
           : `当前 Lv${level.level} ${level.name}，已满级`;
         el.innerHTML = `
-          ${themePickerMarkup()}
           ${adminLink}
-          <a class="level-chip" href="${assetUrl('levels.html')}" title="${escapeHtml(levelTitle)}" style="--level-color:${escapeHtml(level.color || '#00f0ff')}">Lv${level.level}</a>
           <a class="btn-ghost" href="${assetUrl('themes.html')}" title="Theme Center">主题</a>
           <a class="btn-ghost" href="${assetUrl('messages.html')}" title="站内信">私信<span data-message-badge style="display:none;margin-left:5px;color:var(--magenta)"></span></a>
           <a class="btn-ghost" href="${assetUrl('announcements.html')}" title="站内公告">公告</a>
           <a class="btn-ghost" href="${assetUrl('notifications.html')}" title="站内通知">通知<span data-notif-badge style="display:none;margin-left:5px;color:var(--magenta)"></span></a>
+          ${themePickerMarkup()}
+          <a class="level-chip" href="${assetUrl('levels.html')}" title="${escapeHtml(levelTitle)}" style="--level-color:${escapeHtml(level.color || '#00f0ff')}">Lv${level.level}</a>
           <a class="btn-ghost" href="${assetUrl('account/settings.html')}" title="账号设置">${escapeHtml(user.display_name || user.username || '我的账号')}</a>
           <button class="btn-ghost" type="button" data-logout>退出</button>
           <a class="btn-primary" href="${assetUrl('editor.html')}">+ 发帖</a>`;
@@ -310,6 +313,90 @@
     counters.forEach(el => observer.observe(el));
   }
 
+  function safeRichUrl(url, allowImage) {
+    const text = String(url || '').trim().replace(/&amp;/g, '&');
+    if (/^(https?:)?\/\//i.test(text) || text.startsWith('/')) return escapeHtml(text);
+    if (!allowImage && /^(mailto:|#)/i.test(text)) return escapeHtml(text);
+    return '';
+  }
+
+  function renderRichText(value) {
+    let html = escapeHtml(value || '').replace(/\r\n?/g, '\n');
+    const codeBlocks = [];
+    html = html.replace(/```([\w-]*)?\n([\s\S]*?)```/g, (_, lang, code) => {
+      const id = codeBlocks.length;
+      codeBlocks.push(`<pre class="nw-code-block"><code>${lang ? `<span class="nw-code-lang">${lang}</span>\n` : ''}${code.trim()}</code></pre>`);
+      return `@@NW_CODE_BLOCK_${id}@@`;
+    });
+    html = html
+      .replace(/!\[([^\]\n]{0,80})\]\(([^)\s]+)\)/g, (_, alt, url) => {
+        const safeUrl = safeRichUrl(url, true);
+        return safeUrl ? `<img class="nw-rich-image" src="${safeUrl}" alt="${alt}">` : _;
+      })
+      .replace(/\[([^\]\n]{1,120})\]\(([^)\s]+)\)/g, (_, text, url) => {
+        const safeUrl = safeRichUrl(url, false);
+        return safeUrl ? `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer nofollow">${text}</a>` : text;
+      })
+      .replace(/`([^`\n]+)`/g, '<code class="nw-inline-code">$1</code>')
+      .replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/~~([\s\S]+?)~~/g, '<del>$1</del>')
+      .replace(/\[u\]([\s\S]+?)\[\/u\]/g, '<u>$1</u>')
+      .replace(/\[color=(cyan|blue|red|green|purple|gold|muted)\]([\s\S]+?)\[\/color\]/g, '<span class="nw-color-$1">$2</span>')
+      .replace(/\[size=(small|large|huge)\]([\s\S]+?)\[\/size\]/g, '<span class="nw-size-$1">$2</span>')
+      .replace(/\[align=(left|center|right)\]([\s\S]+?)\[\/align\]/g, '<div class="nw-align-$1">$2</div>');
+
+    const lines = html.split('\n');
+    const rendered = [];
+    let listType = '';
+    function closeList() {
+      if (!listType) return;
+      rendered.push(listType === 'ol' ? '</ol>' : '</ul>');
+      listType = '';
+    }
+    lines.forEach(line => {
+      if (!line.trim()) {
+        closeList();
+        rendered.push('');
+        return;
+      }
+      if (/^###\s+/.test(line)) {
+        closeList();
+        rendered.push(`<h3>${line.replace(/^###\s+/, '')}</h3>`);
+      } else if (/^##\s+/.test(line)) {
+        closeList();
+        rendered.push(`<h2>${line.replace(/^##\s+/, '')}</h2>`);
+      } else if (/^#\s+/.test(line)) {
+        closeList();
+        rendered.push(`<h2>${line.replace(/^#\s+/, '')}</h2>`);
+      } else if (/^&gt;\s?/.test(line)) {
+        closeList();
+        rendered.push(`<blockquote>${line.replace(/^&gt;\s?/, '')}</blockquote>`);
+      } else if (/^\d+\.\s+/.test(line)) {
+        if (listType !== 'ol') {
+          closeList();
+          rendered.push('<ol>');
+          listType = 'ol';
+        }
+        rendered.push(`<li>${line.replace(/^\d+\.\s+/, '')}</li>`);
+      } else if (/^[-*]\s+/.test(line)) {
+        if (listType !== 'ul') {
+          closeList();
+          rendered.push('<ul>');
+          listType = 'ul';
+        }
+        rendered.push(`<li>${line.replace(/^[-*]\s+/, '')}</li>`);
+      } else if (/^@@NW_CODE_BLOCK_\d+@@$/.test(line.trim())) {
+        closeList();
+        rendered.push(line.trim());
+      } else {
+        closeList();
+        rendered.push(`<p>${line}</p>`);
+      }
+    });
+    closeList();
+    return rendered.join('\n').replace(/@@NW_CODE_BLOCK_(\d+)@@/g, (_, id) => codeBlocks[Number(id)] || '');
+  }
+
   window.NodeWeave = {
     api,
     apiJson,
@@ -321,7 +408,9 @@
     redirectLogin,
     applyTheme,
     escapeHtml,
+    renderRichText,
     timeAgo,
+    THEMES,
     state,
   };
 
