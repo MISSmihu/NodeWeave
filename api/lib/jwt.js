@@ -18,7 +18,7 @@ function b64url2buf(str) {
 }
 
 async function sign(payload, env, expiresIn) {
-  const secret = env.JWT_SECRET;
+  const secret = env.JWT_SECRET_V2 || env.JWT_SECRET;
   if (!secret) throw new Error('JWT_SECRET not configured');
 
   const header = { alg: 'HS256', typ: 'JWT' };
@@ -35,7 +35,7 @@ async function sign(payload, env, expiresIn) {
 }
 
 async function verify(token, env) {
-  const secret = env.JWT_SECRET;
+  const secret = env.JWT_SECRET_V2 || env.JWT_SECRET;
   if (!secret) return null;
 
   try {

@@ -5,6 +5,8 @@ import { authUser } from './lib/jwt.js';
 import { verifyTurnstile } from './lib/turnstile.js';
 import { generateId } from './lib/id.js';
 import { ok, err, CODE } from './lib/response.js';
+import { levelProgress } from './level.js';
+import { checkAchievementsForUser } from './achievements.js';
 
 const account = new Hono();
 
@@ -67,7 +69,22 @@ account.get('/me', requireLogin, async (c) => {
     'SELECT id, username, email, display_name, bio, avatar_color, role, email_verified, phone_verified, real_name_status, reputation, coins, exp, created_at FROM users WHERE id=?'
   ).bind(userId).first();
   if (!user) return err(c, CODE.NOT_FOUND, '用户不存在');
-  return ok(c, user);
+  const levelInfo = levelProgress(Number(user.reputation || 0));
+  return ok(c, {
+    ...user,
+    level: {
+      level: levelInfo.current.level,
+      name: levelInfo.current.name,
+      color: levelInfo.current.color,
+      icon: levelInfo.current.icon,
+      minRep: levelInfo.current.minRep,
+      reward: levelInfo.current.reward,
+      permissions: levelInfo.current.permissions,
+      progress: levelInfo.progress,
+      need: levelInfo.need,
+      next_level: levelInfo.next ? { ...levelInfo.next, need: levelInfo.need } : null,
+    },
+  });
 });
 
 account.put('/me', requireLogin, async (c) => {
@@ -76,6 +93,7 @@ account.put('/me', requireLogin, async (c) => {
   await c.env.DB.prepare(
     'UPDATE users SET display_name=?, bio=?, avatar_color=?, updated_at=? WHERE id=?'
   ).bind(display_name || '', bio || '', avatar_color || '#00f0ff', Date.now(), userId).run();
+  await checkAchievementsForUser(c.env, userId).catch(() => null);
   return ok(c, { message: '资料已更新' });
 });
 
@@ -154,6 +172,7 @@ account.post('/verify-phone', requireLogin, async (c) => {
       ).bind(phoneHash, 'verified', Date.now(), userId).run();
       await c.env.DB.prepare('UPDATE verification_tokens SET used_at=? WHERE id=?').bind(Date.now(), token).run();
       delete globalThis._smsCodes?.[token];
+      await checkAchievementsForUser(c.env, userId).catch(() => null);
       return ok(c, { message: '手机验证成功' });
     }
   }
@@ -169,6 +188,7 @@ account.post('/verify-phone', requireLogin, async (c) => {
   await c.env.DB.prepare('UPDATE verification_tokens SET used_at=? WHERE id=?').bind(Date.now(), token).run();
 
   delete globalThis._smsCodes[token];
+  await checkAchievementsForUser(c.env, userId).catch(() => null);
   return ok(c, { message: '手机验证成功' });
 });
 
@@ -238,6 +258,7 @@ account.put('/customize', requireLogin, async (c) => {
     Date.now(),
     userId
   ).run();
+  await checkAchievementsForUser(c.env, userId).catch(() => null);
   return ok(c, { message: '装扮已保存' });
 });
 

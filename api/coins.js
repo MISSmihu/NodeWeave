@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { authUser } from './lib/jwt.js';
 import { generateId } from './lib/id.js';
 import { ok, err, CODE } from './lib/response.js';
+import { createNotification } from './notifications.js';
 
 const coins = new Hono();
 
@@ -58,7 +59,7 @@ coins.post('/tip', requireLogin, async (c) => {
   const sender = await c.env.DB.prepare('SELECT coins FROM users WHERE id=?').bind(userId).first();
   if (!sender || sender.coins < tipAmount) return err(c, CODE.VALIDATION, '论坛币不足');
 
-  const post = await c.env.DB.prepare('SELECT id, author_id FROM posts WHERE id=? AND is_hidden=0').bind(post_id).first();
+  const post = await c.env.DB.prepare("SELECT id, title, COALESCE(NULLIF(author_id,''), user_id) AS author_id FROM posts WHERE id=? AND COALESCE(is_hidden,0)=0").bind(post_id).first();
   if (!post) return err(c, CODE.NOT_FOUND, '帖子不存在');
   if (post.author_id === userId) return err(c, CODE.VALIDATION, '不能打赏自己');
 
@@ -70,6 +71,17 @@ coins.post('/tip', requireLogin, async (c) => {
     c.env.DB.prepare('INSERT INTO coin_logs(id,user_id,amount,type,ref_id,balance_after,created_at) VALUES(?,?,?,?,?,(SELECT coins FROM users WHERE id=?),?)').bind('tip_out_'+generateId(8), userId, -tipAmount, 'tip_send', post_id, userId, now),
     c.env.DB.prepare('INSERT INTO coin_logs(id,user_id,amount,type,ref_id,balance_after,created_at) VALUES(?,?,?,?,?,(SELECT coins FROM users WHERE id=?),?)').bind('tip_in_'+generateId(8), post.author_id, tipAmount, 'tip_receive', post_id, post.author_id, now),
   ]);
+
+  try {
+    const actor = await c.env.DB.prepare('SELECT display_name, username FROM users WHERE id=?').bind(userId).first();
+    await createNotification(c.env, {
+      user_id: post.author_id,
+      type: 'tip',
+      ref_id: post_id,
+      actor_id: userId,
+      message: `${actor?.display_name || actor?.username || '有人'} 打赏了你 ${tipAmount} 论坛币：「${String(post.title || '').slice(0, 30)}」`,
+    });
+  } catch (error) {}
 
   return ok(c, { message: '打赏成功' });
 });
@@ -91,6 +103,14 @@ coins.post('/award', requireLogin, async (c) => {
     c.env.DB.prepare('UPDATE users SET coins=coins+?, updated_at=? WHERE id=?').bind(awardAmount, now, user_id),
     c.env.DB.prepare('INSERT INTO coin_logs(id,user_id,amount,type,ref_id,balance_after,created_at) VALUES(?,?,?,?,?,(SELECT coins FROM users WHERE id=?),?)').bind('award_'+generateId(8), user_id, awardAmount, 'admin_award', reason || '管理员奖励', user_id, now),
   ]);
+
+  await createNotification(c.env, {
+    user_id,
+    type: 'asset_admin',
+    ref_id: '',
+    actor_id: c.get('userId'),
+    message: `管理员向你发放了 ${awardAmount} 论坛币${reason ? `：${reason}` : ''}`,
+  }).catch(() => null);
 
   return ok(c, { message: '已发放' });
 });

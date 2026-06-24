@@ -17,6 +17,10 @@
 .signin-card .reward-box{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:20px}
 .signin-card .reward-box .reward-num{font-family:var(--font-display);font-size:36px;color:var(--green)}
 .signin-card .reward-box .reward-label{font-size:12px;color:var(--text-mute);margin-top:4px}
+.reward-lines{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.reward-mini{border:1px solid rgba(0,240,255,.12);border-radius:8px;background:rgba(0,240,255,.035);padding:9px}
+.reward-mini strong{display:block;font-family:var(--font-display);font-size:15px;color:var(--text)}
+.reward-mini span{display:block;font-size:11px;color:var(--text-mute)}
 .signin-card .btn-signin{padding:14px 48px;background:var(--cyan);color:var(--bg);border:none;border-radius:6px;font-family:var(--font-display);font-size:16px;font-weight:700;cursor:pointer;transition:all .2s}
 .signin-card .btn-signin:hover{box-shadow:var(--glow-cyan);transform:translateY(-1px)}
 .signin-card .btn-signin.signed{background:var(--surface-2);color:var(--text-dim);cursor:default}
@@ -42,7 +46,7 @@
 <header class="nav">
   <div class="nav-inner">
     <a href="index.html" class="logo"><span class="logo-mark">◈</span><span class="logo-text">Node<span class="x">Weave</span></span><span class="logo-sub">// SIGNIN</span></a>
-    <div class="nav-actions"><a href="index.html" class="btn-ghost" style="border:1px solid var(--border);padding:8px 16px">返回</a></div>
+    <div class="nav-actions" data-auth-actions><a href="index.html" class="btn-ghost" style="border:1px solid var(--border);padding:8px 16px">返回</a></div>
   </div>
 </header>
 
@@ -54,15 +58,17 @@
   </div>
 </main>
 
+<script src="script.js"></script>
 <script>
 async function init() {
   try {
-    var res = await fetch('/api/signin');
+    var res = await window.NodeWeave.api('/api/signin');
     var json = await res.json();
     if (json.code !== 0) { document.getElementById('loading').textContent = '请先登录'; return; }
     var d = json.data;
     var signed = d.signed_today;
     var streak = d.streak;
+    var rewards = d.next_rewards || { coins: d.next_reward || 0, reputation: 0, exp: 0, bonus: 0 };
     var today = new Date().toLocaleDateString('zh-CN', {year:'numeric',month:'long',day:'numeric',weekday:'long'});
 
     document.getElementById('loading').style.display = 'none';
@@ -84,8 +90,13 @@ async function init() {
       '<div class="day-title">' + (signed ? '✅ 已签到' : '每日签到') + '</div>' +
       '<div class="date">' + today + '</div>' +
       '<div class="reward-box">' +
-        '<div class="reward-num">+' + d.next_reward + '</div>' +
-        '<div class="reward-label">论坛币奖励' + (signed ? ' (下次)' : '') + '</div>' +
+        '<div class="reward-num">+' + rewards.coins + '</div>' +
+        '<div class="reward-label">论坛币奖励' + (signed ? ' (下次)' : '') + (rewards.bonus ? ' · 连签加成 +' + rewards.bonus : '') + '</div>' +
+        '<div class="reward-lines">' +
+          '<div class="reward-mini"><strong>+' + rewards.coins + '</strong><span>论坛币</span></div>' +
+          '<div class="reward-mini"><strong>+' + rewards.reputation + '</strong><span>声望</span></div>' +
+          '<div class="reward-mini"><strong>+' + rewards.exp + '</strong><span>经验</span></div>' +
+        '</div>' +
       '</div>' +
       (signed
         ? '<button class="btn-signin signed" disabled>今日已签到 ✅</button>'
@@ -96,7 +107,7 @@ async function init() {
       '</div>' +
       '<div class="week-grid">' + weekHtml + '</div>' +
       '<div class="streak-info">' +
-        '连续 <span>3</span> 天：+2 bonus · 连续 <span>7</span> 天：+4 bonus · 连续 <span>14</span> 天：+6 bonus · 连续 <span>30</span> 天：+10 bonus' +
+        '连续 <span>3</span> 天：论坛币 +2 · 连续 <span>7</span> 天：论坛币 +4 · 连续 <span>14</span> 天：论坛币 +6 · 连续 <span>30</span> 天：论坛币 +10' +
       '</div>';
   } catch(e) { document.getElementById('loading').textContent = '加载失败'; }
 }
@@ -104,7 +115,7 @@ async function init() {
 async function doSignin() {
   var msg = document.getElementById('msg');
   try {
-    var res = await fetch('/api/signin', { method:'POST' });
+    var res = await window.NodeWeave.api('/api/signin', { method:'POST' });
     var json = await res.json();
     if (json.code !== 0) { msg.textContent = json.msg; msg.className = 'msg show msg-err'; return; }
     msg.textContent = '🎉 ' + json.data.message;

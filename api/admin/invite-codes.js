@@ -6,12 +6,11 @@ import { ok, err, CODE } from '../lib/response.js';
 
 const inviteCodes = new Hono();
 
-// 中间件：require role admin 或 moderator
-async function requireStaff(c, next) {
+async function requireAdmin(c, next) {
   const user = await authUser(c, c.env);
   if (!user) return err(c, CODE.UNAUTHORIZED, '请先登录', 401);
   const row = await c.env.DB.prepare('SELECT role FROM users WHERE id=?').bind(user.sub).first();
-  if (!row || (row.role !== 'admin' && row.role !== 'owner' && row.role !== 'moderator')) {
+  if (!row || (row.role !== 'admin' && row.role !== 'owner')) {
     return err(c, CODE.FORBIDDEN, '无权限', 403);
   }
   c.set('userId', user.sub);
@@ -20,7 +19,7 @@ async function requireStaff(c, next) {
 }
 
 // ========== GET /api/admin/invite-codes - 列表 ==========
-inviteCodes.get('/', requireStaff, async (c) => {
+inviteCodes.get('/', requireAdmin, async (c) => {
   const page = parseInt(c.req.query('page') || '1');
   const pageSize = 20;
   const offset = (page - 1) * pageSize;
@@ -40,7 +39,7 @@ inviteCodes.get('/', requireStaff, async (c) => {
 });
 
 // ========== POST /api/admin/invite-codes - 生成 ==========
-inviteCodes.post('/', requireStaff, async (c) => {
+inviteCodes.post('/', requireAdmin, async (c) => {
   const userId = c.get('userId');
   const { max_uses, expires_in_days, count } = await c.req.json().catch(() => ({}));
   const maxUses = Math.max(1, Math.min(parseInt(max_uses) || 1, 1000));
@@ -73,7 +72,7 @@ inviteCodes.post('/', requireStaff, async (c) => {
 });
 
 // ========== PUT /api/admin/invite-codes/:code - 管理操作 ==========
-inviteCodes.put('/:code', requireStaff, async (c) => {
+inviteCodes.put('/:code', requireAdmin, async (c) => {
   const code = c.req.param('code');
   const { action } = await c.req.json().catch(() => ({}));
 

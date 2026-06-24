@@ -27,6 +27,13 @@
 .feed-list{display:grid;gap:14px}
 .post-card{display:block;text-decoration:none;color:inherit;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;transition:all .2s}
 .post-card:hover{transform:translateY(-3px);border-color:var(--cyan);box-shadow:0 18px 50px rgba(0,240,255,.08)}
+.post-card.is-pinned{border-color:rgba(255,0,60,.26);box-shadow:inset 2px 0 0 var(--magenta),0 0 28px rgba(255,0,60,.055)}
+.post-card.is-featured{background:linear-gradient(135deg,rgba(127,255,0,.055),rgba(18,18,30,.92) 42%,rgba(157,0,255,.04))}
+.feed-badges{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:9px}
+.feed-badge{padding:3px 8px;border:1px solid rgba(0,240,255,.18);border-radius:999px;background:rgba(0,240,255,.06);color:var(--cyan);font-family:var(--font-mono);font-size:10px}
+.feed-badge.pin{border-color:rgba(255,0,60,.28);background:rgba(255,0,60,.08);color:var(--magenta)}
+.feed-badge.feature{border-color:rgba(127,255,0,.26);background:rgba(127,255,0,.07);color:var(--green)}
+.feed-badge.reward{border-color:rgba(255,215,0,.28);background:rgba(255,215,0,.08);color:#ffd700}
 .post-card .meta{display:flex;gap:10px;flex-wrap:wrap;color:var(--text-mute);font-family:var(--font-mono);font-size:11px;margin-bottom:8px}
 .post-card h2{font-family:var(--font-display);font-size:19px;color:var(--text);margin:0 0 8px}
 .post-card p{color:var(--text-dim);font-size:13px;line-height:1.72;margin:0 0 12px}
@@ -180,8 +187,18 @@ async function loadFeed(reset) {
       document.getElementById('btnLoadmore').style.display = 'none';
       return;
     }
-    const html = posts.map(post => `
-      <a class="post-card" href="post.html?id=${esc(post.id)}">
+    const html = posts.map(post => {
+      const heat = Number(post.view_count || 0) + Number(post.like_count || 0) * 3 + Number(post.comment_count || 0) * 5 + Number(post.tip_total || 0) * 2 + Number(post.reply_reward_total || 0);
+      const badges = [];
+      if (post.is_pinned) badges.push('<span class="feed-badge pin">置顶</span>');
+      if (post.is_featured) badges.push('<span class="feed-badge feature">精华</span>');
+      if (heat >= 20) badges.push('<span class="feed-badge pin">热帖</span>');
+      if (Number(post.reply_reward_remaining || 0) > 0) badges.push(`<span class="feed-badge reward">回帖红包 ${Number(post.reply_reward_remaining || 0)}</span>`);
+      if (post.bounty && !post.accepted_answer_id) badges.push(`<span class="feed-badge reward">悬赏 ${post.bounty}</span>`);
+      if (post.accepted_answer_id) badges.push('<span class="feed-badge feature">已解决</span>');
+      return `
+      <a class="post-card${post.is_pinned ? ' is-pinned' : ''}${post.is_featured ? ' is-featured' : ''}" href="post.html?id=${esc(post.id)}">
+        ${badges.length ? `<div class="feed-badges">${badges.join('')}</div>` : ''}
         <div class="meta">
           <span>${post.type === 'blog' ? '博客' : '帖子'}</span>
           <span>${esc(post.board_id || 'general')}</span>
@@ -197,7 +214,8 @@ async function loadFeed(reset) {
           <span>赞 ${post.like_count || 0}</span>
           <span>评分 ${post.rating_avg ? Number(post.rating_avg).toFixed(1) : '-'}</span>
         </div>
-      </a>`).join('');
+      </a>`;
+    }).join('');
     if (feedPage === 1) list.innerHTML = html;
     else list.insertAdjacentHTML('beforeend', html);
     document.getElementById('btnLoadmore').style.display = posts.length >= 10 ? '' : 'none';

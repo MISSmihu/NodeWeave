@@ -4,8 +4,15 @@ import { authUser } from '../lib/jwt.js';
 import { generateId } from '../lib/id.js';
 import { ok, err, CODE } from '../lib/response.js';
 import { createNotification } from '../notifications.js';
+import { checkAchievementsForUser } from '../achievements.js';
 
 const moderation = new Hono();
+const ROLE_RANK = { deleted: 0, banned: 0, member: 0, moderator: 1, admin: 2, owner: 3 };
+
+function canModerateRole(actorRole, targetRole) {
+  if (actorRole === 'owner') return true;
+  return (ROLE_RANK[actorRole] || 0) > (ROLE_RANK[targetRole] || 0);
+}
 
 async function requireStaff(c, next) {
   const user = await authUser(c, c.env);
@@ -29,6 +36,27 @@ function cleanText(value, max) {
 
 function itemLabel(type) {
   return type === 'post' ? '帖子' : type === 'comment' ? '评论' : type === 'profile' ? '用户资料' : '内容';
+}
+
+function requestActionLabel(action) {
+  return action === 'pin' ? '置顶申请' : action === 'feature' ? '加精申请' : '';
+}
+
+function actionLabel(action, item = {}) {
+  const requestLabel = requestActionLabel(item.request_action);
+  if (requestLabel) {
+    if (action === 'approve') return '已通过';
+    if (action === 'reject') return '已驳回';
+  }
+  return {
+    approve: '已通过审核',
+    reject: '未通过审核并已隐藏',
+    delete: '已被管理组删除',
+    pin: '已被管理组置顶',
+    feature: '已被管理组加精',
+    lock: '已被管理组锁定',
+    warn: '已通过审核，但被记录警告',
+  }[action] || '已被处理';
 }
 
 async function getItemAuthor(db, itemType, itemId) {
@@ -82,6 +110,16 @@ async function recordViolation(env, { userId, itemType, itemId, severity, reason
     message: `你的${itemLabel(itemType)}被记录违规：${reason}`,
   });
   return id;
+}
+
+async function ensureCanModerateUser(c, userId) {
+  if (!userId) return null;
+  const target = await c.env.DB.prepare('SELECT id, role FROM users WHERE id=?').bind(userId).first();
+  if (!target) return null;
+  if (!canModerateRole(c.get('userRole'), target.role)) {
+    return err(c, CODE.FORBIDDEN, '不能处理同级或更高权限用户', 403);
+  }
+  return null;
 }
 
 // GET /api/admin/moderation/queue - 审核队列
@@ -170,7 +208,7 @@ moderation.post('/violations', requireStaff, async (c) => {
   if (!userId || !reason) return err(c, CODE.VALIDATION, '缺少用户或原因');
   const user = await c.env.DB.prepare('SELECT id, role FROM users WHERE id=? OR username=?').bind(userId, userId).first();
   if (!user) return err(c, CODE.NOT_FOUND, '用户不存在', 404);
-  if (user.role === 'owner' && c.get('userRole') !== 'owner') return err(c, CODE.FORBIDDEN, '不能给站长记录违规', 403);
+  if (!canModerateRole(c.get('userRole'), user.role)) return err(c, CODE.FORBIDDEN, '不能给同级或更高权限用户记录违规', 403);
   const id = await recordViolation(c.env, { userId: user.id, itemType, itemId, severity, reason, createdBy: actorId });
   return ok(c, { id });
 });
@@ -196,6 +234,8 @@ moderation.post('/reports/:id/resolve', requireStaff, async (c) => {
   const item = await getItemAuthor(c.env.DB, report.item_type, report.item_id);
   const targetUserId = report.target_user_id || item?.author_id || '';
   const notifyRefId = report.ref_post_id || (report.item_type === 'post' ? report.item_id : '');
+  const guard = await ensureCanModerateUser(c, targetUserId);
+  if (guard) return guard;
 
   if (action === 'hide') await hideItem(c.env.DB, report.item_type, report.item_id, 1);
   if (action === 'delete') await deleteItem(c.env.DB, report.item_type, report.item_id);
@@ -224,6 +264,9 @@ moderation.post('/reports/:id/resolve', requireStaff, async (c) => {
     actor_id: actorId,
     message: action === 'dismiss' ? '你的举报已复核，暂未发现明显违规。' : '你的举报已处理，感谢维护社区秩序。',
   });
+  if (action !== 'dismiss') {
+    await checkAchievementsForUser(c.env, report.reporter_id).catch(() => null);
+  }
   if (targetUserId && targetUserId !== report.reporter_id && ['hide', 'delete', 'warn'].includes(action)) {
     await createNotification(c.env, {
       user_id: targetUserId,
@@ -242,29 +285,36 @@ moderation.post('/:id/action', requireStaff, async (c) => {
   const userId = c.get('userId');
   const queueId = c.req.param('id');
   const { action } = await c.req.json().catch(() => ({}));
-  const validActions = ['approve', 'reject', 'delete', 'pin', 'lock', 'warn'];
+  const validActions = ['approve', 'reject', 'delete', 'pin', 'feature', 'lock', 'warn'];
 
   if (!validActions.includes(action)) return err(c, CODE.VALIDATION, '无效操作');
 
   const item = await c.env.DB.prepare('SELECT * FROM moderation_queue WHERE id=?').bind(queueId).first();
   if (!item) return err(c, CODE.NOT_FOUND, '审核项不存在');
+  const guard = await ensureCanModerateUser(c, item.author_id);
+  if (guard) return guard;
 
   const now = Date.now();
+  const requestAction = String(item.request_action || '');
 
   switch (action) {
     case 'approve':
+      if (requestAction === 'pin' && item.item_type === 'post') {
+        await c.env.DB.prepare('UPDATE posts SET is_pinned=1, updated_at=? WHERE id=?').bind(now, item.item_id).run();
+      } else if (requestAction === 'feature' && item.item_type === 'post') {
+        await c.env.DB.prepare('UPDATE posts SET is_featured=1, updated_at=? WHERE id=?').bind(now, item.item_id).run();
+      }
       await c.env.DB.prepare('UPDATE moderation_queue SET status=?, reviewed_by=?, reviewed_at=?, result=? WHERE id=?')
-        .bind('approved', userId, now, 'approved', queueId).run();
+        .bind('approved', userId, now, requestAction === 'pin' ? 'pinned' : requestAction === 'feature' ? 'featured' : 'approved', queueId).run();
       break;
     case 'reject':
-      // 隐藏内容
-      if (item.item_type === 'post') {
+      if (!requestAction && item.item_type === 'post') {
         await c.env.DB.prepare('UPDATE posts SET is_hidden=1 WHERE id=?').bind(item.item_id).run();
-      } else if (item.item_type === 'comment') {
+      } else if (!requestAction && item.item_type === 'comment') {
         await c.env.DB.prepare('UPDATE comments SET is_hidden=1 WHERE id=?').bind(item.item_id).run();
       }
       await c.env.DB.prepare('UPDATE moderation_queue SET status=?, reviewed_by=?, reviewed_at=?, result=? WHERE id=?')
-        .bind('rejected', userId, now, 'rejected', queueId).run();
+        .bind('rejected', userId, now, requestAction ? `${requestAction}_rejected` : 'rejected', queueId).run();
       break;
     case 'delete':
       if (item.item_type === 'post') {
@@ -282,6 +332,20 @@ moderation.post('/:id/action', requireStaff, async (c) => {
       await c.env.DB.prepare('UPDATE moderation_queue SET status=?, reviewed_by=?, reviewed_at=?, result=? WHERE id=?')
         .bind('approved', userId, now, 'pinned', queueId).run();
       break;
+    case 'feature':
+      if (item.item_type === 'post') {
+        await c.env.DB.prepare('UPDATE posts SET is_featured=1 WHERE id=?').bind(item.item_id).run();
+      }
+      await c.env.DB.prepare('UPDATE moderation_queue SET status=?, reviewed_by=?, reviewed_at=?, result=? WHERE id=?')
+        .bind('approved', userId, now, 'featured', queueId).run();
+      break;
+    case 'lock':
+      if (item.item_type === 'post') {
+        await c.env.DB.prepare('UPDATE posts SET is_locked=1 WHERE id=?').bind(item.item_id).run();
+      }
+      await c.env.DB.prepare('UPDATE moderation_queue SET status=?, reviewed_by=?, reviewed_at=?, result=? WHERE id=?')
+        .bind('approved', userId, now, 'locked', queueId).run();
+      break;
     case 'warn':
       await recordViolation(c.env, {
         userId: item.author_id,
@@ -296,12 +360,23 @@ moderation.post('/:id/action', requireStaff, async (c) => {
       break;
   }
 
+  if (item.author_id && item.author_id !== userId) {
+    const noticeTitle = requestAction ? String(item.title || '').replace(/^(置顶申请|加精申请)：/, '') : String(item.title || '');
+    await createNotification(c.env, {
+      user_id: item.author_id,
+      type: 'moderation',
+      ref_id: item.item_id,
+      actor_id: userId,
+      message: `你的${requestActionLabel(requestAction) || itemLabel(item.item_type)}${actionLabel(action, item)}${noticeTitle ? `：${noticeTitle.slice(0, 30)}` : ''}`,
+    }).catch(() => null);
+  }
+
   return ok(c, { message: '操作完成' });
 });
 
 // POST /api/admin/moderation/enqueue - 将内容加入审核队列（供自动化调用）
 moderation.post('/enqueue', requireStaff, async (c) => {
-  const { item_id, item_type, author_id, title, excerpt, ai_verdict, ai_score } = await c.req.json().catch(() => ({}));
+  const { item_id, item_type, author_id, title, excerpt, ai_verdict, ai_score, request_action } = await c.req.json().catch(() => ({}));
   if (!item_id || !item_type || !author_id) return err(c, CODE.VALIDATION, '缺少参数');
 
   const now = Date.now();
@@ -310,8 +385,8 @@ moderation.post('/enqueue', requireStaff, async (c) => {
   const priority = ai_score && ai_score >= 60 ? 1 : 0;
 
   await c.env.DB.prepare(
-    'INSERT INTO moderation_queue(id,item_id,item_type,author_id,title,excerpt,ai_verdict,ai_score,priority,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)'
-  ).bind(id, item_id, item_type, author_id, title || '', excerpt || '', ai_verdict || '', ai_score || 0, priority, now).run();
+    'INSERT INTO moderation_queue(id,item_id,item_type,author_id,title,excerpt,ai_verdict,ai_score,request_action,priority,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)'
+  ).bind(id, item_id, item_type, author_id, title || '', excerpt || '', ai_verdict || '', ai_score || 0, request_action || '', priority, now).run();
 
   return ok(c, { id });
 });

@@ -73,7 +73,7 @@
   <aside class="admin-sidebar">
     <a href="site-config.html">站点配置</a><a href="invite-codes.html">邀请码管理</a>
     <a href="moderation.html">内容审核</a><a href="announcements.html">公告管理</a><a href="users.html" class="active">用户管理</a>
-    <a href="ai-config.html">AI审核配置</a>
+    <a href="achievements.html">成就徽章</a><a href="ai-config.html">AI审核配置</a>
   </aside>
   <main class="admin-main">
     <h2>用户管理</h2>
@@ -103,6 +103,13 @@
 <script>
 let banTargetId = null;
 let adminUser = null;
+const ROLE_RANK = { deleted: 0, banned: 0, member: 0, moderator: 1, admin: 2, owner: 3 };
+
+function canManageTarget(user) {
+  if (!adminUser || !user) return false;
+  if (adminUser.role === 'owner') return true;
+  return (ROLE_RANK[adminUser.role] || 0) > (ROLE_RANK[user.role] || 0);
+}
 
 async function searchUser() {
   const q = document.getElementById('searchId').value.trim();
@@ -120,7 +127,7 @@ async function searchUser() {
     userId = u.id;
     const banned = u.role === 'banned' || u.role === 'deleted';
     const initials = (u.display_name||u.username||'?').substring(0,2).toUpperCase();
-    const canEditProfile = adminUser && ['owner', 'admin', 'moderator'].includes(adminUser.role);
+    const canEditProfile = adminUser && ['owner', 'admin'].includes(adminUser.role) && canManageTarget(u);
     const canEditAssets = adminUser && adminUser.role === 'owner';
     document.getElementById('searchResult').innerHTML =
       '<div class="result-card">' +
@@ -136,9 +143,9 @@ async function searchUser() {
             '</div>' +
           '</div>' +
           '<div class="actions-bar">' +
-            (banned && canBanUsers() ? '<button onclick="unbanUser(\'' + userId + '\')">解除封禁</button>' :
+            (banned && canBanUsers(u) ? '<button onclick="unbanUser(\'' + userId + '\')">解除封禁</button>' :
              (u.role!=='owner'? roleButtons(u) : '') +
-             (canBanUsers() && u.role!=='admin'&&u.role!=='owner'?'<button class="btn-danger" onclick="openBanModal(\'' + userId + '\')">封禁/禁言</button>':'')) +
+             (canBanUsers(u)?'<button class="btn-danger" onclick="openBanModal(\'' + userId + '\')">封禁/禁言</button>':'')) +
           '</div>' +
         '</div>' +
         renderAdminEditPanel(u, userId, canEditProfile, canEditAssets) +
@@ -283,14 +290,14 @@ async function unbanUser(userId) {
 function h(s) { const d=document.createElement('div');d.textContent=s||'';return d.innerHTML; }
 function a(s) { return h(s).replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
 
-function canBanUsers() {
-  return adminUser && ['owner', 'admin'].includes(adminUser.role);
+function canBanUsers(user) {
+  return adminUser && ['owner', 'admin'].includes(adminUser.role) && canManageTarget(user);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
   if (!window.NodeWeave) return;
   adminUser = await window.NodeWeave.currentUser(true);
-  if (!adminUser || !['owner', 'admin', 'moderator'].includes(adminUser.role)) {
+  if (!adminUser || !['owner', 'admin'].includes(adminUser.role)) {
     location.href = '../login.html?redirect=' + encodeURIComponent('admin/users.html');
   }
 });

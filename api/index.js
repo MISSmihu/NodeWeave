@@ -22,11 +22,13 @@ import { invitesRouter } from './invites.js';
 import { followRouter } from './follow.js';
 import { siteConfig } from './site-config.js';
 import { attachmentsRouter } from './attachments.js';
+import { BADGE_CATALOG, ACHIEVEMENT_CATALOG, RETIRED_BADGE_IDS } from './lib/badge-catalog.js';
 import { inviteCodes } from './admin/invite-codes.js';
 import { moderation } from './admin/moderation.js';
 import { bans } from './admin/bans.js';
 import { aiConfig } from './admin/ai-config.js';
 import { siteConfigAdmin } from './admin/site-config-admin.js';
+import { adminAchievements } from './admin/achievements.js';
 
 
 // 数据库自动迁移
@@ -141,6 +143,7 @@ async function runMigrations(db) {
       title TEXT DEFAULT '',
       excerpt TEXT DEFAULT '',
       status TEXT DEFAULT 'pending',
+      request_action TEXT DEFAULT '',
       ai_verdict TEXT DEFAULT '',
       ai_confidence REAL DEFAULT 0,
       reviewer_id TEXT,
@@ -328,6 +331,7 @@ async function runMigrations(db) {
     `ALTER TABLE site_config ADD COLUMN teen_mode_enabled INTEGER DEFAULT 0`,
     `ALTER TABLE site_config ADD COLUMN user_invite_enabled INTEGER DEFAULT 1`,
     `ALTER TABLE site_config ADD COLUMN user_invite_monthly_limit INTEGER DEFAULT 9`,
+    `ALTER TABLE site_config ADD COLUMN post_edit_window_minutes INTEGER DEFAULT 30`,
     `ALTER TABLE site_config ADD COLUMN updated_by TEXT DEFAULT ''`,
     `ALTER TABLE users ADD COLUMN display_name TEXT DEFAULT ''`,
     `ALTER TABLE users ADD COLUMN avatar_color TEXT DEFAULT '#00f0ff'`,
@@ -384,6 +388,11 @@ async function runMigrations(db) {
     `ALTER TABLE posts ADD COLUMN bounty INTEGER DEFAULT 0`,
     `ALTER TABLE posts ADD COLUMN bounty_claimed INTEGER DEFAULT 0`,
     `ALTER TABLE posts ADD COLUMN accepted_answer_id TEXT DEFAULT ''`,
+    `ALTER TABLE posts ADD COLUMN reply_reward_total INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN reply_reward_remaining INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN reply_reward_min INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN reply_reward_max INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN reply_reward_claimed_count INTEGER DEFAULT 0`,
     `ALTER TABLE posts ADD COLUMN updated_at INTEGER DEFAULT 0`,
     `ALTER TABLE comments ADD COLUMN user_id TEXT DEFAULT ''`,
     `ALTER TABLE comments ADD COLUMN author_id TEXT DEFAULT ''`,
@@ -406,6 +415,9 @@ async function runMigrations(db) {
     `ALTER TABLE user_badges ADD COLUMN equipped INTEGER DEFAULT 0`,
     `ALTER TABLE user_achievements ADD COLUMN id TEXT DEFAULT ''`,
     `ALTER TABLE user_achievements ADD COLUMN created_at INTEGER DEFAULT 0`,
+    `ALTER TABLE achievements ADD COLUMN category TEXT DEFAULT 'general'`,
+    `ALTER TABLE achievements ADD COLUMN badge_reward_id TEXT DEFAULT ''`,
+    `ALTER TABLE achievements ADD COLUMN condition_label TEXT DEFAULT ''`,
     `ALTER TABLE verification_tokens ADD COLUMN token TEXT DEFAULT ''`,
     `ALTER TABLE verification_tokens ADD COLUMN used_at INTEGER`,
     `ALTER TABLE invite_codes ADD COLUMN max_uses INTEGER DEFAULT 1`,
@@ -417,6 +429,7 @@ async function runMigrations(db) {
     `ALTER TABLE coin_logs ADD COLUMN balance_after INTEGER DEFAULT 0`,
     `ALTER TABLE moderation_queue ADD COLUMN priority INTEGER DEFAULT 0`,
     `ALTER TABLE moderation_queue ADD COLUMN ai_score INTEGER DEFAULT 0`,
+    `ALTER TABLE moderation_queue ADD COLUMN request_action TEXT DEFAULT ''`,
     `ALTER TABLE moderation_queue ADD COLUMN reviewed_by TEXT DEFAULT ''`,
     `ALTER TABLE moderation_queue ADD COLUMN result TEXT DEFAULT ''`,
     `ALTER TABLE reports ADD COLUMN target_user_id TEXT DEFAULT ''`,
@@ -439,12 +452,26 @@ async function runMigrations(db) {
   await db.prepare(`CREATE TABLE IF NOT EXISTS board_applications (id TEXT PRIMARY KEY, applicant_id TEXT NOT NULL, board_name TEXT NOT NULL, description TEXT, status TEXT DEFAULT 'pending', reviewed_by TEXT, reviewed_at INTEGER, created_at INTEGER NOT NULL)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS coin_logs (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, amount INTEGER NOT NULL, type TEXT NOT NULL, ref_id TEXT, balance_after INTEGER DEFAULT 0, created_at INTEGER NOT NULL)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS signin_records (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, signin_date TEXT NOT NULL, streak INTEGER DEFAULT 1, reward INTEGER DEFAULT 0, created_at INTEGER NOT NULL, UNIQUE(user_id, signin_date))`).run();
+  for (const sql of [
+    `ALTER TABLE signin_records ADD COLUMN reward_reputation INTEGER DEFAULT 0`,
+    `ALTER TABLE signin_records ADD COLUMN reward_exp INTEGER DEFAULT 0`,
+    `ALTER TABLE signin_records ADD COLUMN reward_bonus INTEGER DEFAULT 0`,
+  ]) {
+    try {
+      await db.prepare(sql).run();
+    } catch (error) {
+      const message = String(error.message || error);
+      if (!message.includes('duplicate column name') && !message.includes('no such table')) throw error;
+    }
+  }
   await db.prepare(`CREATE TABLE IF NOT EXISTS post_likes (post_id TEXT NOT NULL, user_id TEXT NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY (post_id, user_id))`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS comment_likes (comment_id TEXT NOT NULL, user_id TEXT NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY (comment_id, user_id))`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS post_downvotes (post_id TEXT NOT NULL, user_id TEXT NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY (post_id, user_id))`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS post_tips (id TEXT PRIMARY KEY, post_id TEXT NOT NULL, from_user TEXT NOT NULL, to_user TEXT NOT NULL, amount INTEGER NOT NULL, message TEXT DEFAULT '', created_at INTEGER NOT NULL)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS post_ratings (post_id TEXT NOT NULL, user_id TEXT NOT NULL, score INTEGER NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY (post_id, user_id))`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS bounty_logs (id TEXT PRIMARY KEY, post_id TEXT NOT NULL, from_user TEXT NOT NULL, to_user TEXT NOT NULL, amount INTEGER NOT NULL, created_at INTEGER NOT NULL)`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS reply_reward_logs (id TEXT PRIMARY KEY, post_id TEXT NOT NULL, user_id TEXT NOT NULL, comment_id TEXT DEFAULT '', amount INTEGER NOT NULL, created_at INTEGER NOT NULL, UNIQUE(post_id, user_id))`).run();
+  await db.prepare(`CREATE INDEX IF NOT EXISTS idx_reply_rewards_post ON reply_reward_logs(post_id, created_at)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS user_bans (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, type TEXT NOT NULL, reason TEXT, banned_until INTEGER, banned_by TEXT NOT NULL, created_at INTEGER NOT NULL)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS reports (id TEXT PRIMARY KEY, item_type TEXT NOT NULL, item_id TEXT NOT NULL, reporter_id TEXT NOT NULL, target_user_id TEXT DEFAULT '', ref_post_id TEXT DEFAULT '', reason TEXT NOT NULL, detail TEXT DEFAULT '', status TEXT DEFAULT 'pending', reviewer_id TEXT DEFAULT '', review_note TEXT DEFAULT '', created_at INTEGER NOT NULL, reviewed_at INTEGER)`).run();
   await db.prepare(`CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status, created_at)`).run();
@@ -483,7 +510,7 @@ async function runMigrations(db) {
     } catch (error) {}
   }
   try {
-    await db.prepare(`UPDATE site_config SET registration_enabled=COALESCE(registration_enabled,1), invite_code_required=COALESCE(invite_code_required,0), email_verification_required=COALESCE(email_verification_required,0), real_name_mode=COALESCE(real_name_mode,'off'), phone_bind_mode=COALESCE(phone_bind_mode,'off'), signin_reward_enabled=COALESCE(signin_reward_enabled,1), coin_enabled=COALESCE(coin_enabled,1), user_level_enabled=COALESCE(user_level_enabled,1), teen_mode_enabled=COALESCE(teen_mode_enabled,0), user_invite_enabled=COALESCE(user_invite_enabled,1), user_invite_monthly_limit=COALESCE(user_invite_monthly_limit,9) WHERE id=1`).run();
+    await db.prepare(`UPDATE site_config SET registration_enabled=COALESCE(registration_enabled,1), invite_code_required=COALESCE(invite_code_required,0), email_verification_required=COALESCE(email_verification_required,0), real_name_mode=COALESCE(real_name_mode,'off'), phone_bind_mode=COALESCE(phone_bind_mode,'off'), signin_reward_enabled=COALESCE(signin_reward_enabled,1), coin_enabled=COALESCE(coin_enabled,1), user_level_enabled=COALESCE(user_level_enabled,1), teen_mode_enabled=COALESCE(teen_mode_enabled,0), user_invite_enabled=COALESCE(user_invite_enabled,1), user_invite_monthly_limit=COALESCE(user_invite_monthly_limit,9), post_edit_window_minutes=COALESCE(post_edit_window_minutes,30) WHERE id=1`).run();
   } catch (error) {}
   await db.prepare(`INSERT OR IGNORE INTO ai_review_config (id) VALUES (1)`).run();
   await db.prepare(`INSERT OR IGNORE INTO boards(id,name,slug,description,icon,color,created_by,is_public,sort_order,created_at) VALUES
@@ -497,10 +524,217 @@ async function runMigrations(db) {
     ('b_promo','推广','promo','产品推广、项目宣传与商务合作','📢','#ff8c00','system',1,9,0),
     ('b_share','福利分享','share','资源分享、白嫖福利与优惠信息','🎁','#ff1493','system',1,10,0),
     ('b_transfer','中转站','transfer','文件中转、网盘分享与资源交换','📦','#00ced1','system',1,11,0)`).run();
+  await syncBadgeAchievementSeeds(db);
   console.log("Migrations checked - all tables exist");
 }
 
+async function syncBadgeAchievementSeeds(db) {
+  const now = Date.now();
+  for (const badge of BADGE_CATALOG) {
+    await db.prepare(
+      `INSERT OR IGNORE INTO badges(id,name,description,icon,color,rarity,category,price,is_special,quantity,created_at)
+       VALUES(?,?,?,?,?,?,?,?,?,?,?)`
+    ).bind(
+      badge.id,
+      badge.name,
+      badge.description,
+      badge.icon,
+      badge.color,
+      badge.rarity,
+      badge.category,
+      badge.price,
+      badge.is_special,
+      badge.quantity,
+      now
+    ).run();
+    await db.prepare(
+      `UPDATE badges
+          SET name=CASE WHEN name IS NULL OR name='' OR name LIKE '%?%' THEN ? ELSE name END,
+              description=CASE WHEN description IS NULL OR description='' OR description LIKE '%?%' THEN ? ELSE description END,
+              icon=COALESCE(NULLIF(icon,''),?),
+              color=COALESCE(NULLIF(color,''),?),
+              rarity=COALESCE(NULLIF(rarity,''),?),
+              category=COALESCE(NULLIF(category,''),?)
+        WHERE id=?`
+    ).bind(
+      badge.name,
+      badge.description,
+      badge.icon,
+      badge.color,
+      badge.rarity,
+      badge.category,
+      badge.id
+    ).run();
+  }
+  for (const id of RETIRED_BADGE_IDS) {
+    await db.prepare('DELETE FROM badges WHERE id=?').bind(id).run().catch(() => null);
+  }
+  for (const achievement of ACHIEVEMENT_CATALOG) {
+    await db.prepare(
+      `INSERT OR IGNORE INTO achievements(id,name,description,icon,category,condition_type,condition_value,badge_reward_id,coin_reward,condition_label,created_at)
+       VALUES(?,?,?,?,?,?,?,?,?,?,?)`
+    ).bind(
+      achievement.id,
+      achievement.name,
+      achievement.description,
+      achievement.icon,
+      achievement.category,
+      achievement.condition_type,
+      achievement.condition_value,
+      achievement.badge_reward_id,
+      achievement.coin_reward,
+      achievement.condition_label,
+      now
+    ).run();
+    await db.prepare(
+      `UPDATE achievements
+          SET name=CASE WHEN name IS NULL OR name='' OR name LIKE '%?%' THEN ? ELSE name END,
+              description=CASE WHEN description IS NULL OR description='' OR description LIKE '%?%' THEN ? ELSE description END,
+              icon=COALESCE(NULLIF(icon,''),?),
+              category=COALESCE(NULLIF(category,''),?),
+              condition_type=COALESCE(NULLIF(condition_type,''),?),
+              condition_value=CASE WHEN COALESCE(condition_value,0)<=0 THEN ? ELSE condition_value END,
+              badge_reward_id=CASE WHEN badge_reward_id IS NULL OR badge_reward_id='' THEN ? ELSE badge_reward_id END,
+              condition_label=CASE WHEN condition_label IS NULL OR condition_label='' OR condition_label LIKE '%?%' THEN ? ELSE condition_label END
+        WHERE id=?`
+    ).bind(
+      achievement.name,
+      achievement.description,
+      achievement.icon,
+      achievement.category,
+      achievement.condition_type,
+      achievement.condition_value,
+      achievement.badge_reward_id,
+      achievement.condition_label,
+      achievement.id
+    ).run();
+  }
+}
+
 let migrated = false;
+
+function siteBaseUrl(c) {
+  const configured = String(c.env.SITE_URL || '').trim();
+  if (configured && !configured.includes('localhost')) return configured.replace(/\/+$/, '');
+  const url = new URL(c.req.url);
+  return `${url.protocol}//${url.host}`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function escapeXml(value) {
+  return escapeHtml(value);
+}
+
+function plainText(value, maxLength = 180) {
+  const text = String(value || '')
+    .replace(/!\[[^\]]*]\([^)]*\)/g, '')
+    .replace(/\[[^\]]+]\([^)]*\)/g, match => match.replace(/\[|\]\([^)]*\)/g, ''))
+    .replace(/[`*_>#-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+}
+
+async function fetchAsset(c, pathname) {
+  const url = new URL(c.req.url);
+  url.pathname = pathname;
+  return c.env.ASSETS.fetch(new Request(url, c.req.raw));
+}
+
+async function renderSitemap(c) {
+  const base = siteBaseUrl(c);
+  const staticPages = ['', 'boards.html', 'blog.html', 'search.html', 'announcements.html', 'levels.html'];
+  let posts = [];
+  try {
+    const rows = await c.env.DB.prepare(
+      `SELECT id, updated_at, created_at
+         FROM posts
+        WHERE COALESCE(is_hidden,0)=0
+        ORDER BY COALESCE(updated_at, created_at) DESC
+        LIMIT 500`
+    ).all();
+    posts = rows.results || [];
+  } catch (error) {}
+  const urls = [
+    ...staticPages.map(page => ({
+      loc: page ? `${base}/${page}` : `${base}/`,
+      lastmod: new Date().toISOString(),
+    })),
+    ...posts.map(post => ({
+      loc: `${base}/post.html?id=${encodeURIComponent(post.id)}`,
+      lastmod: new Date(Number(post.updated_at || post.created_at || Date.now())).toISOString(),
+    })),
+  ];
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+    urls.map(item => `  <url><loc>${escapeXml(item.loc)}</loc><lastmod>${escapeXml(item.lastmod)}</lastmod></url>`).join('\n') +
+    `\n</urlset>`;
+  return new Response(xml, { headers: { 'content-type': 'application/xml; charset=utf-8' } });
+}
+
+async function renderPostSeoHtml(c) {
+  const url = new URL(c.req.url);
+  const postId = url.searchParams.get('id');
+  if (!postId) return fetchAsset(c, '/post.html');
+
+  const [assetResponse, post] = await Promise.all([
+    fetchAsset(c, '/post.html'),
+    c.env.DB.prepare(
+      `SELECT p.id, p.title, p.content, p.type, p.board_id, p.created_at, p.updated_at,
+              COALESCE(NULLIF(p.author_id,''), p.user_id) AS author_id,
+              u.username, u.display_name
+         FROM posts p
+         LEFT JOIN users u ON COALESCE(NULLIF(p.author_id,''), p.user_id)=u.id
+        WHERE p.id=? AND COALESCE(p.is_hidden,0)=0`
+    ).bind(postId).first().catch(() => null),
+  ]);
+  if (!post || !assetResponse.ok) return assetResponse;
+
+  const html = await assetResponse.text();
+  const base = siteBaseUrl(c);
+  const canonical = `${base}/post.html?id=${encodeURIComponent(post.id)}`;
+  const title = `${post.title || '内容详情'} // NodeWeave`;
+  const description = plainText(post.content, 180) || 'NodeWeave 赛博社区内容详情。';
+  const author = post.display_name || post.username || 'NodeWeave 用户';
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': post.type === 'blog' ? 'BlogPosting' : 'DiscussionForumPosting',
+    headline: post.title,
+    description,
+    author: { '@type': 'Person', name: author },
+    datePublished: new Date(Number(post.created_at || Date.now())).toISOString(),
+    dateModified: new Date(Number(post.updated_at || post.created_at || Date.now())).toISOString(),
+    mainEntityOfPage: canonical,
+  };
+  const jsonLdText = JSON.stringify(jsonLd).replace(/</g, '\\u003c');
+  const meta = [
+    `<title>${escapeHtml(title)}</title>`,
+    `<meta name="description" content="${escapeHtml(description)}">`,
+    `<link rel="canonical" href="${escapeHtml(canonical)}">`,
+    `<meta property="og:type" content="article">`,
+    `<meta property="og:title" content="${escapeHtml(post.title)}">`,
+    `<meta property="og:description" content="${escapeHtml(description)}">`,
+    `<meta property="og:url" content="${escapeHtml(canonical)}">`,
+    `<meta name="twitter:card" content="summary">`,
+    `<script type="application/ld+json">${jsonLdText}</script>`,
+  ].join('\n');
+  const article = `<noscript><article><h1>${escapeHtml(post.title)}</h1><p>${escapeHtml(description)}</p><p>作者：${escapeHtml(author)} · 板块：${escapeHtml(post.board_id || 'general')}</p></article></noscript>`;
+  return new Response(
+    html
+      .replace(/<title>.*?<\/title>/i, '')
+      .replace('</head>', `${meta}\n</head>`)
+      .replace('<body>', `<body>\n${article}`),
+    { headers: { 'content-type': 'text/html; charset=utf-8' } }
+  );
+}
 
 
 
@@ -563,8 +797,22 @@ app.route('/api/admin/moderation', moderation);
 app.route('/api/admin/bans', bans);
 app.route('/api/admin/ai-config', aiConfig);
 app.route('/api/admin/site-config', siteConfigAdmin);
+app.route('/api/admin/achievements', adminAchievements);
 
 app.get('/api/health', (c) => c.json({ code: 0, data: { status: 'online', time: Date.now() }, msg: 'ok' }));
+
+app.get('/robots.txt', (c) => {
+  const base = siteBaseUrl(c);
+  return new Response(`User-agent: *\nAllow: /\nSitemap: ${base}/sitemap.xml\n`, {
+    headers: { 'content-type': 'text/plain; charset=utf-8' },
+  });
+});
+
+app.get('/sitemap.xml', renderSitemap);
+
+app.get('/post', renderPostSeoHtml);
+
+app.get('/post.html', renderPostSeoHtml);
 
 app.get('*', async (c) => {
   const url = new URL(c.req.url);

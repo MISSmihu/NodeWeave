@@ -58,7 +58,7 @@ async function createNotification(env, { user_id, type, ref_id, actor_id, messag
 
 function extractMentions(text) {
   const names = new Set();
-  const re = /@([a-zA-Z0-9_]{3,20})/g;
+  const re = /@([\p{L}\p{N}_\u4e00-\u9fa5-]{2,24})/gu;
   let match;
   while ((match = re.exec(String(text || ''))) !== null) names.add(match[1]);
   return [...names].slice(0, 10);
@@ -69,8 +69,9 @@ async function notifyMentions(env, { text, actor_id, ref_id, message }) {
   if (!names.length) return [];
   const placeholders = names.map(() => '?').join(',');
   const rows = await env.DB.prepare(
-    `SELECT id, username FROM users WHERE username IN (${placeholders})`
-  ).bind(...names).all();
+    `SELECT id, username, display_name FROM users
+      WHERE username IN (${placeholders}) OR display_name IN (${placeholders})`
+  ).bind(...names, ...names).all();
   const sent = [];
   for (const user of rows.results || []) {
     if (user.id === actor_id) continue;

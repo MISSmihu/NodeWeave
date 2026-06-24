@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { authUser } from './lib/jwt.js';
 import { generateId } from './lib/id.js';
 import { ok, err, CODE } from './lib/response.js';
+import { isLevelSystemEnabled } from './level.js';
 
 const boardsRouter = new Hono();
 
@@ -49,7 +50,8 @@ boardsRouter.post('/apply', requireLogin, async (c) => {
 
   // Lv4+ 才能申请
   const user = await c.env.DB.prepare('SELECT reputation FROM users WHERE id=?').bind(userId).first();
-  if (!user || user.reputation < 1500) return err(c, CODE.FORBIDDEN, '声望需达到 Lv4 (1500) 才能申请建版');
+  const levelEnabled = await isLevelSystemEnabled(c.env);
+  if (levelEnabled && (!user || user.reputation < 1500)) return err(c, CODE.FORBIDDEN, '声望需达到 Lv4 (1500) 才能申请建版');
 
   const id = 'ba_' + generateId(8);
   await c.env.DB.prepare(

@@ -46,7 +46,13 @@
 .reward-card h4{font-family:var(--font-display);font-size:13px;color:var(--cyan);margin-bottom:10px}
 .reward-card label{display:block;font-family:var(--font-mono);font-size:10px;color:var(--text-mute);margin:8px 0 4px}
 .reward-card select,.reward-card input{width:100%;padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--font-mono);font-size:12px}
+.reward-card input:disabled{opacity:.45;cursor:not-allowed}
 .reward-range{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.reward-preview{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px;padding:12px;border:1px solid rgba(0,240,255,.12);border-radius:8px;background:rgba(0,240,255,.035)}
+.reward-pill{border:1px solid rgba(255,255,255,.07);border-radius:8px;background:rgba(10,10,15,.42);padding:10px}
+.reward-pill span{display:block;font-family:var(--font-mono);font-size:10px;color:var(--text-mute);margin-bottom:4px}
+.reward-pill strong{font-family:var(--font-display);font-size:15px;color:var(--text)}
+.reward-note{grid-column:1/-1;font-size:12px;color:var(--text-dim);line-height:1.7}
 .save-bar{position:fixed;bottom:0;left:200px;right:0;background:var(--surface);border-top:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:16px;z-index:50}
 .save-bar .changes-count{font-family:var(--font-mono);font-size:12px;color:var(--text-mute)}
 .save-bar button{padding:10px 24px;border-radius:4px;font-family:var(--font-display);font-size:14px;cursor:pointer;font-weight:700;border:none}
@@ -60,8 +66,12 @@
 .msg-err{background:rgba(255,0,60,.1);color:var(--magenta);border:1px solid rgba(255,0,60,.2)}
 .highlight-changed{animation:highlightPulse .6s ease}
 @keyframes highlightPulse{50%{background:rgba(0,240,255,.06)}}
-@media(max-width:860px){.reward-grid{grid-template-columns:1fr}}
+@media(max-width:860px){.reward-grid,.reward-preview{grid-template-columns:1fr}}
 </style>
+<script src="../script.js"></script>
+<script>
+(function(){try{var t=localStorage.getItem('nodeweave_theme')||'cyber';document.documentElement.dataset.theme=t;}catch(e){}})();
+</script>
 </head>
 <body>
 <div class="bg-grid"></div><div class="bg-scanlines"></div><div class="bg-glow"></div>
@@ -78,6 +88,7 @@
     <a href="moderation.html">内容审核</a>
     <a href="announcements.html">公告管理</a>
     <a href="users.html">用户管理</a>
+    <a href="achievements.html">成就徽章</a>
     <a href="ai-config.html">AI审核配置</a>
   </aside>
   <main class="admin-main">
@@ -127,11 +138,12 @@
         </select>
       </div>
       <div class="input-row"><div class="info"><div class="name">新用户先审后发条数</div><div class="desc">新用户前N条内容强制先审后发</div></div><input type="number" id="cfg_new_user_pre_moderation_count" value="3" onchange="markChanged()"></div>
+      <div class="input-row"><div class="info"><div class="name">帖子自由编辑时限（分钟）</div><div class="desc">普通用户发布后在此时间内可自由修改；填 0 表示不限制，管理组不受限制</div></div><input type="number" id="cfg_post_edit_window_minutes" value="30" min="0" onchange="markChanged()"></div>
     </div>
 
     <div class="page-section">
       <h3><span class="icon">💰</span> 社区经济</h3>
-      <div class="toggle-row"><div class="info"><div class="name">签到奖励</div><div class="desc">每日签到获得论坛币</div></div><label class="toggle"><input type="checkbox" id="cfg_signin_reward_enabled" onchange="markChanged()"><span class="slider"></span></label></div>
+      <div class="toggle-row"><div class="info"><div class="name">签到奖励</div><div class="desc">每日签到获得论坛币、声望和经验；数量可固定或随机</div></div><label class="toggle"><input type="checkbox" id="cfg_signin_reward_enabled" onchange="markChanged()"><span class="slider"></span></label></div>
       <div class="toggle-row"><div class="info"><div class="name">论坛币系统</div><div class="desc">关闭后所有论坛币功能禁用</div></div><label class="toggle"><input type="checkbox" id="cfg_coin_enabled" onchange="markChanged()"><span class="slider"></span></label></div>
       <div class="toggle-row"><div class="info"><div class="name">用户等级组</div><div class="desc">关闭后所有用户平等权限</div></div><label class="toggle"><input type="checkbox" id="cfg_user_level_enabled" onchange="markChanged()"><span class="slider"></span></label></div>
       <div class="reward-grid">
@@ -169,6 +181,7 @@
           </div>
         </div>
       </div>
+      <div class="reward-preview" id="signinRewardPreview"></div>
     </div>
 
     <div class="page-section">
@@ -216,6 +229,7 @@ async function loadConfig() {
     // 审核
     document.getElementById('cfg_post_moderation_strategy').value = c.post_moderation_strategy || 'post_first';
     document.getElementById('cfg_new_user_pre_moderation_count').value = c.new_user_pre_moderation_count || 3;
+    document.getElementById('cfg_post_edit_window_minutes').value = c.post_edit_window_minutes ?? 30;
 
     // 经济
     setToggle('cfg_signin_reward_enabled', c.signin_reward_enabled);
@@ -237,7 +251,7 @@ async function loadConfig() {
     // 未成年
     setToggle('cfg_teen_mode_enabled', c.teen_mode_enabled);
 
-    changedKeys.clear(); updateChangesInfo();
+    changedKeys.clear(); updateRewardUi(); updateChangesInfo();
   } catch(e) { console.error(e); }
 }
 
@@ -249,7 +263,13 @@ function setValue(id, val) {
   document.getElementById(id).value = val;
 }
 
-function markChanged() { changedKeys.add(event.target.id); updateChangesInfo(); }
+function markChanged() {
+  const target = event?.target;
+  if (!target) return;
+  changedKeys.add(target.id);
+  updateRewardUi();
+  updateChangesInfo();
+}
 
 function updateChangesInfo() {
   document.getElementById('changesInfo').textContent = changedKeys.size ? changedKeys.size + ' 项已更改' : '没有未保存的更改';
@@ -260,7 +280,52 @@ function getValue(id) {
   return el.type === 'checkbox' ? (el.checked ? 1 : 0) : el.value;
 }
 
+function num(id, fallback) {
+  const el = document.getElementById(id);
+  const parsed = parseInt(el.value, 10);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    el.value = fallback;
+    return fallback;
+  }
+  return parsed;
+}
+
+function rewardText(prefix, label) {
+  const mode = document.getElementById('cfg_signin_' + prefix + '_mode').value === 'random' ? 'random' : 'fixed';
+  const fixed = num('cfg_signin_' + prefix + '_fixed', prefix === 'coin' ? 3 : 1);
+  let min = num('cfg_signin_' + prefix + '_min', prefix === 'coin' ? 2 : 1);
+  let max = num('cfg_signin_' + prefix + '_max', prefix === 'coin' ? 8 : 3);
+  if (min > max) {
+    const oldMin = min;
+    min = max;
+    max = oldMin;
+    document.getElementById('cfg_signin_' + prefix + '_min').value = min;
+    document.getElementById('cfg_signin_' + prefix + '_max').value = max;
+    changedKeys.add('cfg_signin_' + prefix + '_min');
+    changedKeys.add('cfg_signin_' + prefix + '_max');
+  }
+  document.getElementById('cfg_signin_' + prefix + '_fixed').disabled = mode === 'random';
+  document.getElementById('cfg_signin_' + prefix + '_min').disabled = mode === 'fixed';
+  document.getElementById('cfg_signin_' + prefix + '_max').disabled = mode === 'fixed';
+  return { label, text: mode === 'random' ? min + ' - ' + max : fixed, mode };
+}
+
+function updateRewardUi() {
+  const coin = rewardText('coin', '论坛币');
+  const reputation = rewardText('reputation', '声望');
+  const exp = rewardText('exp', '经验');
+  const enabled = document.getElementById('cfg_signin_reward_enabled').checked;
+  const coinEnabled = document.getElementById('cfg_coin_enabled').checked;
+  document.getElementById('signinRewardPreview').innerHTML =
+    '<div class="reward-pill"><span>签到状态</span><strong>' + (enabled ? '开启' : '关闭') + '</strong></div>' +
+    '<div class="reward-pill"><span>' + coin.label + '</span><strong>' + (coinEnabled ? coin.text : '0') + '</strong></div>' +
+    '<div class="reward-pill"><span>' + reputation.label + '</span><strong>' + reputation.text + '</strong></div>' +
+    '<div class="reward-pill"><span>' + exp.label + '</span><strong>' + exp.text + '</strong></div>' +
+    '<div class="reward-note">连续签到额外加成只作用于论坛币：3天 +2、7天 +4、14天 +6、30天 +10。关闭论坛币系统时，签到仍可发声望和经验。</div>';
+}
+
 async function saveAll() {
+  updateRewardUi();
   const changed = {};
   for (const id of changedKeys) {
     const key = id.replace('cfg_', '');
@@ -287,7 +352,14 @@ async function saveAll() {
 
 function resetAll() { loadConfig(); }
 
-loadConfig();
+document.addEventListener('DOMContentLoaded', async () => {
+  const user = window.NodeWeave ? await window.NodeWeave.currentUser(true) : null;
+  if (!user || !['owner', 'admin'].includes(user.role)) {
+    location.href = '../login.html?redirect=' + encodeURIComponent('admin/site-config.html');
+    return;
+  }
+  loadConfig();
+});
 </script>
 </body>
 </html>

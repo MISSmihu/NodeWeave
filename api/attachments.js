@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { authUser } from './lib/jwt.js';
 import { generateId } from './lib/id.js';
 import { ok, err, CODE } from './lib/response.js';
+import { isLevelSystemEnabled } from './level.js';
 
 const attachmentsRouter = new Hono();
 
@@ -11,6 +12,10 @@ async function requireLogin(c, next) {
   if (!user) return err(c, CODE.UNAUTHORIZED, '请先登录', 401);
   c.set('userId', user.sub);
   return next();
+}
+
+function isStaffRole(role) {
+  return ['owner', 'admin', 'moderator'].includes(role);
 }
 
 function parseCloudinaryUrl(value) {
@@ -35,7 +40,13 @@ function safeFileName(name) {
 
 attachmentsRouter.post('/upload', requireLogin, async (c) => {
   const userId = c.get('userId');
-  const config = parseCloudinaryUrl(c.env.CLOUDINARY_URL);
+  const user = await c.env.DB.prepare('SELECT role, reputation FROM users WHERE id=?').bind(userId).first();
+  const levelEnabled = await isLevelSystemEnabled(c.env);
+  if (levelEnabled && (!user || (!isStaffRole(user.role) && Number(user.reputation || 0) < 200))) {
+    return err(c, CODE.FORBIDDEN, '附件上传需达到 Lv2 极客（声望 200）', 403);
+  }
+
+  const config = parseCloudinaryUrl(c.env.CLOUDINARY_URL_V2 || c.env.CLOUDINARY_URL);
   if (!config) return err(c, CODE.SERVER_ERROR, '附件上传服务未配置', 500);
 
   const form = await c.req.formData().catch(() => null);

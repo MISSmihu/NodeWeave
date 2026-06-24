@@ -20,6 +20,7 @@
 .review-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:18px 20px;margin-bottom:12px}
 .review-item .meta{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--text-mute);margin-bottom:8px}
 .review-item .item-type{display:inline-block;padding:2px 8px;border-radius:3px;font-family:var(--font-mono);font-size:10px;background:rgba(0,240,255,.1);color:var(--cyan)}
+.review-item .item-type.request{background:rgba(255,215,0,.12);color:#ffd700;border:1px solid rgba(255,215,0,.24)}
 .review-item .title{font-size:15px;color:var(--text);margin-bottom:6px}
 .review-item .excerpt{font-size:13px;color:var(--text-dim);line-height:1.5;margin-bottom:10px;max-height:80px;overflow:hidden}
 .review-item .ai-badge{display:inline-block;padding:2px 8px;border-radius:3px;font-family:var(--font-mono);font-size:10px;margin-right:6px}
@@ -53,6 +54,9 @@
 .empty-state{text-align:center;padding:40px;color:var(--text-mute)}
 @media(max-width:860px){.report-grid{grid-template-columns:1fr}.admin-sidebar{position:static;width:auto}.admin-main{margin-left:0}.admin-layout{display:block}}
 </style>
+<script>
+(function(){try{var t=localStorage.getItem('nodeweave_theme')||'cyber';document.documentElement.dataset.theme=t;}catch(e){}})();
+</script>
 </head>
 <body>
 <div class="bg-grid"></div><div class="bg-scanlines"></div><div class="bg-glow"></div>
@@ -69,6 +73,7 @@
     <a href="moderation.html" class="active">内容审核</a>
     <a href="announcements.html">公告管理</a>
     <a href="users.html">用户管理</a>
+    <a href="achievements.html">成就徽章</a>
     <a href="ai-config.html">AI审核配置</a>
   </aside>
   <main class="admin-main">
@@ -105,6 +110,7 @@
     </section>
   </main>
 </div>
+<script src="../script.js"></script>
 <script>
 let currentStatus = 'pending';
 let currentView = 'queue';
@@ -153,9 +159,22 @@ async function loadQueue() {
       const aiBadge = item.ai_verdict ?
         '<span class="ai-badge ai-' + (item.ai_verdict==='safe'?'safe':item.ai_verdict==='suspicious'?'sus':'violation') + '">AI: ' + item.ai_verdict + ' (' + item.ai_score + ')</span>' : '';
       const canAct = currentStatus === 'pending';
+      const requestLabel = requestActionName(item.request_action);
+      const itemTypeLabel = requestLabel || (item.item_type === 'post' ? '帖子' : item.item_type === 'comment' ? '评论' : '内容');
+      const itemTypeClass = requestLabel ? 'item-type request' : 'item-type';
+      const actionButtons = requestLabel
+        ? '<button class="btn-success" onclick="act(\'' + item.id + '\',\'approve\')">通过申请</button>' +
+          '<button onclick="act(\'' + item.id + '\',\'reject\')">驳回申请</button>' +
+          '<button onclick="act(\'' + item.id + '\',\'warn\')">警告</button>'
+        : '<button class="btn-success" onclick="act(\'' + item.id + '\',\'approve\')">通过</button>' +
+          '<button onclick="act(\'' + item.id + '\',\'reject\')">驳回</button>' +
+          '<button onclick="act(\'' + item.id + '\',\'delete\')">删除</button>' +
+          '<button onclick="act(\'' + item.id + '\',\'pin\')">置顶</button>' +
+          '<button onclick="act(\'' + item.id + '\',\'feature\')">加精</button>' +
+          '<button onclick="act(\'' + item.id + '\',\'warn\')">警告</button>';
       return '<div class="review-item">' +
         '<div class="meta">' +
-          '<span class="item-type">' + (item.item_type==='post'?'帖子':'评论') + '</span>' +
+          '<span class="' + itemTypeClass + '">' + itemTypeLabel + '</span>' +
           '<span>作者: ' + h(item.author_name) + '</span>' +
           aiBadge +
           '<span>' + new Date(item.created_at).toLocaleString('zh-CN') + '</span>' +
@@ -163,13 +182,7 @@ async function loadQueue() {
         (item.title ? '<div class="title">' + h(item.title) + '</div>' : '') +
         '<div class="excerpt">' + h(item.excerpt || '') + '</div>' +
         (item.item_id ? '<div style="margin-top:4px"><a style="color:var(--cyan);font-size:12px" href="../post.html?id=' + encodeURIComponent(item.item_id) + '" target="_blank">打开内容</a></div>' : '') +
-        (canAct ? '<div class="actions">' +
-          '<button class="btn-success" onclick="act(\'' + item.id + '\',\'approve\')">通过</button>' +
-          '<button onclick="act(\'' + item.id + '\',\'reject\')">驳回</button>' +
-          '<button onclick="act(\'' + item.id + '\',\'delete\')">删除</button>' +
-          '<button onclick="act(\'' + item.id + '\',\'pin\')">置顶</button>' +
-          '<button onclick="act(\'' + item.id + '\',\'warn\')">警告</button>' +
-        '</div>' : '<div style="color:var(--text-mute);font-size:11px;margin-top:4px">' + (item.result||'') + '</div>') +
+        (canAct ? '<div class="actions">' + actionButtons + '</div>' : '<div style="color:var(--text-mute);font-size:11px;margin-top:4px">' + (item.result||'') + '</div>') +
       '</div>';
     }).join('');
   } catch(e) {}
@@ -285,6 +298,7 @@ window.act = async function(id, action) {
 };
 
 function h(s) { const d=document.createElement('div');d.textContent=s||'';return d.innerHTML; }
+function requestActionName(value) { return value === 'pin' ? '置顶申请' : value === 'feature' ? '加精申请' : ''; }
 function typeName(type) { return type === 'post' ? '帖子' : type === 'comment' ? '评论' : type === 'profile' ? '资料' : '内容'; }
 function severityName(value) { return value === 'severe' ? '恶劣违规' : value === 'major' ? '严重违规' : '轻微违规'; }
 function openInitialView() {

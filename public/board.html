@@ -160,7 +160,7 @@ function renderBoard() {
 }
 
 function postHeat(post) {
-  return Number(post.view_count || 0) + Number(post.like_count || 0) * 3 + Number(post.comment_count || 0) * 5 + Number(post.tip_total || 0) * 2;
+  return Number(post.view_count || 0) + Number(post.like_count || 0) * 3 + Number(post.comment_count || 0) * 5 + Number(post.tip_total || 0) * 2 + Number(post.reply_reward_total || 0);
 }
 
 async function loadPosts() {
@@ -197,6 +197,7 @@ function renderPost(post) {
   if (post.is_pinned) flags.push('<span class="flag hot">置顶</span>');
   if (post.is_featured) flags.push('<span class="flag featured">精华</span>');
   if (postHeat(post) >= 20) flags.push('<span class="flag hot">热帖</span>');
+  if (Number(post.reply_reward_remaining || 0) > 0) flags.push(`<span class="flag featured">回帖红包 ${Number(post.reply_reward_remaining || 0)}</span>`);
   if (post.bounty && !post.bounty_claimed) flags.push(`<span class="flag featured">悬赏 ${post.bounty}</span>`);
   if (post.accepted_answer_id) flags.push('<span class="flag featured">已解决</span>');
   flags.push(`<span class="flag">${post.type === 'blog' ? '博客' : '帖子'}</span>`);

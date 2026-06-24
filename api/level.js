@@ -5,7 +5,7 @@ import { ok } from './lib/response.js';
 const level = new Hono();
 
 const LEVELS = [
-  { level: 0, name: '新人', minRep: 0, color: '#8a8aa8', icon: '◈', reward: '注册即得基础身份', permissions: ['发帖/评论每日 5 次', '浏览公开内容', '参与签到'] },
+  { level: 0, name: '新人', minRep: 0, color: '#8a8aa8', icon: '◈', reward: '注册即得基础身份', permissions: ['每日最多回复 25 条', '浏览公开内容', '参与签到'] },
   { level: 1, name: '学徒', minRep: 50, color: '#7fff00', icon: '◉', reward: '解除新人每日发帖限制', permissions: ['不限量发帖/评论', '参与评分互动', '可获得普通成就徽章'] },
   { level: 2, name: '极客', minRep: 200, color: '#00f0ff', icon: '◇', reward: '解锁附件上传', permissions: ['上传帖子附件', '更高搜索/浏览额度', '可购买稀有徽章'] },
   { level: 3, name: '黑客', minRep: 500, color: '#9d00ff', icon: '◆', reward: '解锁主页高级装扮与悬赏', permissions: ['自定义头像/主页装扮', '发布悬赏问答', '更高打赏额度'] },
@@ -36,6 +36,15 @@ function levelProgress(reputation) {
   };
 }
 
+async function isLevelSystemEnabled(env) {
+  try {
+    const cfg = await env.DB.prepare('SELECT user_level_enabled FROM site_config WHERE id=1').first();
+    return Number(cfg?.user_level_enabled ?? 1) !== 0;
+  } catch (error) {
+    return true;
+  }
+}
+
 // GET /api/level/list - 等级列表
 level.get('/list', (c) => ok(c, LEVELS));
 
@@ -61,4 +70,4 @@ level.get('/:userId', async (c) => {
   });
 });
 
-export { level, getLevel, levelProgress, LEVELS };
+export { level, getLevel, levelProgress, isLevelSystemEnabled, LEVELS };

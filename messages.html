@@ -113,6 +113,7 @@ async function openThread(peerId) {
   document.getElementById('hint').textContent = 'Enter 换行，点击发送提交';
   renderMessages(json.data.messages || []);
   loadThreads();
+  if (window.NodeWeave.updateMessageBadge) window.NodeWeave.updateMessageBadge();
 }
 
 function renderMessages(messages) {

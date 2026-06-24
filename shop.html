@@ -84,6 +84,7 @@
 
   <div class="cat-tabs">
     <button class="active" data-cat="">全部</button>
+    <button data-cat="achievement">成就</button>
     <button data-cat="general">基础</button>
     <button data-cat="tech">技术</button>
     <button data-cat="social">社交</button>
@@ -93,12 +94,13 @@
   <div class="badge-grid" id="badgeGrid">加载中...</div>
   <div class="msg" id="msg"></div>
 </main>
+<script src="script.js"></script>
 <script>
-var myBadgeIds = new Set();
+var myBadges = new Map();
 
 async function loadBalance() {
   try {
-    var r = await fetch('/api/coins'); var j = await r.json();
+    var r = await NodeWeave.api('/api/coins'); var j = await r.json();
     if (j.code===0) { document.getElementById('balance').textContent = (j.data.balance||0).toLocaleString(); return; }
   } catch(e) {}
   document.getElementById('balance').textContent = '0';
@@ -106,29 +108,33 @@ async function loadBalance() {
 
 async function loadMyBadges() {
   try {
-    var r = await fetch('/api/badges/mine'); var j = await r.json();
-    if (j.code===0 && j.data.badges) j.data.badges.forEach(function(b){myBadgeIds.add(b.id)});
+    var r = await NodeWeave.api('/api/badges/mine'); var j = await r.json();
+    if (j.code===0 && j.data.badges) j.data.badges.forEach(function(b){myBadges.set(b.id, b)});
   } catch(e) {}
 }
 
 async function loadBadges(cat) {
   try {
     var url = '/api/badges'; if (cat) url += '?category=' + cat;
-    var r = await fetch(url); var j = await r.json();
+    var r = await NodeWeave.api(url); var j = await r.json();
     if (j.code!==0 || !j.data.badges) throw new Error();
     var grid = document.getElementById('badgeGrid');
     if (!j.data.badges.length) { grid.innerHTML = '<p style="color:var(--text-mute);text-align:center;padding:40px">暂无徽章</p>'; return; }
     grid.innerHTML = j.data.badges.map(function(b){
-      var owned = myBadgeIds.has(b.id);
+      var ownedBadge = myBadges.get(b.id);
+      var owned = !!ownedBadge;
+      var action = owned
+        ? '<button class="btn-buy" onclick="toggleBadge(\''+b.id+'\','+(ownedBadge.equipped?0:1)+')">'+(ownedBadge.equipped?'取消展示':'展示徽章')+'</button>'
+        : (b.category === 'achievement' || b.is_special)
+          ? '<button class="btn-buy owned" disabled>成就解锁</button>'
+          : '<button class="btn-buy" onclick="buyBadge(\''+b.id+'\','+b.price+')">购 买</button>';
       return '<div class="badge-card rarity-'+b.rarity+'">'+
         '<div class="rarity-bar"></div>'+
         '<div class="badge-shape">'+badgeImg(b.id,'')+'</div>'+
         '<div class="badge-name">'+h(b.name)+'</div>'+
         '<div class="badge-desc">'+h(b.description||'')+'</div>'+
         '<div class="badge-price">'+(b.price>0?'Ⓝ '+b.price:'免费')+'</div>'+
-        (owned
-          ?'<button class="btn-buy owned" disabled>已拥有</button>'
-          :'<button class="btn-buy" onclick="buyBadge(\''+b.id+'\','+b.price+')">购 买</button>')+
+        action+
         (b.quantity>=0?'<div class="stock">库存: '+b.quantity+'</div>':'<div class="stock">无限量</div>')+
       '</div>';
     }).join('');
@@ -140,13 +146,29 @@ async function loadBadges(cat) {
 async function buyBadge(id, price) {
   var msg = document.getElementById('msg');
   try {
-    var r = await fetch('/api/badges/purchase', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({badge_id:id})});
+    var r = await NodeWeave.api('/api/badges/purchase', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({badge_id:id})});
     var j = await r.json();
     if (j.code!==0) { msg.textContent=j.msg; msg.className='msg show msg-err'; return; }
     msg.textContent='购买成功！'; msg.className='msg show msg-ok';
     setTimeout(function(){msg.classList.remove('show')},1800);
-    myBadgeIds.add(id);
-    loadBalance();
+    await loadBalance();
+    myBadges.clear();
+    await loadMyBadges();
+    loadBadges(document.querySelector('.cat-tabs button.active').dataset.cat);
+  } catch(e) { msg.textContent='操作失败'; msg.className='msg show msg-err'; }
+}
+
+async function toggleBadge(id, equipped) {
+  var msg = document.getElementById('msg');
+  try {
+    var r = await NodeWeave.api('/api/badges/equip', {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({badge_id:id,equipped:!!equipped})});
+    var j = await r.json();
+    if (j.code!==0) { msg.textContent=j.msg || '操作失败'; msg.className='msg show msg-err'; return; }
+    msg.textContent= equipped ? '已展示到个人主页' : '已取消展示';
+    msg.className='msg show msg-ok';
+    setTimeout(function(){msg.classList.remove('show')},1800);
+    myBadges.clear();
+    await loadMyBadges();
     loadBadges(document.querySelector('.cat-tabs button.active').dataset.cat);
   } catch(e) { msg.textContent='操作失败'; msg.className='msg show msg-err'; }
 }

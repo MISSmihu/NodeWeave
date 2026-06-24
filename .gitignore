@@ -3,8 +3,10 @@
 .dev.vars
 .DS_Store
 *.log
+*.err
 
 nexus-badges/
 badges_prompts/
+badge-preview/
 
 static/

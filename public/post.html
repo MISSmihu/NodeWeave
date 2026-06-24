@@ -15,9 +15,15 @@
 .back-link:hover{color:var(--cyan)}
 .post-tags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .post-tags span{padding:4px 10px;border:1px solid rgba(0,240,255,.18);background:rgba(0,240,255,.07);border-radius:999px;color:var(--cyan);font-family:var(--font-mono);font-size:11px}
+.post-status-tags{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+.status-tag{padding:4px 9px;border-radius:999px;border:1px solid rgba(0,240,255,.18);background:rgba(0,240,255,.06);color:var(--cyan);font-family:var(--font-mono);font-size:11px}
+.status-tag.pin{border-color:rgba(255,0,60,.28);background:rgba(255,0,60,.08);color:var(--magenta);box-shadow:0 0 18px rgba(255,0,60,.08)}
+.status-tag.feature{border-color:rgba(127,255,0,.26);background:rgba(127,255,0,.07);color:var(--green)}
+.status-tag.reward{border-color:rgba(255,215,0,.28);background:rgba(255,215,0,.08);color:#ffd700}
 .post-title{font-family:var(--font-display);font-size:clamp(24px,4vw,36px);line-height:1.25;margin:0;color:var(--text)}
 .post-meta{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0 22px;color:var(--text-mute);font-size:13px}
 .post-meta a{color:var(--cyan);text-decoration:none}
+.edit-note{margin:-10px 0 16px;color:var(--text-mute);font-size:12px;line-height:1.7}
 .post-body,.hidden-reveal{white-space:pre-wrap;word-break:break-word;line-height:1.9;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:24px}
 .hidden-reveal{margin-top:14px;background:rgba(0,240,255,.035);border-style:dashed}
 .attach-box{display:flex;align-items:center;gap:12px;margin:16px 0;padding:14px 16px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px}
@@ -37,6 +43,13 @@
 .comment-mod .danger{border-color:rgba(255,0,60,.35);color:var(--magenta)}
 .guest-lock{margin:16px 0;padding:16px;border:1px dashed rgba(0,240,255,.22);border-radius:8px;background:linear-gradient(135deg,rgba(0,240,255,.06),rgba(157,0,255,.035));color:var(--text-dim);font-size:13px;line-height:1.8}
 .guest-lock a{color:var(--cyan);text-decoration:none}
+.reward-panel{margin:16px 0;padding:16px;border:1px solid rgba(255,215,0,.22);border-radius:10px;background:linear-gradient(135deg,rgba(255,215,0,.09),rgba(157,0,255,.04));box-shadow:0 0 28px rgba(255,215,0,.06)}
+.reward-panel h3{font-family:var(--font-display);font-size:15px;color:#ffd700;margin-bottom:8px}
+.reward-panel p{color:var(--text-dim);font-size:13px;line-height:1.7}
+.reward-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+.reward-chip{padding:10px;border:1px solid rgba(255,255,255,.07);border-radius:8px;background:rgba(10,10,15,.42)}
+.reward-chip span{display:block;color:var(--text-mute);font-family:var(--font-mono);font-size:10px;margin-bottom:4px}
+.reward-chip strong{font-family:var(--font-display);color:var(--text);font-size:15px}
 .rate-stars{display:inline-flex;gap:3px;align-items:center}
 .rate-star{font-size:20px;cursor:pointer;color:var(--text-mute);transition:all .15s}
 .rate-star.active,.rate-star:hover{color:#ffd700;text-shadow:0 0 8px rgba(255,215,0,.35)}
@@ -74,7 +87,7 @@
 .msg.err{display:block;background:rgba(255,0,60,.1);border:1px solid rgba(255,0,60,.22);color:var(--magenta)}
 .spinner{width:34px;height:34px;border:2px solid var(--border);border-top-color:var(--cyan);border-radius:50%;animation:spin .8s linear infinite;margin:80px auto}
 @keyframes spin{to{transform:rotate(360deg)}}
-@media(max-width:720px){.post-shell{padding:18px}.post-page{padding-left:16px;padding-right:16px}}
+@media(max-width:720px){.post-shell{padding:18px}.post-page{padding-left:16px;padding-right:16px}.reward-grid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -186,8 +199,25 @@ function renderPost() {
   const tags = (p.tags || []).map(tag => `<span>#${esc(tag)}</span>`).join('');
   const date = new Date(p.created_at).toLocaleString('zh-CN');
   const lastReply = p.last_reply_at && p.last_reply_at !== p.created_at ? new Date(p.last_reply_at).toLocaleString('zh-CN') : '';
-  const canEdit = currentUser && currentUser.username && p.author_id && (p.author_id === currentUser.id);
   const isStaff = currentUser && ['owner', 'admin', 'moderator'].includes(currentUser.role);
+  const heat = Number(p.view_count || 0) + Number(p.like_count || 0) * 3 + Number(p.comment_count || 0) * 5 + Number(p.tip_total || 0) * 2 + Number(p.reply_reward_total || 0);
+  const statusTags = [];
+  if (p.is_pinned) statusTags.push('<span class="status-tag pin">置顶</span>');
+  if (p.is_featured) statusTags.push('<span class="status-tag feature">精华</span>');
+  if (heat >= 20) statusTags.push('<span class="status-tag pin">热帖</span>');
+  if (Number(p.reply_reward_remaining || 0) > 0) statusTags.push(`<span class="status-tag reward">回帖红包 ${Number(p.reply_reward_remaining || 0)} / ${Number(p.reply_reward_total || 0)}</span>`);
+  if (p.bounty && !p.accepted_answer_id) statusTags.push(`<span class="status-tag reward">悬赏 ${p.bounty}</span>`);
+  if (p.accepted_answer_id) statusTags.push('<span class="status-tag feature">已解决</span>');
+  if (p.is_ai_generated) statusTags.push('<span class="status-tag">AI 辅助</span>');
+  const canEdit = !!p.can_edit;
+  let editNote = '';
+  if (currentUser && p.author_id === currentUser.id && !isStaff) {
+    if (p.edit_window_expired) {
+      editNote = `<div class="edit-note">编辑窗口已结束：普通用户发布后 ${p.edit_window_minutes || 30} 分钟内可自由修改，之后请联系版主或管理员。</div>`;
+    } else if (p.can_edit_until) {
+      editNote = `<div class="edit-note">你可在 ${new Date(p.can_edit_until).toLocaleString('zh-CN')} 前自由修改此内容。</div>`;
+    }
+  }
   const attachment = p.attachment_url ? `
     <div class="attach-box">
       <span style="font-size:24px">📎</span>
@@ -226,7 +256,19 @@ function renderPost() {
       <button type="button" onclick="location.href='editor.html?edit=${esc(p.id)}'">编辑全文</button>
       <button class="danger" type="button" onclick="deletePost()">删除</button>
     </div>` : '';
+  const rewardPanel = Number(p.reply_reward_total || 0) > 0 ? `
+    <div class="reward-panel">
+      <h3>🧧 回帖红包池</h3>
+      <p>首次有效回复可随机领取一次论坛币；楼主自己回复不领取，红包余额发完即止。</p>
+      <div class="reward-grid">
+        <div class="reward-chip"><span>总额</span><strong>${Number(p.reply_reward_total || 0)}</strong></div>
+        <div class="reward-chip"><span>剩余</span><strong>${Number(p.reply_reward_remaining || 0)}</strong></div>
+        <div class="reward-chip"><span>随机范围</span><strong>${Number(p.reply_reward_min || 0)}-${Number(p.reply_reward_max || 0)}</strong></div>
+        <div class="reward-chip"><span>已领取</span><strong>${Number(p.reply_reward_claimed_count || 0)}</strong></div>
+      </div>
+    </div>` : '';
   shell.innerHTML = `
+    <div class="post-status-tags">${statusTags.join('')}</div>
     <div class="post-tags">${tags || `<span>${p.type === 'blog' ? '博客' : '帖子'}</span>`}</div>
     <h1 class="post-title">${esc(p.title)}</h1>
     <div class="post-meta">
@@ -238,7 +280,9 @@ function renderPost() {
       ${p.bounty ? `<span style="color:#ffd700">悬赏 ${p.bounty} 论坛币</span>` : ''}
       ${canEdit ? `<a href="editor.html?edit=${esc(p.id)}">编辑</a>` : ''}
     </div>
+    ${editNote}
     ${staffBar}
+    ${rewardPanel}
     <div class="post-body">${esc(p.content)}</div>
     ${guestLock}
     ${attachment}
@@ -393,6 +437,9 @@ async function submitComment() {
     return;
   }
   input.value = '';
+  if (json.data?.reply_reward?.amount) {
+    alert(`手气不错！你获得 ${json.data.reply_reward.amount} 论坛币回帖红包。`);
+  }
   await loadPost();
 }
 

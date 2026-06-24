@@ -4,6 +4,8 @@ import { authUser } from './lib/jwt.js';
 import { generateId } from './lib/id.js';
 import { ok, err, CODE } from './lib/response.js';
 import { createNotification, notifyMentions } from './notifications.js';
+import { checkAchievementsForUser } from './achievements.js';
+import { isLevelSystemEnabled } from './level.js';
 
 const posts = new Hono();
 
@@ -37,6 +39,10 @@ function asInt(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function isStaffRole(role) {
+  return ['owner', 'admin', 'moderator'].includes(role);
+}
+
 function authorExpr(alias = 'p') {
   return `COALESCE(NULLIF(${alias}.author_id,''), ${alias}.user_id)`;
 }
@@ -57,10 +63,51 @@ function normalizeSearch(value) {
   return String(value || '').trim().slice(0, 80);
 }
 
+function normalizeReplyReward(body) {
+  const total = Math.max(0, asInt(body.reply_reward_total, 0));
+  const min = Math.max(0, asInt(body.reply_reward_min, 0));
+  const max = Math.max(0, asInt(body.reply_reward_max, 0));
+  if (!total && !min && !max) {
+    return { total: 0, min: 0, max: 0 };
+  }
+  if (total < 1) {
+    return { error: '回帖红包总额至少 1 论坛币' };
+  }
+  if (min < 1 || max < 1) {
+    return { error: '回帖红包随机金额至少 1 论坛币' };
+  }
+  if (min > max) {
+    return { error: '回帖红包最小金额不能大于最大金额' };
+  }
+  if (total < min) {
+    return { error: '回帖红包总额不能小于单次最小奖励' };
+  }
+  return { total, min, max };
+}
+
+function wantsRequest(value) {
+  return value === true || value === 1 || value === '1' || value === 'true' || value === 'on';
+}
+
+async function getPostEditWindowMinutes(env) {
+  try {
+    const cfg = await env.DB.prepare('SELECT post_edit_window_minutes FROM site_config WHERE id=1').first();
+    const minutes = asInt(cfg?.post_edit_window_minutes, 30);
+    return Math.max(0, Math.min(minutes, 43200));
+  } catch (error) {
+    return 30;
+  }
+}
+
 function postListSelect() {
   return `SELECT p.id, p.title, p.content, p.type, p.board_id, p.is_pinned, COALESCE(p.is_featured,0) AS is_featured,
             p.view_count, p.like_count, p.comment_count, p.downvote_count, p.tip_count, p.tip_total,
             p.rating_avg, p.rating_count, p.bounty, p.bounty_claimed, p.accepted_answer_id, p.created_at, p.updated_at,
+            COALESCE(p.reply_reward_total,0) AS reply_reward_total,
+            COALESCE(p.reply_reward_remaining,0) AS reply_reward_remaining,
+            COALESCE(p.reply_reward_min,0) AS reply_reward_min,
+            COALESCE(p.reply_reward_max,0) AS reply_reward_max,
+            COALESCE(p.reply_reward_claimed_count,0) AS reply_reward_claimed_count,
             last_reply.last_reply_at AS last_reply_at,
             COALESCE(last_reply.last_reply_at, p.updated_at, p.created_at) AS activity_at,
             ${authorExpr('p')} AS author_id,
@@ -134,7 +181,7 @@ posts.get('/', optLogin, async (c) => {
     where += ' AND COALESCE(p.is_featured,0)=1';
   }
   if (sort === 'hot') {
-    where += ' AND (COALESCE(p.view_count,0) + COALESCE(p.like_count,0) * 3 + COALESCE(p.comment_count,0) * 5 + COALESCE(p.tip_total,0) * 2 + COALESCE(p.rating_avg,0) * COALESCE(p.rating_count,0) * 4) >= 20';
+    where += ' AND (COALESCE(p.view_count,0) + COALESCE(p.like_count,0) * 3 + COALESCE(p.comment_count,0) * 5 + COALESCE(p.tip_total,0) * 2 + COALESCE(p.rating_avg,0) * COALESCE(p.rating_count,0) * 4 + COALESCE(p.reply_reward_total,0)) >= 20';
   }
   if (sort === 'bounty') {
     where += ' AND COALESCE(p.bounty,0)>0 AND COALESCE(p.bounty_claimed,0)=0';
@@ -147,7 +194,7 @@ posts.get('/', optLogin, async (c) => {
   }
 
   const orderBy = sort === 'hot'
-    ? 'ORDER BY COALESCE(p.is_pinned,0) DESC, (COALESCE(p.view_count,0) + COALESCE(p.like_count,0) * 3 + COALESCE(p.comment_count,0) * 5 + COALESCE(p.tip_total,0) * 2 + COALESCE(p.rating_avg,0) * COALESCE(p.rating_count,0) * 4) DESC, p.created_at DESC'
+    ? 'ORDER BY COALESCE(p.is_pinned,0) DESC, (COALESCE(p.view_count,0) + COALESCE(p.like_count,0) * 3 + COALESCE(p.comment_count,0) * 5 + COALESCE(p.tip_total,0) * 2 + COALESCE(p.rating_avg,0) * COALESCE(p.rating_count,0) * 4 + COALESCE(p.reply_reward_total,0)) DESC, p.created_at DESC'
     : sort === 'replied'
       ? 'ORDER BY COALESCE(p.is_pinned,0) DESC, COALESCE(last_reply.last_reply_at, p.updated_at, p.created_at) DESC'
       : sort === 'bounty'
@@ -193,7 +240,24 @@ posts.get('/:id', optLogin, async (c) => {
   await c.env.DB.prepare('UPDATE posts SET view_count=COALESCE(view_count,0)+1 WHERE id=?').bind(postId).run();
   const tags = await c.env.DB.prepare('SELECT tag FROM post_tags WHERE post_id=?').bind(postId).all();
   const signedIn = !!c.get('userId');
-  return ok(c, publicPostShape({ ...post, tags: (tags.results || []).map(t => t.tag), view_count: (post.view_count || 0) + 1 }, signedIn));
+  const viewerId = c.get('userId');
+  let role = '';
+  if (viewerId) {
+    const roleRow = await c.env.DB.prepare('SELECT role FROM users WHERE id=?').bind(viewerId).first();
+    role = roleRow?.role || '';
+  }
+  const editWindowMinutes = await getPostEditWindowMinutes(c.env);
+  const canStaffEdit = isStaffRole(role);
+  const canAuthorEdit = signedIn && viewerId === post.author_id && (editWindowMinutes <= 0 || Date.now() <= Number(post.created_at || 0) + editWindowMinutes * 60000);
+  return ok(c, publicPostShape({
+    ...post,
+    tags: (tags.results || []).map(t => t.tag),
+    view_count: (post.view_count || 0) + 1,
+    can_edit: !!(canStaffEdit || canAuthorEdit),
+    can_edit_until: editWindowMinutes > 0 ? Number(post.created_at || 0) + editWindowMinutes * 60000 : 0,
+    edit_window_minutes: editWindowMinutes,
+    edit_window_expired: !!(signedIn && viewerId === post.author_id && !canStaffEdit && editWindowMinutes > 0 && Date.now() > Number(post.created_at || 0) + editWindowMinutes * 60000),
+  }, signedIn));
 });
 
 posts.post('/', requireLogin, async (c) => {
@@ -210,6 +274,8 @@ posts.post('/', requireLogin, async (c) => {
   const attachmentName = String(body.attachment_name || '').trim();
   const attachmentSize = Math.max(0, asInt(body.attachment_size, 0));
   const bounty = Math.max(0, asInt(body.bounty, 0));
+  const replyReward = normalizeReplyReward(body);
+  if (replyReward.error) return err(c, CODE.VALIDATION, replyReward.error);
 
   if (!title) return err(c, CODE.VALIDATION, '标题不能为空');
   if (!content) return err(c, CODE.VALIDATION, '内容不能为空');
@@ -227,32 +293,83 @@ posts.post('/', requireLogin, async (c) => {
     }
   } catch (error) {}
 
-  if (bounty > 0) {
-    const user = await c.env.DB.prepare('SELECT coins FROM users WHERE id=?').bind(userId).first();
-    if (!user || user.coins < bounty) return err(c, CODE.VALIDATION, '论坛币不足，无法设置悬赏');
+  const author = await c.env.DB.prepare('SELECT role, reputation, coins FROM users WHERE id=?').bind(userId).first();
+  const levelEnabled = await isLevelSystemEnabled(c.env);
+  if (levelEnabled && (attachmentUrl || attachmentName || attachmentSize > 0) && (!author || (!isStaffRole(author.role) && Number(author.reputation || 0) < 200))) {
+    return err(c, CODE.FORBIDDEN, '添加附件需达到 Lv2 极客（声望 200）', 403);
   }
+
+  if (bounty > 0) {
+    if (levelEnabled && (!author || (!isStaffRole(author.role) && Number(author.reputation || 0) < 500))) {
+      return err(c, CODE.FORBIDDEN, '发布悬赏问答需达到 Lv3 黑客（声望 500）', 403);
+    }
+    if (!author || Number(author.coins || 0) < bounty) return err(c, CODE.VALIDATION, '论坛币不足，无法设置悬赏');
+  }
+  const totalCost = bounty + replyReward.total;
+  if (totalCost > 0 && (!author || Number(author.coins || 0) < totalCost)) {
+    return err(c, CODE.VALIDATION, '论坛币不足，无法设置悬赏或回帖红包');
+  }
+
+  const pinRequest = wantsRequest(body.pin_request) || wantsRequest(body.is_pinned);
+  const featureRequest = wantsRequest(body.feature_request) || wantsRequest(body.is_featured);
 
   const postId = 'p_' + generateId();
   const now = Date.now();
-  await c.env.DB.batch([
+
+  const writes = [
     c.env.DB.prepare(
       `INSERT INTO posts(
         id,user_id,author_id,board_id,title,content,type,hidden_content,is_ai_generated,
-        visibility,visible_after,attachment_url,attachment_name,attachment_size,bounty,created_at,updated_at
-      ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+        visibility,visible_after,attachment_url,attachment_name,attachment_size,bounty,
+        reply_reward_total,reply_reward_remaining,reply_reward_min,reply_reward_max,reply_reward_claimed_count,
+        is_pinned,is_featured,created_at,updated_at
+      ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
     ).bind(
       postId, userId, userId, board.slug, title, content, type, hiddenContent, body.is_ai_generated ? 1 : 0,
-      visibility, visibleAfter, attachmentUrl, attachmentName, attachmentSize, bounty, now, now
+      visibility, visibleAfter, attachmentUrl, attachmentName, attachmentSize, bounty,
+      replyReward.total, replyReward.total, replyReward.min, replyReward.max, 0,
+      0, 0, now, now
     ),
     c.env.DB.prepare('UPDATE users SET reputation=COALESCE(reputation,0)+5, updated_at=? WHERE id=?').bind(now, userId),
     c.env.DB.prepare('UPDATE boards SET post_count=COALESCE(post_count,0)+1 WHERE slug=? OR id=?').bind(board.slug, board.id),
-  ]);
+  ];
 
-  if (bounty > 0) {
+  const enqueuePublishRequest = (requestAction, label) => {
+    writes.push(c.env.DB.prepare(
+      `INSERT INTO moderation_queue(
+        id,item_id,item_type,author_id,title,excerpt,status,request_action,priority,created_at
+      ) VALUES(?,?,?,?,?,?,?,?,?,?)`
+    ).bind(
+      'mq_' + generateId(10),
+      postId,
+      'post',
+      userId,
+      `${label}：${title}`.slice(0, 200),
+      `用户在发帖时提交${label}，审核通过后才会生效。`,
+      'pending',
+      requestAction,
+      1,
+      now
+    ));
+  };
+  if (pinRequest) enqueuePublishRequest('pin', '置顶申请');
+  if (featureRequest) enqueuePublishRequest('feature', '加精申请');
+
+  await c.env.DB.batch(writes);
+
+  if (totalCost > 0) {
+    const logs = [];
+    if (bounty > 0) {
+      logs.push(c.env.DB.prepare('INSERT INTO coin_logs(id,user_id,amount,type,ref_id,created_at) VALUES(?,?,?,?,?,?)')
+        .bind('cl_' + generateId(8), userId, -bounty, 'bounty_set', postId, now));
+    }
+    if (replyReward.total > 0) {
+      logs.push(c.env.DB.prepare('INSERT INTO coin_logs(id,user_id,amount,type,ref_id,created_at) VALUES(?,?,?,?,?,?)')
+        .bind('cl_' + generateId(8), userId, -replyReward.total, 'reply_reward_lock', postId, now));
+    }
     await c.env.DB.batch([
-      c.env.DB.prepare('UPDATE users SET coins=COALESCE(coins,0)-?, updated_at=? WHERE id=?').bind(bounty, now, userId),
-      c.env.DB.prepare('INSERT INTO coin_logs(id,user_id,amount,type,ref_id,created_at) VALUES(?,?,?,?,?,?)')
-        .bind('cl_' + generateId(8), userId, -bounty, 'bounty_set', postId, now),
+      c.env.DB.prepare('UPDATE users SET coins=COALESCE(coins,0)-?, updated_at=? WHERE id=?').bind(totalCost, now, userId),
+      ...logs,
     ]);
   }
   await syncTags(c.env.DB, postId, body.tags);
@@ -265,18 +382,38 @@ posts.post('/', requireLogin, async (c) => {
       message: `${author?.display_name || author?.username || '有人'} 在帖子中 @ 了你`,
     });
   } catch (error) {}
-  return ok(c, { id: postId }, 201);
+  await checkAchievementsForUser(c.env, userId).catch(() => null);
+  return ok(c, { id: postId, moderation_requests: [pinRequest ? 'pin' : '', featureRequest ? 'feature' : ''].filter(Boolean) }, 201);
 });
 
 posts.put('/:id', requireLogin, async (c) => {
   const userId = c.get('userId');
   const postId = c.req.param('id');
   const body = await c.req.json().catch(() => ({}));
-  const post = await c.env.DB.prepare(`SELECT title, ${authorExpr()} AS author_id FROM posts p WHERE p.id=?`).bind(postId).first();
+  const post = await c.env.DB.prepare(
+    `SELECT title, ${authorExpr()} AS author_id, attachment_url, attachment_name, attachment_size, created_at FROM posts p WHERE p.id=?`
+  ).bind(postId).first();
   if (!post) return err(c, CODE.NOT_FOUND, '帖子不存在', 404);
-  const roleRow = await c.env.DB.prepare('SELECT role FROM users WHERE id=?').bind(userId).first();
+  const roleRow = await c.env.DB.prepare('SELECT role, reputation FROM users WHERE id=?').bind(userId).first();
   const isStaff = roleRow && ['owner', 'admin', 'moderator'].includes(roleRow.role);
   if (post.author_id !== userId && !isStaff) return err(c, CODE.FORBIDDEN, '只能编辑自己的帖子', 403);
+  if (post.author_id === userId && !isStaff) {
+    const editWindowMinutes = await getPostEditWindowMinutes(c.env);
+    if (editWindowMinutes > 0 && Date.now() > Number(post.created_at || 0) + editWindowMinutes * 60000) {
+      return err(c, CODE.FORBIDDEN, `帖子发布超过 ${editWindowMinutes} 分钟，已不能自行编辑，请联系版主或管理员`, 403);
+    }
+  }
+  const levelEnabled = await isLevelSystemEnabled(c.env);
+  const nextAttachmentUrl = body.attachment_url !== undefined ? String(body.attachment_url || '').trim() : String(post.attachment_url || '').trim();
+  const nextAttachmentName = body.attachment_name !== undefined ? String(body.attachment_name || '').trim() : String(post.attachment_name || '').trim();
+  const nextAttachmentSize = body.attachment_size !== undefined ? Math.max(0, asInt(body.attachment_size, 0)) : Math.max(0, asInt(post.attachment_size, 0));
+  const changesAttachment = nextAttachmentUrl !== String(post.attachment_url || '').trim()
+    || nextAttachmentName !== String(post.attachment_name || '').trim()
+    || nextAttachmentSize !== Math.max(0, asInt(post.attachment_size, 0));
+  const setsNewAttachment = !!nextAttachmentUrl || !!nextAttachmentName || nextAttachmentSize > 0;
+  if (levelEnabled && changesAttachment && setsNewAttachment && !isStaff && Number(roleRow?.reputation || 0) < 200) {
+    return err(c, CODE.FORBIDDEN, '编辑附件需达到 Lv2 极客（声望 200）', 403);
+  }
 
   const fields = [];
   const params = [];
@@ -475,6 +612,7 @@ posts.post('/:id/like', requireLogin, async (c) => {
         message: `${actor?.display_name || actor?.username || '有人'} 点赞了你的内容「${String(post.title || '').slice(0, 30)}」`,
       });
     } catch (error) {}
+    await checkAchievementsForUser(c.env, post.author_id).catch(() => null);
   }
   return ok(c, { liked: true });
 });
@@ -482,7 +620,7 @@ posts.post('/:id/like', requireLogin, async (c) => {
 posts.post('/:id/downvote', requireLogin, async (c) => {
   const userId = c.get('userId');
   const postId = c.req.param('id');
-  const post = await c.env.DB.prepare('SELECT id FROM posts WHERE id=?').bind(postId).first();
+  const post = await c.env.DB.prepare(`SELECT id, title, ${authorExpr()} AS author_id FROM posts p WHERE id=?`).bind(postId).first();
   if (!post) return err(c, CODE.NOT_FOUND, '帖子不存在', 404);
 
   const existing = await c.env.DB.prepare('SELECT 1 FROM post_downvotes WHERE post_id=? AND user_id=?').bind(postId, userId).first();
@@ -497,6 +635,18 @@ posts.post('/:id/downvote', requireLogin, async (c) => {
     c.env.DB.prepare('INSERT OR IGNORE INTO post_downvotes(post_id,user_id,created_at) VALUES(?,?,?)').bind(postId, userId, Date.now()),
     c.env.DB.prepare('UPDATE posts SET downvote_count=COALESCE(downvote_count,0)+1 WHERE id=?').bind(postId),
   ]);
+  if (post.author_id !== userId) {
+    try {
+      const actor = await c.env.DB.prepare('SELECT display_name, username FROM users WHERE id=?').bind(userId).first();
+      await createNotification(c.env, {
+        user_id: post.author_id,
+        type: 'downvote',
+        ref_id: postId,
+        actor_id: userId,
+        message: `${actor?.display_name || actor?.username || '有人'} 对你的内容点了踩「${String(post.title || '').slice(0, 30)}」`,
+      });
+    } catch (error) {}
+  }
   return ok(c, { downvoted: true });
 });
 
@@ -534,6 +684,10 @@ posts.post('/:id/tip', requireLogin, async (c) => {
       message: `${actor?.display_name || actor?.username || '有人'} 打赏了你 ${tipAmount} 论坛币：「${String(post.title || '').slice(0, 30)}」`,
     });
   } catch (error) {}
+  await Promise.all([
+    checkAchievementsForUser(c.env, userId),
+    checkAchievementsForUser(c.env, post.author_id),
+  ]).catch(() => null);
   return ok(c, { id: tipId, amount: tipAmount });
 });
 
@@ -543,13 +697,28 @@ posts.post('/:id/rate', requireLogin, async (c) => {
   const score = asInt((await c.req.json().catch(() => ({}))).score, 0);
   if (score < 1 || score > 5) return err(c, CODE.VALIDATION, '评分需为 1-5 分');
 
-  const post = await c.env.DB.prepare('SELECT id FROM posts WHERE id=?').bind(postId).first();
+  const post = await c.env.DB.prepare(`SELECT id, title, ${authorExpr()} AS author_id FROM posts p WHERE p.id=?`).bind(postId).first();
   if (!post) return err(c, CODE.NOT_FOUND, '帖子不存在', 404);
 
   await c.env.DB.prepare('INSERT OR REPLACE INTO post_ratings(post_id,user_id,score,created_at) VALUES(?,?,?,?)').bind(postId, userId, score, Date.now()).run();
   const stats = await c.env.DB.prepare('SELECT AVG(score) as avg, COUNT(*) as cnt FROM post_ratings WHERE post_id=?').bind(postId).first();
   const avg = Math.round((stats.avg || 0) * 10) / 10;
   await c.env.DB.prepare('UPDATE posts SET rating_avg=?, rating_count=? WHERE id=?').bind(avg, stats.cnt || 0, postId).run();
+  if (score === 5 && post.author_id !== userId) {
+    await checkAchievementsForUser(c.env, post.author_id).catch(() => null);
+  }
+  if (post.author_id !== userId) {
+    try {
+      const actor = await c.env.DB.prepare('SELECT display_name, username FROM users WHERE id=?').bind(userId).first();
+      await createNotification(c.env, {
+        user_id: post.author_id,
+        type: 'rating',
+        ref_id: postId,
+        actor_id: userId,
+        message: `${actor?.display_name || actor?.username || '有人'} 给你的内容评分 ${score} 星「${String(post.title || '').slice(0, 30)}」`,
+      });
+    } catch (error) {}
+  }
   return ok(c, { rating_avg: avg, rating_count: stats.cnt || 0 });
 });
 
@@ -583,7 +752,11 @@ posts.post('/:id/bounty', requireLogin, async (c) => {
   if (post.author_id !== userId) return err(c, CODE.FORBIDDEN, '只能给自己的帖子设悬赏', 403);
   if (post.bounty > 0) return err(c, CODE.VALIDATION, '已设有悬赏，无法修改');
 
-  const user = await c.env.DB.prepare('SELECT coins FROM users WHERE id=?').bind(userId).first();
+  const user = await c.env.DB.prepare('SELECT role, reputation, coins FROM users WHERE id=?').bind(userId).first();
+  const levelEnabled = await isLevelSystemEnabled(c.env);
+  if (levelEnabled && (!user || (!isStaffRole(user.role) && Number(user.reputation || 0) < 500))) {
+    return err(c, CODE.FORBIDDEN, '设置悬赏需达到 Lv3 黑客（声望 500）', 403);
+  }
   if (!user || user.coins < bountyAmount) return err(c, CODE.VALIDATION, '论坛币不足');
   const now = Date.now();
   await c.env.DB.batch([
@@ -631,6 +804,7 @@ posts.post('/:id/accept', requireLogin, async (c) => {
       message: `你的回答已被采纳${post.bounty > 0 ? `，获得 ${post.bounty} 论坛币悬赏` : ''}`,
     });
   } catch (error) {}
+  await checkAchievementsForUser(c.env, comment.author_id).catch(() => null);
   return ok(c, { accepted: true, bounty_transferred: post.bounty || 0 });
 });
 

@@ -43,6 +43,9 @@
 .msg-ok{background:rgba(127,255,0,.1);color:var(--green);border:1px solid rgba(127,255,0,.2)}
 .msg-err{background:rgba(255,0,60,.1);color:var(--magenta);border:1px solid rgba(255,0,60,.2)}
 </style>
+<script>
+(function(){try{var t=localStorage.getItem('nodeweave_theme')||'cyber';document.documentElement.dataset.theme=t;}catch(e){}})();
+</script>
 </head>
 <body>
 <div class="bg-grid"></div>
@@ -69,6 +72,7 @@
     <a href="moderation.html">内容审核</a>
     <a href="announcements.html">公告管理</a>
     <a href="users.html">用户管理</a>
+    <a href="achievements.html">成就徽章</a>
     <a href="moderation.html?view=reports">举报处理</a>
   </aside>
 
@@ -119,6 +123,7 @@
 
 <script>
 const API = '/api/admin/invite-codes';
+let adminUser = null;
 
 async function loadList() {
   try {
@@ -195,8 +200,16 @@ function showMsg(id, text, type) {
   setTimeout(() => el.classList.remove('show'), 3000);
 }
 
-document.getElementById('genBtn').addEventListener('click', genCodes);
-loadList();
+document.addEventListener('DOMContentLoaded', async () => {
+  adminUser = window.NodeWeave ? await window.NodeWeave.currentUser(true) : null;
+  if (!adminUser || !['owner', 'admin'].includes(adminUser.role)) {
+    location.href = '../login.html?redirect=' + encodeURIComponent('admin/invite-codes.html');
+    return;
+  }
+  document.getElementById('genBtn').addEventListener('click', genCodes);
+  loadList();
+});
 </script>
+<script src="../script.js"></script>
 </body>
 </html>

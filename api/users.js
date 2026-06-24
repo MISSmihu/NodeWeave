@@ -4,8 +4,15 @@ import { ok, err, CODE } from './lib/response.js';
 import { levelProgress } from './level.js';
 import { authUser } from './lib/jwt.js';
 import { generateId } from './lib/id.js';
+import { createNotification } from './notifications.js';
 
 const users = new Hono();
+const ROLE_RANK = { deleted: 0, banned: 0, member: 0, moderator: 1, admin: 2, owner: 3 };
+
+function canManageRole(actorRole, targetRole) {
+  if (actorRole === 'owner') return true;
+  return (ROLE_RANK[actorRole] || 0) > (ROLE_RANK[targetRole] || 0);
+}
 
 async function requireOwner(c, next) {
   const user = await authUser(c, c.env);
@@ -20,7 +27,7 @@ async function requireStaff(c, next) {
   const user = await authUser(c, c.env);
   if (!user) return err(c, CODE.UNAUTHORIZED, '请先登录', 401);
   const row = await c.env.DB.prepare('SELECT role FROM users WHERE id=?').bind(user.sub).first();
-  if (!row || !['owner', 'admin', 'moderator'].includes(row.role)) return err(c, CODE.FORBIDDEN, '无权限', 403);
+  if (!row || !['owner', 'admin'].includes(row.role)) return err(c, CODE.FORBIDDEN, '无权限', 403);
   c.set('userId', user.sub);
   c.set('userRole', row.role);
   return next();
@@ -131,16 +138,24 @@ users.put('/:id/role', requireOwner, async (c) => {
   if (user.role === 'owner') return err(c, CODE.FORBIDDEN, '不能修改站长账号', 403);
 
   await c.env.DB.prepare('UPDATE users SET role=?, updated_at=? WHERE id=?').bind(role, Date.now(), user.id).run();
+  await createNotification(c.env, {
+    user_id: user.id,
+    type: 'role',
+    ref_id: '',
+    actor_id: actorId,
+    message: `你的用户角色已被站长调整为 ${role}`,
+  }).catch(() => null);
   return ok(c, { id: user.id, role });
 });
 
 // PUT /api/users/:id/admin-profile - 站长/管理员编辑用户资料
 users.put('/:id/admin-profile', requireStaff, async (c) => {
+  const actorId = c.get('userId');
   const target = c.req.param('id');
   const role = c.get('userRole');
   const user = await c.env.DB.prepare('SELECT id, role FROM users WHERE id=? OR username=?').bind(target, target).first();
   if (!user) return err(c, CODE.NOT_FOUND, '用户不存在', 404);
-  if (user.role === 'owner' && role !== 'owner') return err(c, CODE.FORBIDDEN, '不能修改站长资料', 403);
+  if (user.id !== actorId && !canManageRole(role, user.role)) return err(c, CODE.FORBIDDEN, '不能修改同级或更高权限用户资料', 403);
 
   const body = await c.req.json().catch(() => ({}));
   const displayName = String(body.display_name || '').trim().slice(0, 24);
@@ -148,6 +163,15 @@ users.put('/:id/admin-profile', requireStaff, async (c) => {
   const avatarColor = /^#[0-9a-fA-F]{3,8}$/.test(String(body.avatar_color || '')) ? body.avatar_color : '#00f0ff';
   await c.env.DB.prepare('UPDATE users SET display_name=?, bio=?, avatar_color=?, updated_at=? WHERE id=?')
     .bind(displayName, bio, avatarColor, Date.now(), user.id).run();
+  if (user.id !== actorId) {
+    await createNotification(c.env, {
+      user_id: user.id,
+      type: 'profile_admin',
+      ref_id: user.id,
+      actor_id: actorId,
+      message: '你的个人资料已被管理组更新，如有疑问请联系站长。',
+    }).catch(() => null);
+  }
   return ok(c, { id: user.id, message: '资料已更新' });
 });
 
@@ -174,6 +198,19 @@ users.put('/:id/assets', requireOwner, async (c) => {
     );
   }
   await c.env.DB.batch(statements);
+  const changes = [];
+  if (coins !== Number(user.coins || 0)) changes.push(`论坛币 ${Number(user.coins || 0)} → ${coins}`);
+  if (reputation !== Number(user.reputation || 0)) changes.push(`声望 ${Number(user.reputation || 0)} → ${reputation}`);
+  if (exp !== Number(user.exp || 0)) changes.push(`经验 ${Number(user.exp || 0)} → ${exp}`);
+  if (changes.length) {
+    await createNotification(c.env, {
+      user_id: user.id,
+      type: 'asset_admin',
+      ref_id: user.id,
+      actor_id: actorId,
+      message: `站长调整了你的账户资产：${changes.join('，')}`,
+    }).catch(() => null);
+  }
   return ok(c, { id: user.id, coins, reputation, exp });
 });
 

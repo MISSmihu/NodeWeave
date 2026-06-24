@@ -5,6 +5,7 @@ import { generateId } from './lib/id.js';
 import { ok, err, CODE } from './lib/response.js';
 import { consumeInviteCode, findInviteCode, normalizeInviteCode } from './lib/invite.js';
 import { createNotification } from './notifications.js';
+import { checkAchievementsForUser } from './achievements.js';
 
 const oauth = new Hono();
 
@@ -84,6 +85,7 @@ async function createOAuthUserWithMeta(c, { provider, provider_uid, username, em
     'INSERT INTO oauth_accounts(id,user_id,provider,provider_uid,provider_name,provider_avatar,created_at) VALUES(?,?,?,?,?,?,?)'
   ).bind(generateId(12), userId, provider, provider_uid, displayName || '', avatar || '', now).run();
 
+  await checkAchievementsForUser(c.env, userId).catch(() => null);
   return { userId, username: finalUsername, created: true };
 }
 

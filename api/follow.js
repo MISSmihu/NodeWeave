@@ -4,6 +4,7 @@ import { authUser } from './lib/jwt.js';
 import { generateId } from './lib/id.js';
 import { ok, err, CODE } from './lib/response.js';
 import { createNotification } from './notifications.js';
+import { checkAchievementsForUser } from './achievements.js';
 
 const followRouter = new Hono();
 
@@ -26,6 +27,7 @@ followRouter.post('/:userId', requireLogin, async (c) => {
 
   if (existing) {
     await c.env.DB.prepare('DELETE FROM follows WHERE id=?').bind(existing.id).run();
+    await checkAchievementsForUser(c.env, followingId).catch(() => null);
     return ok(c, { following: false });
   }
 
@@ -39,6 +41,7 @@ followRouter.post('/:userId', requireLogin, async (c) => {
     user_id: followingId, type: 'follow', actor_id: followerId,
     message: (actor?.display_name || '某人') + ' 关注了你',
   });
+  await checkAchievementsForUser(c.env, followingId).catch(() => null);
 
   return ok(c, { following: true });
 });

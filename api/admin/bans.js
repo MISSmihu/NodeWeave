@@ -3,8 +3,16 @@ import { Hono } from 'hono';
 import { authUser } from '../lib/jwt.js';
 import { generateId } from '../lib/id.js';
 import { ok, err, CODE } from '../lib/response.js';
+import { createNotification } from '../notifications.js';
 
 const bans = new Hono();
+const ROLE_RANK = { deleted: 0, banned: 0, member: 0, moderator: 1, admin: 2, owner: 3 };
+
+function canBanRole(actorRole, targetRole) {
+  if (targetRole === 'owner') return false;
+  if (actorRole === 'owner') return true;
+  return (ROLE_RANK[actorRole] || 0) > (ROLE_RANK[targetRole] || 0);
+}
 
 async function requireAdmin(c, next) {
   const user = await authUser(c, c.env);
@@ -13,6 +21,7 @@ async function requireAdmin(c, next) {
   if (!row || (row.role !== 'admin' && row.role !== 'owner'))
     return err(c, CODE.FORBIDDEN, '无权限', 403);
   c.set('userId', user.sub);
+  c.set('userRole', row.role);
   return next();
 }
 
@@ -31,6 +40,7 @@ bans.get('/', requireAdmin, async (c) => {
 // POST /api/admin/bans - 封禁/禁言用户
 bans.post('/', requireAdmin, async (c) => {
   const adminId = c.get('userId');
+  const adminRole = c.get('userRole');
   const { user_id, type, reason, duration_days } = await c.req.json().catch(() => ({}));
   if (!user_id || !type) return err(c, CODE.VALIDATION, '缺少参数');
   if (!['mute', 'ban'].includes(type)) return err(c, CODE.VALIDATION, '类型须为 mute 或 ban');
@@ -38,7 +48,7 @@ bans.post('/', requireAdmin, async (c) => {
   // 不能封管理员
   const target = await c.env.DB.prepare('SELECT role FROM users WHERE id=?').bind(user_id).first();
   if (!target) return err(c, CODE.NOT_FOUND, '用户不存在');
-  if (target.role === 'owner' || target.role === 'admin') return err(c, CODE.FORBIDDEN, '不能封禁管理员', 403);
+  if (!canBanRole(adminRole, target.role)) return err(c, CODE.FORBIDDEN, '不能封禁同级或更高权限用户', 403);
 
   const now = Date.now();
   const banId = 'ban_' + generateId();
@@ -52,6 +62,16 @@ bans.post('/', requireAdmin, async (c) => {
   if (type === 'ban') {
     await c.env.DB.prepare('UPDATE users SET role=? WHERE id=?').bind('banned', user_id).run();
   }
+
+  await createNotification(c.env, {
+    user_id,
+    type: 'ban',
+    ref_id: banId,
+    actor_id: adminId,
+    message: type === 'ban'
+      ? `你的账号已被封禁${reason ? `：${reason}` : ''}`
+      : `你的账号已被禁言${bannedUntil ? `至 ${new Date(bannedUntil).toLocaleString('zh-CN')}` : ''}${reason ? `：${reason}` : ''}`,
+  }).catch(() => null);
 
   return ok(c, { id: banId }, 201);
 });
@@ -68,6 +88,14 @@ bans.delete('/:id', requireAdmin, async (c) => {
   }
 
   await c.env.DB.prepare('DELETE FROM user_bans WHERE id=?').bind(banId).run();
+
+  await createNotification(c.env, {
+    user_id: ban.user_id,
+    type: 'ban_lifted',
+    ref_id: banId,
+    actor_id: '',
+    message: ban.type === 'ban' ? '你的账号封禁已解除。' : '你的账号禁言已解除。',
+  }).catch(() => null);
 
   return ok(c, { message: '已解除' });
 });

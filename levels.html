@@ -16,24 +16,41 @@
 .my-progress{display:none;border:1px solid var(--border);border-radius:10px;background:rgba(18,18,30,.78);padding:20px;margin-bottom:22px}
 .my-progress.show{display:block}
 .my-progress h2{font-family:var(--font-display);font-size:17px;color:var(--cyan);margin-bottom:12px}
+.asset-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}
+.asset-box{border:1px solid rgba(0,240,255,.12);border-radius:8px;background:rgba(10,10,15,.42);padding:13px}
+.asset-box span{display:block;font-family:var(--font-mono);font-size:11px;color:var(--text-mute);margin-bottom:5px}
+.asset-box strong{display:block;font-family:var(--font-display);font-size:18px;color:var(--text)}
 .progress-track{height:12px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid var(--border);overflow:hidden}
 .progress-fill{height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--purple));box-shadow:var(--glow-cyan)}
 .progress-meta{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;font-family:var(--font-mono);font-size:12px;color:var(--text-mute)}
+.permission-panels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px}
+.permission-panel{border:1px solid rgba(255,255,255,.07);border-radius:8px;background:rgba(255,255,255,.025);padding:14px}
+.permission-panel h3{font-family:var(--font-display);font-size:13px;color:var(--cyan);margin-bottom:8px}
+.permission-panel p{font-size:13px;color:var(--text-dim);line-height:1.8;margin:0}
+.permission-panel ul{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.permission-panel li{font-size:13px;color:var(--text-dim);line-height:1.65}
+.permission-panel li::before{content:'✓ ';color:var(--green)}
 .levels-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 .level-card{position:relative;overflow:hidden;border:1px solid var(--border);border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,.018),transparent),rgba(18,18,30,.78);padding:20px}
 .level-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--level-color,var(--cyan));box-shadow:0 0 20px var(--level-color,var(--cyan))}
+.level-card.current{border-color:var(--level-color,var(--cyan));box-shadow:0 0 0 1px color-mix(in srgb,var(--level-color,var(--cyan)) 35%,transparent),0 22px 80px rgba(0,0,0,.24)}
+.level-card.next{border-color:rgba(127,255,0,.32)}
+.level-card.locked{opacity:.74}
 .level-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}
 .level-name{font-family:var(--font-display);font-size:20px;color:var(--text)}
 .level-icon{font-size:28px;color:var(--level-color,var(--cyan));text-shadow:0 0 18px var(--level-color,var(--cyan))}
 .level-rep{font-family:var(--font-mono);font-size:12px;color:var(--text-mute);margin-top:4px}
+.level-state{display:inline-flex;margin-top:8px;padding:3px 8px;border:1px solid rgba(0,240,255,.18);border-radius:999px;background:rgba(0,240,255,.06);color:var(--cyan);font-family:var(--font-mono);font-size:11px}
+.level-card.current .level-state{border-color:var(--level-color,var(--cyan));color:var(--level-color,var(--cyan))}
+.level-card.next .level-state{border-color:rgba(127,255,0,.35);color:var(--green)}
 .level-section{margin-top:14px}
 .level-section strong{display:block;font-family:var(--font-mono);font-size:11px;color:var(--cyan);margin-bottom:7px;text-transform:uppercase}
 .perm-list{display:grid;gap:6px}
 .perm-list span{font-size:13px;color:var(--text-dim);line-height:1.6}
 .perm-list span::before{content:'✓ ';color:var(--green)}
 .reward{font-size:13px;color:var(--text);line-height:1.7}
-@media(max-width:940px){.levels-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:640px){.levels-page{padding-left:16px;padding-right:16px}.levels-grid{grid-template-columns:1fr}}
+@media(max-width:940px){.levels-grid,.permission-panels{grid-template-columns:repeat(2,minmax(0,1fr))}.asset-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){.levels-page{padding-left:16px;padding-right:16px}.levels-grid,.permission-panels,.asset-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -62,8 +79,10 @@
 
   <section class="my-progress" id="myProgress">
     <h2 id="myLevelTitle">当前等级</h2>
+    <div class="asset-grid" id="assetGrid"></div>
     <div class="progress-track"><div class="progress-fill" id="myProgressFill"></div></div>
     <div class="progress-meta" id="myProgressMeta"></div>
+    <div class="permission-panels" id="permissionPanels"></div>
   </section>
 
   <section class="levels-grid" id="levelsGrid"></section>
@@ -74,14 +93,31 @@
 const esc = (value) => window.NodeWeave.escapeHtml(value);
 const params = new URLSearchParams(location.search);
 const targetUser = params.get('user');
+let allLevels = [];
+let progressData = null;
+let profileData = null;
 
 function renderLevelCard(level) {
+  const reputation = Number(progressData?.reputation || 0);
+  const currentLevel = Number(progressData?.level ?? -1);
+  const nextLevel = progressData?.next_level ? Number(progressData.next_level.level) : -1;
+  const unlocked = reputation >= Number(level.minRep || 0);
+  const stateClass = level.level === currentLevel ? 'current' : level.level === nextLevel ? 'next' : unlocked ? 'unlocked' : 'locked';
+  const gap = Math.max(0, Number(level.minRep || 0) - reputation);
+  const stateText = level.level === currentLevel
+    ? '当前等级'
+    : level.level === nextLevel
+      ? `下一目标 · 差 ${gap.toLocaleString()} 声望`
+      : unlocked
+        ? '已解锁'
+        : `未解锁 · 差 ${gap.toLocaleString()} 声望`;
   return `
-    <article class="level-card" style="--level-color:${esc(level.color || '#00f0ff')}">
+    <article class="level-card ${stateClass}" style="--level-color:${esc(level.color || '#00f0ff')}">
       <div class="level-top">
         <div>
           <div class="level-name">Lv${level.level} ${esc(level.name)}</div>
           <div class="level-rep">声望 ≥ ${Number(level.minRep || 0).toLocaleString()}</div>
+          <div class="level-state">${esc(stateText)}</div>
         </div>
         <div class="level-icon">${esc(level.icon || '◈')}</div>
       </div>
@@ -98,10 +134,45 @@ function renderLevelCard(level) {
 
 async function loadLevels() {
   const json = await window.NodeWeave.apiJson('/api/level/list').catch(() => null);
-  const levels = json?.code === 0 ? json.data : [];
+  allLevels = json?.code === 0 ? json.data : [];
+  renderLevels();
+}
+
+function renderLevels() {
+  const levels = allLevels || [];
   document.getElementById('levelsGrid').innerHTML = levels.length
     ? levels.map(renderLevelCard).join('')
     : '<div class="level-card">等级配置暂时无法读取</div>';
+}
+
+function renderAssetPanel() {
+  const data = progressData || {};
+  const user = profileData || {};
+  document.getElementById('assetGrid').innerHTML = `
+    <div class="asset-box"><span>论坛币</span><strong>${Number(user.coins || 0).toLocaleString()}</strong></div>
+    <div class="asset-box"><span>声望</span><strong>${Number(data.reputation || user.reputation || 0).toLocaleString()}</strong></div>
+    <div class="asset-box"><span>经验</span><strong>${Number(user.exp || 0).toLocaleString()}</strong></div>
+    <div class="asset-box"><span>用户组</span><strong>Lv${data.level || 0} ${esc(data.name || '新人')}</strong></div>
+  `;
+  const currentPermissions = (data.permissions || []).map(item => `<li>${esc(item)}</li>`).join('');
+  const nextPermissions = data.next_level
+    ? (data.next_level.permissions || []).map(item => `<li>${esc(item)}</li>`).join('')
+    : '<li>已达到最高等级，继续积累声望会提升社区影响力</li>';
+  document.getElementById('permissionPanels').innerHTML = `
+    <article class="permission-panel">
+      <h3>当前权限</h3>
+      <ul>${currentPermissions || '<li>浏览公开内容</li>'}</ul>
+    </article>
+    <article class="permission-panel">
+      <h3>下一等级</h3>
+      <p>${data.next_level ? `Lv${data.next_level.level} ${esc(data.next_level.name)} · 还差 ${Number(data.need || 0).toLocaleString()} 声望` : '你已经抵达 Lv5 传奇。'}</p>
+      <ul>${nextPermissions}</ul>
+    </article>
+    <article class="permission-panel">
+      <h3>升级来源</h3>
+      <p>发帖通过 +5 声望，回复 +1 声望，Lv0 每天最多回复 25 条；签到、被点赞、答案被采纳、内容加精都会继续推进升级。</p>
+    </article>
+  `;
 }
 
 async function loadTargetProgress() {
@@ -109,17 +180,24 @@ async function loadTargetProgress() {
   if (!userId) {
     const current = await window.NodeWeave.currentUser(true);
     userId = current?.id || '';
+    profileData = current || null;
+  } else {
+    const profileJson = await window.NodeWeave.apiJson('/api/users/' + encodeURIComponent(userId)).catch(() => null);
+    if (profileJson?.code === 0) profileData = profileJson.data;
   }
   if (!userId) return;
   const json = await window.NodeWeave.apiJson('/api/level/' + encodeURIComponent(userId)).catch(() => null);
   if (!json || json.code !== 0) return;
   const data = json.data;
+  progressData = data;
   document.getElementById('myProgress').classList.add('show');
   document.getElementById('myLevelTitle').textContent = `当前：${data.icon || ''} Lv${data.level} ${data.name}`;
   document.getElementById('myProgressFill').style.width = (data.progress || 0) + '%';
   document.getElementById('myProgressMeta').innerHTML = data.next_level
     ? `<span>当前声望 ${Number(data.reputation || 0).toLocaleString()}</span><span>距离 Lv${data.next_level.level} ${esc(data.next_level.name)} 还差 ${Number(data.need || 0).toLocaleString()} 声望</span><span>下一等级奖励：${esc(data.next_level.reward || '')}</span>`
     : `<span>当前声望 ${Number(data.reputation || 0).toLocaleString()}</span><span>已达到最高等级</span>`;
+  renderAssetPanel();
+  renderLevels();
 }
 
 document.addEventListener('DOMContentLoaded', () => {

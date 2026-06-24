@@ -2,6 +2,26 @@
 (function () {
   const PUBLIC_ORIGIN = 'https://nodeweave.wiltonmaggiojb.workers.dev';
   const state = { user: null, userLoaded: false };
+  const THEMES = [
+    { id: 'cyber', name: '霓虹' },
+    { id: 'aurora', name: '极光' },
+    { id: 'ember', name: '余烬' },
+    { id: 'matrix', name: '矩阵' },
+    { id: 'midnight', name: '午夜' },
+  ];
+
+  function applyTheme(themeId) {
+    const theme = THEMES.some(item => item.id === themeId) ? themeId : 'cyber';
+    document.documentElement.dataset.theme = theme;
+    try { localStorage.setItem('nodeweave_theme', theme); } catch (error) {}
+    document.querySelectorAll('[data-theme-picker]').forEach(el => {
+      el.value = theme;
+    });
+  }
+
+  applyTheme((() => {
+    try { return localStorage.getItem('nodeweave_theme') || 'cyber'; } catch (error) { return 'cyber'; }
+  })());
 
   function escapeHtml(value) {
     const div = document.createElement('div');
@@ -113,26 +133,46 @@
     document.querySelectorAll('[data-user-role]').forEach(el => {
       el.textContent = user ? (user.role || 'member') : '';
     });
+    document.querySelectorAll('[data-user-level]').forEach(el => {
+      el.textContent = user?.level ? `Lv${user.level.level} ${user.level.name}` : 'Lv0 新人';
+    });
+    document.querySelectorAll('[data-user-reputation]').forEach(el => {
+      el.textContent = user ? String(user.reputation || 0) : '0';
+    });
+    document.querySelectorAll('[data-user-exp]').forEach(el => {
+      el.textContent = user ? String(user.exp || 0) : '0';
+    });
     document.querySelectorAll('[data-auth-actions]').forEach(el => {
       if (user) {
         const adminLink = ['owner', 'admin', 'moderator'].includes(user.role)
           ? `<a class="btn-ghost" href="${assetUrl('admin/index.html')}" title="站长后台">后台</a>`
           : '';
+        const level = user.level || { level: 0, name: '新人', need: 50, progress: 0 };
+        const levelTitle = level.next_level
+          ? `当前 Lv${level.level} ${level.name}，距离 Lv${level.next_level.level} 还差 ${level.need || 0} 声望`
+          : `当前 Lv${level.level} ${level.name}，已满级`;
         el.innerHTML = `
+          ${themePickerMarkup()}
           ${adminLink}
-          <a class="btn-ghost" href="${assetUrl('messages.html')}" title="站内信">私信</a>
+          <a class="level-chip" href="${assetUrl('levels.html')}" title="${escapeHtml(levelTitle)}" style="--level-color:${escapeHtml(level.color || '#00f0ff')}">Lv${level.level}</a>
+          <a class="btn-ghost" href="${assetUrl('themes.html')}" title="Theme Center">主题</a>
+          <a class="btn-ghost" href="${assetUrl('messages.html')}" title="站内信">私信<span data-message-badge style="display:none;margin-left:5px;color:var(--magenta)"></span></a>
           <a class="btn-ghost" href="${assetUrl('announcements.html')}" title="站内公告">公告</a>
           <a class="btn-ghost" href="${assetUrl('notifications.html')}" title="站内通知">通知<span data-notif-badge style="display:none;margin-left:5px;color:var(--magenta)"></span></a>
           <a class="btn-ghost" href="${assetUrl('account/settings.html')}" title="账号设置">${escapeHtml(user.display_name || user.username || '我的账号')}</a>
           <button class="btn-ghost" type="button" data-logout>退出</button>
           <a class="btn-primary" href="${assetUrl('editor.html')}">+ 发帖</a>`;
         updateNotificationBadge();
+        updateMessageBadge();
       } else {
         el.innerHTML = `
+          ${themePickerMarkup()}
+          <a class="btn-ghost" href="${assetUrl('themes.html')}" title="Theme Center">主题</a>
           <a class="btn-ghost" href="${assetUrl('login.html')}">登录</a>
           <a class="btn-primary" href="${assetUrl('login.html?tab=register')}">注册</a>`;
       }
     });
+    setupThemePicker();
   }
 
   async function updateNotificationBadge() {
@@ -141,6 +181,18 @@
       const json = await apiJson('/api/notifications?pageSize=1');
       const count = Number(json?.data?.unread || 0);
       document.querySelectorAll('[data-notif-badge]').forEach(el => {
+        el.textContent = count > 99 ? '99+' : String(count || '');
+        el.style.display = count ? '' : 'none';
+      });
+    } catch (error) {}
+  }
+
+  async function updateMessageBadge() {
+    if (!state.user) return;
+    try {
+      const json = await apiJson('/api/messages/unread-count');
+      const count = Number(json?.data?.unread || 0);
+      document.querySelectorAll('[data-message-badge]').forEach(el => {
         el.textContent = count > 99 ? '99+' : String(count || '');
         el.style.display = count ? '' : 'none';
       });
@@ -167,11 +219,72 @@
 
   function setupDelegates() {
     document.addEventListener('click', (event) => {
+      const navToggle = event.target.closest('.nav-toggle');
+      if (navToggle) {
+        event.preventDefault();
+        const nav = navToggle.closest('.nav');
+        const open = !nav.classList.contains('nav-open');
+        nav.classList.toggle('nav-open', open);
+        navToggle.setAttribute('aria-expanded', String(open));
+        navToggle.setAttribute('aria-label', open ? '关闭手机导航' : '打开手机导航');
+        return;
+      }
       const logoutButton = event.target.closest('[data-logout]');
       if (logoutButton) {
         event.preventDefault();
         logout();
       }
+      if (event.target.closest('.nav-links a') || event.target.closest('.nav-actions a')) {
+        closeMobileNav();
+      }
+    });
+    document.addEventListener('change', (event) => {
+      const picker = event.target.closest('[data-theme-picker]');
+      if (picker) applyTheme(picker.value);
+    });
+  }
+
+  function themePickerMarkup() {
+    return `<select class="theme-picker" data-theme-picker aria-label="切换主题">${
+      THEMES.map(theme => `<option value="${theme.id}">${theme.name}</option>`).join('')
+    }</select>`;
+  }
+
+  function setupThemePicker() {
+    document.querySelectorAll('[data-auth-actions]').forEach(el => {
+      if (!el.querySelector('[data-theme-picker]')) {
+        el.insertAdjacentHTML('afterbegin', themePickerMarkup());
+      }
+    });
+    if (!document.querySelector('[data-auth-actions]') && !document.querySelector('.theme-fab')) {
+      document.body.insertAdjacentHTML('beforeend', `<div class="theme-fab"><span style="font-family:var(--font-mono);font-size:11px;color:var(--text-mute)">主题</span>${themePickerMarkup()}</div>`);
+    }
+    applyTheme(document.documentElement.dataset.theme || 'cyber');
+  }
+
+  function setupMobileNav() {
+    document.querySelectorAll('.nav').forEach(nav => {
+      const inner = nav.querySelector('.nav-inner');
+      if (!inner) return;
+      nav.classList.add('nav-mobile-ready');
+      if (inner.querySelector('.nav-toggle')) return;
+      const toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'nav-toggle';
+      toggle.setAttribute('aria-label', '打开手机导航');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.innerHTML = '<span></span><span></span><span></span>';
+      inner.insertBefore(toggle, inner.querySelector('.nav-actions') || null);
+    });
+  }
+
+  function closeMobileNav() {
+    document.querySelectorAll('.nav.nav-open').forEach(nav => {
+      nav.classList.remove('nav-open');
+      const toggle = nav.querySelector('.nav-toggle');
+      if (!toggle) return;
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-label', '打开手机导航');
     });
   }
 
@@ -203,8 +316,10 @@
     assetUrl,
     currentUser,
     renderAuth,
+    updateMessageBadge,
     logout,
     redirectLogin,
+    applyTheme,
     escapeHtml,
     timeAgo,
     state,
@@ -215,6 +330,8 @@
     setupShortcuts();
     setupDelegates();
     setupCounters();
+    setupMobileNav();
+    setupThemePicker();
     currentUser();
   });
 })();

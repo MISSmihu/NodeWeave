@@ -8,6 +8,7 @@ import { generateId } from './lib/id.js';
 import { ok, err, CODE } from './lib/response.js';
 import { consumeInviteCode, findInviteCode, normalizeInviteCode } from './lib/invite.js';
 import { createNotification } from './notifications.js';
+import { checkAchievementsForUser } from './achievements.js';
 
 const auth = new Hono();
 
@@ -100,6 +101,7 @@ auth.post('/register', async (c) => {
     return ok(c, { message: '验证邮件已发送，请查收邮箱' }, 201);
   }
 
+  await checkAchievementsForUser(c.env, userId).catch(() => null);
   return ok(c, { message: '注册成功，请登录' }, 201);
 });
 

@@ -37,15 +37,16 @@
   </div>
   <div id="notifList">加载中...</div>
 </main>
+<script src="script.js"></script>
 <script>
 async function load() {
   var list = document.getElementById('notifList');
   try {
-    var r = await fetch('/api/notifications');
+    var r = await NodeWeave.api('/api/notifications');
     var j = await r.json();
     if (j.code!==0) { list.innerHTML='<p style="color:var(--text-mute);text-align:center;padding:40px">请先登录</p>'; return; }
     if (!j.data.notifications.length) { list.innerHTML='<p style="color:var(--text-mute);text-align:center;padding:40px">暂无通知</p>'; return; }
-    var icons = {comment:'💬',reply:'↩️',mention:'@',like:'👍',comment_like:'👍',follow:'👤',message:'✉️',tip:'💰',accepted:'✅',moderation:'🛡️',report:'🚨',report_result:'📮',violation:'⚠️',announcement:'📢',system:'📢',achievement:'🏆',invite:'🎟️'};
+    var icons = {comment:'💬',reply:'↩️',mention:'@',like:'👍',comment_like:'👍',downvote:'👎',rating:'⭐',follow:'👤',message:'✉️',tip:'💰',accepted:'✅',moderation:'🛡️',report:'🚨',report_result:'📮',violation:'⚠️',announcement:'📢',system:'📢',achievement:'🏆',admin_grant:'🏅',admin_revoke:'♻️',invite:'🎟️',role:'🪪',profile_admin:'👤',asset_admin:'💳',ban:'⛔',ban_lifted:'✅'};
     list.innerHTML = j.data.notifications.map(function(n){
       var href = notificationHref(n);
       return '<a class="notif-item'+(n.is_read?'':' unread')+'" href="'+href+'" data-id="'+h(n.id)+'">'+
@@ -60,13 +61,13 @@ async function load() {
   }
 }
 async function readAll() {
-  try { await fetch('/api/notifications/read-all',{method:'POST'}); } catch(e) {}
+  try { await NodeWeave.api('/api/notifications/read-all',{method:'POST'}); } catch(e) {}
   load();
 }
 document.addEventListener('click', function(event){
   var item = event.target.closest('.notif-item[data-id]');
   if (!item || !item.classList.contains('unread')) return;
-  try { fetch('/api/notifications/' + encodeURIComponent(item.dataset.id) + '/read', { method:'POST' }); } catch(e) {}
+  try { NodeWeave.api('/api/notifications/' + encodeURIComponent(item.dataset.id) + '/read', { method:'POST' }); } catch(e) {}
 });
 function h(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
 function notificationHref(n) {
@@ -84,6 +85,8 @@ function typeLabel(type) {
     mention:'@提醒',
     like:'内容点赞',
     comment_like:'评论点赞',
+    downvote:'内容点踩',
+    rating:'内容评分',
     message:'站内私信',
     tip:'论坛币打赏',
     accepted:'回答采纳',
@@ -94,6 +97,13 @@ function typeLabel(type) {
     announcement:'站内公告',
     system:'系统公告',
     achievement:'成就通知',
+    admin_grant:'站长颁发',
+    admin_revoke:'站长撤回',
+    role:'角色变更',
+    profile_admin:'资料管理',
+    asset_admin:'资产变更',
+    ban:'封禁禁言',
+    ban_lifted:'封禁解除',
     invite:'邀请注册'
   })[type] || '通知';
 }
