@@ -157,15 +157,13 @@
         el.innerHTML = `
           ${adminLink}
           <a class="btn-ghost" href="${assetUrl('themes.html')}" title="Theme Center">主题</a>
-          <a class="btn-ghost" href="${assetUrl('messages.html')}" title="站内信">私信<span data-message-badge style="display:none;margin-left:5px;color:var(--magenta)"></span></a>
+          <a class="btn-ghost" href="${assetUrl('notifications.html')}" title="消息中心：私信 / 通知">消息<span data-message-badge style="display:none;margin-left:5px;color:var(--magenta)"></span></a>
           <a class="btn-ghost" href="${assetUrl('announcements.html')}" title="站内公告">公告</a>
-          <a class="btn-ghost" href="${assetUrl('notifications.html')}" title="站内通知">通知<span data-notif-badge style="display:none;margin-left:5px;color:var(--magenta)"></span></a>
           ${themePickerMarkup()}
           <a class="level-chip" href="${assetUrl('levels.html')}" title="${escapeHtml(levelTitle)}" style="--level-color:${escapeHtml(level.color || '#00f0ff')}">Lv${level.level}</a>
           <a class="btn-ghost account-chip" href="${assetUrl('account/settings.html')}" title="账号设置">${escapeHtml(user.display_name || user.username || '我的账号')}</a>
           <button class="btn-ghost" type="button" data-logout>退出</button>
           <a class="btn-primary" href="${assetUrl('editor.html')}">+ 发帖</a>`;
-        updateNotificationBadge();
         updateMessageBadge();
       } else {
         el.innerHTML = `
@@ -179,27 +177,24 @@
   }
 
   async function updateNotificationBadge() {
-    if (!state.user) return;
-    try {
-      const json = await apiJson('/api/notifications?pageSize=1');
-      const count = Number(json?.data?.unread || 0);
-      document.querySelectorAll('[data-notif-badge]').forEach(el => {
-        el.textContent = count > 99 ? '99+' : String(count || '');
-        el.style.display = count ? '' : 'none';
-      });
-    } catch (error) {}
+    return updateMessageBadge();
   }
 
   async function updateMessageBadge() {
     if (!state.user) return;
+    let count = 0;
+    try {
+      const json = await apiJson('/api/notifications?pageSize=1');
+      count = Math.max(count, Number(json?.data?.unread || 0));
+    } catch (error) {}
     try {
       const json = await apiJson('/api/messages/unread-count');
-      const count = Number(json?.data?.unread || 0);
-      document.querySelectorAll('[data-message-badge]').forEach(el => {
-        el.textContent = count > 99 ? '99+' : String(count || '');
-        el.style.display = count ? '' : 'none';
-      });
+      count = Math.max(count, Number(json?.data?.unread || 0));
     } catch (error) {}
+    document.querySelectorAll('[data-message-badge],[data-notif-badge]').forEach(el => {
+      el.textContent = count > 99 ? '99+' : String(count || '');
+      el.style.display = count ? '' : 'none';
+    });
   }
 
   async function logout() {
