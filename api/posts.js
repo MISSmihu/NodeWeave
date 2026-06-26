@@ -657,12 +657,25 @@ posts.put('/:id/customize', requireLogin, async (c) => {
   const postId = c.req.param('id');
   const post = await c.env.DB.prepare(`SELECT ${authorExpr()} AS author_id FROM posts p WHERE p.id=?`).bind(postId).first();
   if (!post) return err(c, CODE.NOT_FOUND, '帖子不存在', 404);
-  if (post.author_id !== userId) return err(c, CODE.FORBIDDEN, '只能编辑自己的帖子', 403);
+  const roleRow = await c.env.DB.prepare('SELECT role FROM users WHERE id=?').bind(userId).first();
+  const isStaff = isStaffRole(roleRow?.role);
+  if (post.author_id !== userId && !isStaff) return err(c, CODE.FORBIDDEN, '只能编辑自己的帖子', 403);
 
   const { custom_css, custom_bg_type, custom_bg_value } = await c.req.json().catch(() => ({}));
   await c.env.DB.prepare(
     'UPDATE posts SET custom_css=?, custom_bg_type=?, custom_bg_value=?, updated_at=? WHERE id=?'
   ).bind(custom_css || '', custom_bg_type || '', custom_bg_value || '', Date.now(), postId).run();
+  if (post.author_id !== userId && isStaff) {
+    try {
+      await createNotification(c.env, {
+        user_id: post.author_id,
+        type: 'moderation',
+        ref_id: postId,
+        actor_id: userId,
+        message: '你的帖子装扮已被管理组编辑',
+      });
+    } catch (error) {}
+  }
   return ok(c, { message: '装扮已保存' });
 });
 

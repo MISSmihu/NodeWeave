@@ -619,14 +619,15 @@ async function loadEditPost() {
   }
   const post = json.data;
   const note = $('editWindowNote');
-  if (!post.can_edit) {
+  const staffOverride = isStaffUser(currentUser);
+  if (!post.can_edit && !staffOverride) {
     note.classList.add('show');
     note.textContent = '当前账号没有编辑这篇内容的权限。';
     $('btnPublish').disabled = true;
     showMessage('当前账号没有编辑这篇内容的权限', false);
     return;
   }
-  if (post.edit_unrestricted) {
+  if (post.edit_unrestricted || staffOverride) {
     note.classList.add('show');
     note.textContent = '管理组编辑模式：站长、管理员和版主不受普通用户编辑时限限制。';
   } else if (post.edit_window_applies && post.edit_window_minutes > 0) {

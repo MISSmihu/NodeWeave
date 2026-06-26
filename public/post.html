@@ -289,9 +289,9 @@ function renderPost() {
   if (p.accepted_answer_id) statusTags.push('<span class="status-tag feature">已解决</span>');
   if (p.lottery?.enabled) statusTags.push(`<span class="status-tag reward">抽奖 ${lotteryStatusLabel(p.lottery.status)}</span>`);
   if (p.is_ai_generated) statusTags.push('<span class="status-tag">AI 辅助</span>');
-  const canEdit = !!p.can_edit;
+  const canEdit = !!p.can_edit || !!isStaff;
   let editNote = '';
-  if (p.edit_unrestricted) {
+  if (p.edit_unrestricted || isStaff) {
     editNote = '<div class="edit-note">管理组编辑模式：不受普通用户编辑时限限制。</div>';
   } else if (currentUser && p.author_id === currentUser.id && p.edit_window_applies) {
     if (p.edit_window_expired) {
