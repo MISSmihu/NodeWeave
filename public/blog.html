@@ -174,6 +174,22 @@ function statsHtml(post) {
     <span>评分 ${post.rating_avg ? Number(post.rating_avg).toFixed(1) : '-'}</span>`;
 }
 
+function lotteryStatus(post) {
+  const status = String(post.lottery_status || 'none');
+  if (status === 'active' && Number(post.lottery_end_at || 0) > 0 && Number(post.lottery_end_at) <= Date.now()) return 'ready';
+  return status;
+}
+
+function lotteryStatusLabel(status) {
+  return ({ active: '进行中', ready: '可开奖', drawn: '已开奖', cancelled: '已取消' })[status] || '抽奖';
+}
+
+function lotteryMeta(post) {
+  if (!Number(post.lottery_enabled || 0)) return '';
+  const name = String(post.lottery_prize_name || '').trim();
+  return `<span>抽奖 ${esc(name ? name.slice(0, 18) : lotteryStatusLabel(lotteryStatus(post)))}</span>`;
+}
+
 function renderFeature(post) {
   const card = document.getElementById('featureCard');
   if (!post) {
@@ -184,6 +200,7 @@ function renderFeature(post) {
   card.innerHTML = `
     <div class="feature-meta">
       <span>博客</span><span>${esc(post.board_id || 'blog')}</span><span>@${esc(post.display_name || post.username || '匿名用户')}</span><span>${timeAgo(post.created_at)}</span>
+      ${lotteryMeta(post)}
     </div>
     <h2>${esc(post.title)}</h2>
     <p>${esc(excerpt(post.content, 220))}</p>
@@ -211,6 +228,7 @@ function renderArticles(posts, reset, hasFeature = false) {
         <span>${esc(post.board_id || 'blog')}</span>
         <span>@${esc(post.display_name || post.username || '匿名用户')}</span>
         <span>${timeAgo(post.created_at)}</span>
+        ${lotteryMeta(post)}
       </div>
       <h3>${esc(post.title)}</h3>
       <p>${esc(excerpt(post.content, 140))}</p>

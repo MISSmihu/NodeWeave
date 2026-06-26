@@ -160,6 +160,23 @@ let feedType = '';
 const esc = (value) => window.NodeWeave.escapeHtml(value);
 const timeAgo = (value) => window.NodeWeave.timeAgo(value);
 
+function lotteryStatus(post) {
+  const status = String(post.lottery_status || 'none');
+  if (status === 'active' && Number(post.lottery_end_at || 0) > 0 && Number(post.lottery_end_at) <= Date.now()) return 'ready';
+  return status;
+}
+
+function lotteryStatusLabel(status) {
+  return ({ active: '进行中', ready: '可开奖', drawn: '已开奖', cancelled: '已取消' })[status] || '抽奖';
+}
+
+function lotteryBadge(post) {
+  if (!Number(post.lottery_enabled || 0)) return '';
+  const name = String(post.lottery_prize_name || '').trim();
+  const label = name ? name.slice(0, 18) : lotteryStatusLabel(lotteryStatus(post));
+  return `<span class="feed-badge reward">抽奖 ${esc(label)}</span>`;
+}
+
 async function loadStats() {
   try {
     const boardsJson = await window.NodeWeave.apiJson('/api/boards');
@@ -194,6 +211,7 @@ async function loadFeed(reset) {
       if (heat >= 20) badges.push('<span class="feed-badge pin">热帖</span>');
       if (Number(post.reply_reward_remaining || 0) > 0) badges.push(`<span class="feed-badge reward">回帖红包 ${Number(post.reply_reward_remaining || 0)}</span>`);
       if (post.bounty && !post.accepted_answer_id) badges.push(`<span class="feed-badge reward">悬赏 ${post.bounty}</span>`);
+      if (Number(post.lottery_enabled || 0)) badges.push(lotteryBadge(post));
       if (post.accepted_answer_id) badges.push('<span class="feed-badge feature">已解决</span>');
       return `
       <a class="post-card${post.is_pinned ? ' is-pinned' : ''}${post.is_featured ? ' is-featured' : ''}" href="post.html?id=${esc(post.id)}">

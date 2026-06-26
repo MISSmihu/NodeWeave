@@ -398,6 +398,125 @@
     return rendered.join('\n').replace(/@@NW_CODE_BLOCK_(\d+)@@/g, (_, id) => codeBlocks[Number(id)] || '');
   }
 
+  function cleanPreviewUrl(value) {
+    const raw = String(value || '').trim().replace(/[)\].,，。！!？?;；]+$/g, '');
+    if (!raw || !/^https?:\/\//i.test(raw)) return '';
+    try {
+      const url = new URL(raw);
+      if (!['http:', 'https:'].includes(url.protocol)) return '';
+      return url.toString();
+    } catch (error) {
+      return '';
+    }
+  }
+
+  function extractPreviewUrls(value) {
+    const text = String(value || '');
+    const seen = new Set();
+    const urls = [];
+    const add = (raw) => {
+      const url = cleanPreviewUrl(raw);
+      if (!url || seen.has(url)) return;
+      seen.add(url);
+      urls.push(url);
+    };
+    text.replace(/\[[^\]\n]{1,120}\]\(([^)\s]+)\)/g, (_, url) => {
+      add(url);
+      return _;
+    });
+    text.replace(/(^|[^\w@])(https?:\/\/[^\s<>()\[\]{}"'`]+)/g, (_, prefix, url) => {
+      add(url);
+      return _;
+    });
+    return urls.slice(0, 6);
+  }
+
+  function renderPreviewCard(preview) {
+    const url = preview.final_url || preview.url;
+    const title = escapeHtml(preview.title || preview.host || url);
+    const host = escapeHtml(preview.site_name || preview.host || '');
+    const desc = escapeHtml(preview.description || '');
+    const image = preview.image ? `<img class="nw-link-card-image" src="${escapeHtml(preview.image)}" alt="">` : '';
+    const icon = !preview.image ? `<div class="nw-link-card-icon">${escapeHtml((preview.host || title || '链接').slice(0, 2))}</div>` : '';
+    return `
+      <a class="nw-link-card" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer nofollow">
+        ${image || icon}
+        <div class="nw-link-card-body">
+          <div class="nw-link-card-title">${title}</div>
+          <div class="nw-link-card-host">${host}</div>
+          ${desc ? `<div class="nw-link-card-desc">${desc}</div>` : ''}
+        </div>
+      </a>`;
+  }
+
+  async function renderLinkPreviews(container, sourceText) {
+    if (!container) return [];
+    const existing = container.querySelector(':scope > .nw-link-preview-panel');
+    if (existing) existing.remove();
+    const urls = extractPreviewUrls(sourceText);
+    if (!urls.length) return [];
+
+    const token = (container.__nwLinkPreviewToken || 0) + 1;
+    container.__nwLinkPreviewToken = token;
+
+    const panel = document.createElement('div');
+    panel.className = 'nw-link-preview-panel';
+    panel.innerHTML = '<div class="nw-link-preview-hint">正在解析外链标题...</div>';
+    container.appendChild(panel);
+
+    let previews = [];
+    try {
+      const json = await apiJson('/api/links/preview-batch', {
+        method: 'POST',
+        body: JSON.stringify({ urls }),
+      });
+      previews = json.code === 0 ? (json.data?.previews || []) : [];
+    } catch (error) {}
+    if (container.__nwLinkPreviewToken !== token) return [];
+
+    if (!previews.length) {
+      panel.innerHTML = '<div class="nw-link-preview-hint">暂无可用的链接预览</div>';
+      return [];
+    }
+    panel.innerHTML = previews.map(renderPreviewCard).join('');
+    return previews;
+  }
+
+  function isExternalUrl(href) {
+    if (!href) return false;
+    if (/^(#|mailto:|tel:|javascript:|data:)/i.test(href)) return false;
+    try {
+      const url = new URL(href, location.href);
+      return ['http:', 'https:'].includes(url.protocol) && url.origin !== location.origin;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function setupExternalLinkGuard() {
+    document.addEventListener('click', (event) => {
+      const link = event.target.closest('a[href]');
+      if (!link) return;
+      const scope = link.closest('.nw-rich-content, .nw-link-preview-panel, .attach-box');
+      if (!scope) return;
+      const href = link.getAttribute('href') || '';
+      if (!isExternalUrl(href)) return;
+      const url = new URL(href, location.href);
+      const message = `即将访问外部网站：\n${url.hostname}\n\n${url.href}\n\n确定继续吗？`;
+      if (!window.confirm(message)) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      event.preventDefault();
+      if (link.target === '_blank') {
+        window.open(url.href, '_blank', 'noopener,noreferrer');
+      } else {
+        location.href = url.href;
+      }
+    }, true);
+  }
+
   window.NodeWeave = {
     api,
     apiJson,
@@ -410,6 +529,7 @@
     applyTheme,
     escapeHtml,
     renderRichText,
+    renderLinkPreviews,
     timeAgo,
     THEMES,
     state,
@@ -419,6 +539,7 @@
     showFileBanner();
     setupShortcuts();
     setupDelegates();
+    setupExternalLinkGuard();
     setupCounters();
     setupMobileNav();
     setupThemePicker();

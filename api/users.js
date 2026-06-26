@@ -68,7 +68,14 @@ users.get('/:id', async (c) => {
 
   // 最近帖子
   const recentPosts = await c.env.DB.prepare(
-    "SELECT id, title, type, like_count, comment_count, created_at FROM posts WHERE COALESCE(NULLIF(author_id,''), user_id)=? AND COALESCE(is_hidden,0)=0 ORDER BY created_at DESC LIMIT 10"
+    `SELECT id, title, type, like_count, comment_count, created_at,
+            COALESCE(lottery_enabled,0) AS lottery_enabled,
+            COALESCE(lottery_prize_name,'') AS lottery_prize_name,
+            COALESCE(lottery_status,'none') AS lottery_status,
+            COALESCE(lottery_end_at,0) AS lottery_end_at
+       FROM posts
+      WHERE COALESCE(NULLIF(author_id,''), user_id)=? AND COALESCE(is_hidden,0)=0
+      ORDER BY created_at DESC LIMIT 10`
   ).bind(finalUser.id).all();
 
   return ok(c, {
@@ -112,7 +119,11 @@ users.get('/:id/posts', async (c) => {
     : 'ORDER BY created_at DESC';
 
   const rows = await c.env.DB.prepare(
-    `SELECT id, title, content, type, board_id, like_count, comment_count, view_count, downvote_count, tip_count, tip_total, rating_avg, rating_count, created_at
+    `SELECT id, title, content, type, board_id, like_count, comment_count, view_count, downvote_count, tip_count, tip_total, rating_avg, rating_count, created_at,
+            COALESCE(lottery_enabled,0) AS lottery_enabled,
+            COALESCE(lottery_prize_name,'') AS lottery_prize_name,
+            COALESCE(lottery_status,'none') AS lottery_status,
+            COALESCE(lottery_end_at,0) AS lottery_end_at
        FROM posts ${where}
       ${orderBy} LIMIT ? OFFSET ?`
   ).bind(...params, pageSize, offset).all();

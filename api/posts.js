@@ -6,6 +6,7 @@ import { ok, err, CODE } from './lib/response.js';
 import { createNotification, notifyMentions } from './notifications.js';
 import { checkAchievementsForUser } from './achievements.js';
 import { isLevelSystemEnabled } from './level.js';
+import { buildLotteryShape, lotteryRuntimeStatus } from './lotteries.js';
 
 const posts = new Hono();
 
@@ -85,6 +86,53 @@ function normalizeReplyReward(body) {
   return { total, min, max };
 }
 
+function normalizeLottery(body) {
+  const enabled = body.lottery_enabled === true || body.lottery_enabled === 1 || body.lottery_enabled === '1' || body.lottery_enabled === 'true' || body.lottery_enabled === 'on';
+  if (!enabled) {
+    return {
+      enabled: false,
+      status: 'none',
+      prize_name: '',
+      prize_description: '',
+      prize_type: 'text',
+      prize_coin_total: 0,
+      entry_fee: 0,
+      winner_count: 0,
+      start_at: 0,
+      end_at: 0,
+      error: '',
+    };
+  }
+  const prizeName = String(body.lottery_prize_name || '').trim().slice(0, 120);
+  const prizeDescription = String(body.lottery_prize_description || '').trim().slice(0, 500);
+  const prizeType = body.lottery_prize_type === 'coins' ? 'coins' : 'text';
+  const prizeCoinTotal = Math.max(0, asInt(body.lottery_prize_coin_total, 0));
+  const entryFee = Math.max(0, asInt(body.lottery_entry_fee, 0));
+  const winnerCount = Math.max(0, asInt(body.lottery_winner_count, 0));
+  const startAt = body.lottery_start_at ? asInt(body.lottery_start_at, 0) : Date.now();
+  const endAt = body.lottery_end_at ? asInt(body.lottery_end_at, 0) : 0;
+  if (!prizeName) return { error: '抽奖名称不能为空' };
+  if (entryFee < 1) return { error: '抽奖参与费用至少 1 论坛币' };
+  if (winnerCount < 1) return { error: '中奖人数至少 1 人' };
+  if (!endAt || endAt <= startAt || endAt <= Date.now()) return { error: '抽奖结束时间必须晚于开始时间和当前时间' };
+  if (prizeType === 'coins' && prizeCoinTotal < winnerCount) {
+    return { error: '奖池论坛币总额不能少于中奖人数' };
+  }
+  return {
+    enabled: true,
+    status: 'active',
+    prize_name: prizeName,
+    prize_description: prizeDescription,
+    prize_type: prizeType,
+    prize_coin_total: prizeCoinTotal,
+    entry_fee: entryFee,
+    winner_count: winnerCount,
+    start_at: startAt,
+    end_at: endAt,
+    error: '',
+  };
+}
+
 function wantsRequest(value) {
   return value === true || value === 1 || value === '1' || value === 'true' || value === 'on';
 }
@@ -108,6 +156,14 @@ function postListSelect() {
             COALESCE(p.reply_reward_min,0) AS reply_reward_min,
             COALESCE(p.reply_reward_max,0) AS reply_reward_max,
             COALESCE(p.reply_reward_claimed_count,0) AS reply_reward_claimed_count,
+            COALESCE(p.lottery_enabled,0) AS lottery_enabled,
+            COALESCE(p.lottery_status,'none') AS lottery_status,
+            COALESCE(p.lottery_prize_name,'') AS lottery_prize_name,
+            COALESCE(p.lottery_entry_fee,0) AS lottery_entry_fee,
+            COALESCE(p.lottery_winner_count,0) AS lottery_winner_count,
+            COALESCE(p.lottery_prize_type,'text') AS lottery_prize_type,
+            COALESCE(p.lottery_prize_coin_total,0) AS lottery_prize_coin_total,
+            COALESCE(p.lottery_end_at,0) AS lottery_end_at,
             last_reply.last_reply_at AS last_reply_at,
             COALESCE(last_reply.last_reply_at, p.updated_at, p.created_at) AS activity_at,
             ${authorExpr('p')} AS author_id,
@@ -249,7 +305,7 @@ posts.get('/:id', optLogin, async (c) => {
   const editWindowMinutes = await getPostEditWindowMinutes(c.env);
   const canStaffEdit = isStaffRole(role);
   const canAuthorEdit = signedIn && viewerId === post.author_id && (editWindowMinutes <= 0 || Date.now() <= Number(post.created_at || 0) + editWindowMinutes * 60000);
-  return ok(c, publicPostShape({
+  const shaped = publicPostShape({
     ...post,
     tags: (tags.results || []).map(t => t.tag),
     view_count: (post.view_count || 0) + 1,
@@ -257,7 +313,9 @@ posts.get('/:id', optLogin, async (c) => {
     can_edit_until: editWindowMinutes > 0 ? Number(post.created_at || 0) + editWindowMinutes * 60000 : 0,
     edit_window_minutes: editWindowMinutes,
     edit_window_expired: !!(signedIn && viewerId === post.author_id && !canStaffEdit && editWindowMinutes > 0 && Date.now() > Number(post.created_at || 0) + editWindowMinutes * 60000),
-  }, signedIn));
+  }, signedIn);
+  shaped.lottery = await buildLotteryShape(c.env, post, viewerId, role);
+  return ok(c, shaped);
 });
 
 posts.post('/', requireLogin, async (c) => {
@@ -276,6 +334,8 @@ posts.post('/', requireLogin, async (c) => {
   const bounty = Math.max(0, asInt(body.bounty, 0));
   const replyReward = normalizeReplyReward(body);
   if (replyReward.error) return err(c, CODE.VALIDATION, replyReward.error);
+  const lottery = normalizeLottery(body);
+  if (lottery.error) return err(c, CODE.VALIDATION, lottery.error);
 
   if (!title) return err(c, CODE.VALIDATION, '标题不能为空');
   if (!content) return err(c, CODE.VALIDATION, '内容不能为空');
@@ -306,8 +366,10 @@ posts.post('/', requireLogin, async (c) => {
     if (!author || Number(author.coins || 0) < bounty) return err(c, CODE.VALIDATION, '论坛币不足，无法设置悬赏');
   }
   const totalCost = bounty + replyReward.total;
-  if (totalCost > 0 && (!author || Number(author.coins || 0) < totalCost)) {
-    return err(c, CODE.VALIDATION, '论坛币不足，无法设置悬赏或回帖红包');
+  const lotteryCost = lottery.enabled && lottery.prize_type === 'coins' ? lottery.prize_coin_total : 0;
+  const totalPostCost = totalCost + lotteryCost;
+  if (totalPostCost > 0 && (!author || Number(author.coins || 0) < totalPostCost)) {
+    return err(c, CODE.VALIDATION, '论坛币不足，无法设置悬赏、回帖红包或抽奖奖池');
   }
 
   const pinRequest = wantsRequest(body.pin_request) || wantsRequest(body.is_pinned);
@@ -322,12 +384,14 @@ posts.post('/', requireLogin, async (c) => {
         id,user_id,author_id,board_id,title,content,type,hidden_content,is_ai_generated,
         visibility,visible_after,attachment_url,attachment_name,attachment_size,bounty,
         reply_reward_total,reply_reward_remaining,reply_reward_min,reply_reward_max,reply_reward_claimed_count,
+        lottery_enabled,lottery_status,lottery_prize_name,lottery_prize_description,lottery_prize_type,lottery_prize_coin_total,lottery_entry_fee,lottery_winner_count,lottery_start_at,lottery_end_at,lottery_drawn_at,
         is_pinned,is_featured,created_at,updated_at
-      ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+      ) VALUES(${Array.from({ length: 35 }, () => '?').join(',')})`
     ).bind(
       postId, userId, userId, board.slug, title, content, type, hiddenContent, body.is_ai_generated ? 1 : 0,
       visibility, visibleAfter, attachmentUrl, attachmentName, attachmentSize, bounty,
       replyReward.total, replyReward.total, replyReward.min, replyReward.max, 0,
+      lottery.enabled ? 1 : 0, lottery.status, lottery.prize_name, lottery.prize_description, lottery.prize_type, lottery.prize_coin_total, lottery.entry_fee, lottery.winner_count, lottery.start_at, lottery.end_at, 0,
       0, 0, now, now
     ),
     c.env.DB.prepare('UPDATE users SET reputation=COALESCE(reputation,0)+5, updated_at=? WHERE id=?').bind(now, userId),
@@ -357,7 +421,7 @@ posts.post('/', requireLogin, async (c) => {
 
   await c.env.DB.batch(writes);
 
-  if (totalCost > 0) {
+  if (totalPostCost > 0) {
     const logs = [];
     if (bounty > 0) {
       logs.push(c.env.DB.prepare('INSERT INTO coin_logs(id,user_id,amount,type,ref_id,created_at) VALUES(?,?,?,?,?,?)')
@@ -367,8 +431,12 @@ posts.post('/', requireLogin, async (c) => {
       logs.push(c.env.DB.prepare('INSERT INTO coin_logs(id,user_id,amount,type,ref_id,created_at) VALUES(?,?,?,?,?,?)')
         .bind('cl_' + generateId(8), userId, -replyReward.total, 'reply_reward_lock', postId, now));
     }
+    if (lotteryCost > 0) {
+      logs.push(c.env.DB.prepare('INSERT INTO coin_logs(id,user_id,amount,type,ref_id,created_at) VALUES(?,?,?,?,?,?)')
+        .bind('cl_' + generateId(8), userId, -lotteryCost, 'lottery_prize_lock', postId, now));
+    }
     await c.env.DB.batch([
-      c.env.DB.prepare('UPDATE users SET coins=COALESCE(coins,0)-?, updated_at=? WHERE id=?').bind(totalCost, now, userId),
+      c.env.DB.prepare('UPDATE users SET coins=COALESCE(coins,0)-?, updated_at=? WHERE id=?').bind(totalPostCost, now, userId),
       ...logs,
     ]);
   }
@@ -501,15 +569,26 @@ posts.put('/:id', requireLogin, async (c) => {
 posts.delete('/:id', requireLogin, async (c) => {
   const userId = c.get('userId');
   const postId = c.req.param('id');
-  const post = await c.env.DB.prepare(`SELECT title, ${authorExpr()} AS author_id, board_id FROM posts p WHERE p.id=?`).bind(postId).first();
+  const post = await c.env.DB.prepare(
+    `SELECT title, ${authorExpr()} AS author_id, board_id,
+            COALESCE(lottery_enabled,0) AS lottery_enabled,
+            COALESCE(lottery_status,'none') AS lottery_status,
+            COALESCE(lottery_end_at,0) AS lottery_end_at
+       FROM posts p WHERE p.id=?`
+  ).bind(postId).first();
   if (!post) return err(c, CODE.NOT_FOUND, '帖子不存在', 404);
   const roleRow = await c.env.DB.prepare('SELECT role FROM users WHERE id=?').bind(userId).first();
   const isStaff = roleRow && ['owner', 'admin', 'moderator'].includes(roleRow.role);
   if (post.author_id !== userId && !isStaff) return err(c, CODE.FORBIDDEN, '只能删除自己的帖子', 403);
+  if (Number(post.lottery_enabled || 0) && ['active', 'ready'].includes(lotteryRuntimeStatus(post))) {
+    return err(c, CODE.VALIDATION, '帖子抽奖仍在进行，请先开奖或取消抽奖后再删除');
+  }
 
   await c.env.DB.batch([
     c.env.DB.prepare('DELETE FROM post_tags WHERE post_id=?').bind(postId),
     c.env.DB.prepare('DELETE FROM comments WHERE post_id=?').bind(postId),
+    c.env.DB.prepare('DELETE FROM lottery_entries WHERE post_id=?').bind(postId),
+    c.env.DB.prepare('DELETE FROM lottery_winners WHERE post_id=?').bind(postId),
     c.env.DB.prepare('DELETE FROM posts WHERE id=?').bind(postId),
     c.env.DB.prepare('UPDATE boards SET post_count=MAX(0,COALESCE(post_count,0)-1) WHERE slug=? OR id=?').bind(post.board_id, post.board_id),
   ]);

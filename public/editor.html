@@ -84,6 +84,10 @@
 .reward-box::after{content:'RED PACKET';position:absolute;right:14px;top:14px;font-family:var(--font-display);font-size:10px;letter-spacing:.18em;color:rgba(0,240,255,.18)}
 .reward-fields{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:12px}
 .reward-preview-line{margin-top:10px;padding:10px 12px;border:1px solid rgba(255,215,0,.18);border-radius:7px;background:rgba(255,215,0,.055);color:var(--text-dim);font-size:12px;line-height:1.7}
+.lottery-box{position:relative;overflow:hidden}
+.lottery-box::after{content:'LOTTERY';position:absolute;right:14px;top:14px;font-family:var(--font-display);font-size:10px;letter-spacing:.18em;color:rgba(255,215,0,.2)}
+.lottery-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.lottery-preview-line{margin-top:10px;padding:10px 12px;border:1px solid rgba(255,215,0,.18);border-radius:7px;background:rgba(255,215,0,.055);color:var(--text-dim);font-size:12px;line-height:1.7}
 .staff-publish-box{display:none;border-color:rgba(0,240,255,.22);background:linear-gradient(135deg,rgba(0,240,255,.06),rgba(157,0,255,.04))}
 .staff-publish-box.show{display:block}
 .edit-window-note{display:none;margin-bottom:16px;padding:12px 14px;border:1px solid rgba(255,215,0,.18);border-radius:8px;background:rgba(255,215,0,.06);color:var(--text-dim);font-size:12px;line-height:1.7}
@@ -94,7 +98,7 @@
 .message.err{background:rgba(255,0,60,.1);color:var(--magenta);border:1px solid rgba(255,0,60,.22)}
 .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:18px}
 @media(max-width:760px){
-  .form-row,.dt-custom,.upload-zone,.reward-fields{grid-template-columns:1fr}
+  .form-row,.dt-custom,.upload-zone,.reward-fields,.lottery-fields{grid-template-columns:1fr}
   .editor-head{display:block}
   .editor-card{padding:18px}
   .toolbar-top{align-items:flex-start;flex-direction:column}
@@ -176,6 +180,51 @@
         </div>
       </div>
       <div class="reward-preview-line" id="replyRewardPreview">可选。发布时冻结总额；每个用户首次有效回复随机领取一次，楼主自己回复不领取。</div>
+    </div>
+
+    <div class="section lottery-box" id="lotterySection">
+      <div class="section-title">帖子抽奖</div>
+      <div class="check-row">
+        <label><input type="checkbox" id="lotteryEnabled"> 开启抽奖</label>
+      </div>
+      <div class="lottery-fields">
+        <div class="form-group" style="margin:0">
+          <label for="lotteryPrizeName">奖品名称</label>
+          <input id="lotteryPrizeName" placeholder="例如：周边礼品 / 50 论坛币">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label for="lotteryPrizeType">奖品类型</label>
+          <select id="lotteryPrizeType">
+            <option value="text">文字奖品</option>
+            <option value="coins">论坛币奖品</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;grid-column:1 / -1">
+          <label for="lotteryPrizeDescription">奖品说明</label>
+          <textarea id="lotteryPrizeDescription" style="min-height:84px" placeholder="写清楚奖品内容、领奖方式、发放时间"></textarea>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label for="lotteryEntryFee">参与费用 <span>论坛币</span></label>
+          <input id="lotteryEntryFee" type="number" min="1" step="1" placeholder="例如 10">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label for="lotteryWinnerCount">中奖人数</label>
+          <input id="lotteryWinnerCount" type="number" min="1" step="1" placeholder="例如 3">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label for="lotteryPrizeCoinTotal">奖池总额 <span>论坛币</span></label>
+          <input id="lotteryPrizeCoinTotal" type="number" min="0" step="1" placeholder="仅论坛币奖品时填写">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label for="lotteryStartAt">开始时间</label>
+          <input id="lotteryStartAt" type="datetime-local">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label for="lotteryEndAt">结束时间</label>
+          <input id="lotteryEndAt" type="datetime-local">
+        </div>
+      </div>
+      <div class="lottery-preview-line" id="lotteryPreview">未开启抽奖。</div>
     </div>
 
     <div class="section staff-publish-box" id="staffPublishBox">
@@ -332,6 +381,8 @@ let currentUser = null;
 let editId = new URLSearchParams(location.search).get('edit');
 let tags = [];
 let selectedVisibleAfter = null;
+let selectedLotteryStartAt = null;
+let selectedLotteryEndAt = null;
 let selectedFile = null;
 let uploadedAttachment = null;
 let levelSystemEnabled = true;
@@ -363,6 +414,90 @@ function updateReplyRewardPreview() {
     return;
   }
   preview.textContent = `发布后将冻结 ${total || 0} 论坛币；每位用户首次回复随机获得 ${min || 0}-${max || 0} 论坛币，发完即止。`;
+}
+
+function toDateTimeLocalValue(ts) {
+  const date = new Date(Number(ts || 0));
+  if (!Number.isFinite(date.getTime())) return '';
+  const pad = (value) => String(value).padStart(2, '0');
+  return [
+    date.getFullYear(),
+    '-',
+    pad(date.getMonth() + 1),
+    '-',
+    pad(date.getDate()),
+    'T',
+    pad(date.getHours()),
+    ':',
+    pad(date.getMinutes()),
+  ].join('');
+}
+
+function fromDateTimeLocalValue(value) {
+  if (!value) return 0;
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date.getTime() : 0;
+}
+
+function updateLotteryPreview() {
+  const preview = $('lotteryPreview');
+  if (!preview) return;
+  const enabled = $('lotteryEnabled')?.checked;
+  const prizeType = $('lotteryPrizeType')?.value || 'text';
+  const prizeName = String($('lotteryPrizeName')?.value || '').trim();
+  const prizeDesc = String($('lotteryPrizeDescription')?.value || '').trim();
+  const entryFee = parseInt($('lotteryEntryFee')?.value || '0', 10) || 0;
+  const winnerCount = parseInt($('lotteryWinnerCount')?.value || '0', 10) || 0;
+  const prizeCoinTotal = parseInt($('lotteryPrizeCoinTotal')?.value || '0', 10) || 0;
+  const startAt = fromDateTimeLocalValue($('lotteryStartAt')?.value || '');
+  const endAt = fromDateTimeLocalValue($('lotteryEndAt')?.value || '');
+  if (!enabled) {
+    preview.textContent = '未开启抽奖。';
+    return;
+  }
+  const parts = [];
+  parts.push(`奖品：${prizeName || '未填写'}`);
+  parts.push(`类型：${prizeType === 'coins' ? '论坛币' : '文字奖品'}`);
+  parts.push(`参与费用：${entryFee || 0} 论坛币`);
+  parts.push(`中奖人数：${winnerCount || 0}`);
+  if (prizeType === 'coins') parts.push(`奖池总额：${prizeCoinTotal || 0} 论坛币`);
+  if (startAt) parts.push(`开始：${new Date(startAt).toLocaleString('zh-CN')}`);
+  if (endAt) parts.push(`结束：${new Date(endAt).toLocaleString('zh-CN')}`);
+  if (prizeDesc) parts.push(`说明：${prizeDesc.slice(0, 80)}${prizeDesc.length > 80 ? '...' : ''}`);
+  preview.textContent = parts.join(' · ');
+}
+
+function updateLotterySection() {
+  const section = $('lotterySection');
+  if (!section) return;
+  const enabled = $('lotteryEnabled').checked;
+  const locked = !!editId;
+  section.classList.toggle('locked', locked || !enabled);
+  [
+    'lotteryPrizeName',
+    'lotteryPrizeType',
+    'lotteryPrizeDescription',
+    'lotteryEntryFee',
+    'lotteryWinnerCount',
+    'lotteryPrizeCoinTotal',
+    'lotteryStartAt',
+    'lotteryEndAt',
+  ].forEach(id => {
+    const el = $(id);
+    if (el) el.disabled = locked || !enabled;
+  });
+  if (locked) {
+    $('lotteryPreview').textContent = '抽奖只允许在发帖时设置，编辑时仅可查看。';
+    return;
+  }
+  if (enabled) {
+    if (!$('lotteryStartAt').value) $('lotteryStartAt').value = toDateTimeLocalValue(selectedLotteryStartAt || Date.now());
+    if (!$('lotteryEndAt').value) $('lotteryEndAt').value = toDateTimeLocalValue(selectedLotteryEndAt || (Date.now() + 24 * 60 * 60 * 1000));
+  } else {
+    selectedLotteryStartAt = null;
+    selectedLotteryEndAt = null;
+  }
+  updateLotteryPreview();
 }
 
 function isStaffUser(user) {
@@ -505,6 +640,18 @@ async function loadEditPost() {
     name: post.attachment_name || '',
     size: Number(post.attachment_size || 0),
   };
+  const lottery = post.lottery || null;
+  $('lotteryEnabled').checked = !!lottery?.enabled;
+  $('lotteryPrizeName').value = lottery?.prize_name || '';
+  $('lotteryPrizeType').value = lottery?.prize_type || 'text';
+  $('lotteryPrizeDescription').value = lottery?.prize_description || '';
+  $('lotteryEntryFee').value = lottery?.entry_fee || '';
+  $('lotteryWinnerCount').value = lottery?.winner_count || '';
+  $('lotteryPrizeCoinTotal').value = lottery?.prize_coin_total || '';
+  selectedLotteryStartAt = lottery?.start_at || null;
+  selectedLotteryEndAt = lottery?.end_at || null;
+  $('lotteryStartAt').value = lottery?.start_at ? toDateTimeLocalValue(lottery.start_at) : '';
+  $('lotteryEndAt').value = lottery?.end_at ? toDateTimeLocalValue(lottery.end_at) : '';
   tags = post.tags || [];
   if (post.visibility === 'reply') $('hiddenReplyOnly').checked = true;
   if (post.visibility === 'timed') {
@@ -513,6 +660,7 @@ async function loadEditPost() {
   }
   renderTags();
   refreshHiddenPanel();
+  updateLotterySection();
   updateBountyVisibility();
 }
 
@@ -629,10 +777,13 @@ function clearFormat() {
   replaceEditorRange(cleaned, 0, cleaned.length);
 }
 
-function refreshPreview() {
+async function refreshPreview() {
   const preview = $('contentPreview');
   if (!preview || !preview.classList.contains('show')) return;
-  $('contentPreviewBody').innerHTML = window.NodeWeave.renderRichText($('postContent').value);
+  const content = $('postContent').value;
+  const body = $('contentPreviewBody');
+  body.innerHTML = window.NodeWeave.renderRichText(content);
+  await window.NodeWeave.renderLinkPreviews(body, content);
 }
 
 function togglePreview() {
@@ -691,10 +842,30 @@ async function publish() {
   const replyRewardTotal = editId ? 0 : (parseInt($('replyRewardTotal').value || '0', 10) || 0);
   const replyRewardMin = editId ? 0 : (parseInt($('replyRewardMin').value || '0', 10) || 0);
   const replyRewardMax = editId ? 0 : (parseInt($('replyRewardMax').value || '0', 10) || 0);
+  const lotteryEnabled = !editId && $('lotteryEnabled').checked;
+  const lotteryPrizeName = lotteryEnabled ? String($('lotteryPrizeName').value || '').trim() : '';
+  const lotteryPrizeDescription = lotteryEnabled ? String($('lotteryPrizeDescription').value || '').trim() : '';
+  const lotteryPrizeType = lotteryEnabled ? $('lotteryPrizeType').value : 'text';
+  const lotteryPrizeCoinTotal = lotteryEnabled ? (parseInt($('lotteryPrizeCoinTotal').value || '0', 10) || 0) : 0;
+  const lotteryEntryFee = lotteryEnabled ? (parseInt($('lotteryEntryFee').value || '0', 10) || 0) : 0;
+  const lotteryWinnerCount = lotteryEnabled ? (parseInt($('lotteryWinnerCount').value || '0', 10) || 0) : 0;
+  const lotteryStartAt = lotteryEnabled ? fromDateTimeLocalValue($('lotteryStartAt').value || '') : 0;
+  const lotteryEndAt = lotteryEnabled ? fromDateTimeLocalValue($('lotteryEndAt').value || '') : 0;
   if (hasAttachment && isAttachmentChanged() && !canUploadAttachment()) return showMessage('添加附件需达到 Lv2 极客（声望 200）', false);
   if (bountyAmount > 0 && !canUseBounty()) return showMessage('设置悬赏需达到 Lv3 黑客（声望 500）', false);
   if ((replyRewardTotal || replyRewardMin || replyRewardMax) && (!replyRewardTotal || replyRewardMin < 1 || replyRewardMax < replyRewardMin || replyRewardTotal < replyRewardMin)) {
     return showMessage('请填写有效的回帖红包：总额≥最小金额，随机最大≥随机最小。', false);
+  }
+  if (lotteryEnabled) {
+    if (!lotteryPrizeName) return showMessage('请填写抽奖奖品名称', false);
+    if (lotteryEntryFee < 1) return showMessage('抽奖参与费用至少 1 论坛币', false);
+    if (lotteryWinnerCount < 1) return showMessage('中奖人数至少 1 人', false);
+    if (!lotteryStartAt || !lotteryEndAt || lotteryEndAt <= lotteryStartAt || lotteryEndAt <= Date.now()) {
+      return showMessage('请填写有效的抽奖开始/结束时间', false);
+    }
+    if (lotteryPrizeType === 'coins' && lotteryPrizeCoinTotal < lotteryWinnerCount) {
+      return showMessage('论坛币奖池总额不能少于中奖人数', false);
+    }
   }
 
   $('btnPublish').disabled = true;
@@ -721,6 +892,17 @@ async function publish() {
       body.reply_reward_max = replyRewardMax;
       body.pin_request = $('pinOnPublish').checked;
       body.feature_request = $('featureOnPublish').checked;
+    }
+    if (lotteryEnabled) {
+      body.lottery_enabled = true;
+      body.lottery_prize_name = lotteryPrizeName;
+      body.lottery_prize_description = lotteryPrizeDescription;
+      body.lottery_prize_type = lotteryPrizeType;
+      body.lottery_prize_coin_total = lotteryPrizeCoinTotal;
+      body.lottery_entry_fee = lotteryEntryFee;
+      body.lottery_winner_count = lotteryWinnerCount;
+      body.lottery_start_at = lotteryStartAt;
+      body.lottery_end_at = lotteryEndAt;
     }
     if ($('hiddenReplyOnly').checked) body.visibility = 'reply';
     if ($('hiddenTimed').checked) {
@@ -751,6 +933,15 @@ function saveDraft() {
     type: $('postType').value,
     board_id: $('postBoard').value,
     tags,
+    lotteryEnabled: $('lotteryEnabled').checked,
+    lotteryPrizeName: $('lotteryPrizeName').value,
+    lotteryPrizeDescription: $('lotteryPrizeDescription').value,
+    lotteryPrizeType: $('lotteryPrizeType').value,
+    lotteryPrizeCoinTotal: $('lotteryPrizeCoinTotal').value,
+    lotteryEntryFee: $('lotteryEntryFee').value,
+    lotteryWinnerCount: $('lotteryWinnerCount').value,
+    lotteryStartAt: $('lotteryStartAt').value,
+    lotteryEndAt: $('lotteryEndAt').value,
     saved_at: Date.now(),
   };
   localStorage.setItem('nodeweave_draft', JSON.stringify(draft));
@@ -768,7 +959,17 @@ function restoreDraft() {
     if (draft.type) $('postType').value = draft.type;
     if (draft.board_id) $('postBoard').value = draft.board_id;
     tags = Array.isArray(draft.tags) ? draft.tags : [];
+    if (typeof draft.lotteryEnabled === 'boolean') $('lotteryEnabled').checked = draft.lotteryEnabled;
+    if (draft.lotteryPrizeName) $('lotteryPrizeName').value = draft.lotteryPrizeName;
+    if (draft.lotteryPrizeDescription) $('lotteryPrizeDescription').value = draft.lotteryPrizeDescription;
+    if (draft.lotteryPrizeType) $('lotteryPrizeType').value = draft.lotteryPrizeType;
+    if (draft.lotteryPrizeCoinTotal) $('lotteryPrizeCoinTotal').value = draft.lotteryPrizeCoinTotal;
+    if (draft.lotteryEntryFee) $('lotteryEntryFee').value = draft.lotteryEntryFee;
+    if (draft.lotteryWinnerCount) $('lotteryWinnerCount').value = draft.lotteryWinnerCount;
+    if (draft.lotteryStartAt) $('lotteryStartAt').value = draft.lotteryStartAt;
+    if (draft.lotteryEndAt) $('lotteryEndAt').value = draft.lotteryEndAt;
     renderTags();
+    updateLotterySection();
     updateBountyVisibility();
   } catch (error) {}
 }
@@ -808,6 +1009,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   $('hiddenReplyOnly').addEventListener('change', refreshHiddenPanel);
   $('hiddenTimed').addEventListener('change', refreshHiddenPanel);
+  $('lotteryEnabled').addEventListener('change', updateLotterySection);
+  $('lotteryPrizeType').addEventListener('change', updateLotteryPreview);
+  ['lotteryPrizeName', 'lotteryPrizeDescription', 'lotteryPrizeType', 'lotteryPrizeCoinTotal', 'lotteryEntryFee', 'lotteryWinnerCount', 'lotteryStartAt', 'lotteryEndAt'].forEach(id => $(id).addEventListener('input', updateLotteryPreview));
   ['replyRewardTotal', 'replyRewardMin', 'replyRewardMax'].forEach(id => $(id).addEventListener('input', updateReplyRewardPreview));
   $('dtPresets').addEventListener('click', (event) => {
     const button = event.target.closest('.dt-preset');

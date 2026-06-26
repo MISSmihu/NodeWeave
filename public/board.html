@@ -40,6 +40,7 @@
 .flag{padding:3px 8px;border-radius:3px;font-family:var(--font-mono);font-size:10px;border:1px solid rgba(0,240,255,.18);color:var(--cyan);background:rgba(0,240,255,.06)}
 .flag.hot{border-color:rgba(255,0,60,.25);color:var(--magenta);background:rgba(255,0,60,.07)}
 .flag.featured{border-color:rgba(127,255,0,.25);color:var(--green);background:rgba(127,255,0,.07)}
+.flag.reward{border-color:rgba(255,215,0,.28);color:#ffd700;background:rgba(255,215,0,.08)}
 .post-title{font-family:var(--font-display);font-size:20px;line-height:1.35;color:var(--text);margin-bottom:9px}
 .post-excerpt{color:var(--text-dim);font-size:13px;line-height:1.8;margin-bottom:12px}
 .limited{color:var(--text-mute);font-family:var(--font-mono);font-size:11px;margin-top:6px}
@@ -163,6 +164,23 @@ function postHeat(post) {
   return Number(post.view_count || 0) + Number(post.like_count || 0) * 3 + Number(post.comment_count || 0) * 5 + Number(post.tip_total || 0) * 2 + Number(post.reply_reward_total || 0);
 }
 
+function lotteryStatus(post) {
+  const status = String(post.lottery_status || 'none');
+  if (status === 'active' && Number(post.lottery_end_at || 0) > 0 && Number(post.lottery_end_at) <= Date.now()) return 'ready';
+  return status;
+}
+
+function lotteryStatusLabel(status) {
+  return ({ active: '进行中', ready: '可开奖', drawn: '已开奖', cancelled: '已取消' })[status] || '抽奖';
+}
+
+function lotteryFlag(post) {
+  if (!Number(post.lottery_enabled || 0)) return '';
+  const name = String(post.lottery_prize_name || '').trim();
+  const label = name ? name.slice(0, 18) : lotteryStatusLabel(lotteryStatus(post));
+  return `<span class="flag reward">抽奖 ${esc(label)}</span>`;
+}
+
 async function loadPosts() {
   const list = document.getElementById('postList');
   list.innerHTML = '<div class="loading-state"><div class="icon">⌁</div><h3>正在同步帖子节点...</h3><p>正在读取真实内容流。</p></div>';
@@ -199,6 +217,7 @@ function renderPost(post) {
   if (postHeat(post) >= 20) flags.push('<span class="flag hot">热帖</span>');
   if (Number(post.reply_reward_remaining || 0) > 0) flags.push(`<span class="flag featured">回帖红包 ${Number(post.reply_reward_remaining || 0)}</span>`);
   if (post.bounty && !post.bounty_claimed) flags.push(`<span class="flag featured">悬赏 ${post.bounty}</span>`);
+  if (Number(post.lottery_enabled || 0)) flags.push(lotteryFlag(post));
   if (post.accepted_answer_id) flags.push('<span class="flag featured">已解决</span>');
   flags.push(`<span class="flag">${post.type === 'blog' ? '博客' : '帖子'}</span>`);
   const content = String(post.content || '').replace(/\s+/g, ' ').trim();

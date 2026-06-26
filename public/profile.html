@@ -255,8 +255,14 @@ function renderPosts(posts) {
   }
   list.innerHTML = posts.map(post => `<a class="post-item" href="post.html?id=${esc(post.id)}">
     <div class="post-title">${esc(post.title)}</div>
-    <div class="post-meta">${post.type === 'blog' ? '博客' : '帖子'} · ${post.like_count || 0} 赞 · ${post.comment_count || 0} 评论</div>
+    <div class="post-meta">${post.type === 'blog' ? '博客' : '帖子'}${lotteryPostMeta(post)} · ${post.like_count || 0} 赞 · ${post.comment_count || 0} 评论</div>
   </a>`).join('');
+}
+
+function lotteryPostMeta(post) {
+  if (!Number(post.lottery_enabled || 0)) return '';
+  const name = String(post.lottery_prize_name || '').trim();
+  return ` · 抽奖 ${esc(name ? name.slice(0, 14) : '进行中')}`;
 }
 
 async function loadBadges(id) {

@@ -70,6 +70,22 @@ function excerpt(text, length) {
   return clean.length > length ? clean.slice(0, length) + '...' : clean;
 }
 
+function lotteryStatus(post) {
+  const status = String(post.lottery_status || 'none');
+  if (status === 'active' && Number(post.lottery_end_at || 0) > 0 && Number(post.lottery_end_at) <= Date.now()) return 'ready';
+  return status;
+}
+
+function lotteryStatusLabel(status) {
+  return ({ active: '进行中', ready: '可开奖', drawn: '已开奖', cancelled: '已取消' })[status] || '抽奖';
+}
+
+function lotteryMeta(post) {
+  if (!Number(post.lottery_enabled || 0)) return '';
+  const name = String(post.lottery_prize_name || '').trim();
+  return `<span>抽奖 ${esc(name ? name.slice(0, 18) : lotteryStatusLabel(lotteryStatus(post)))}</span>`;
+}
+
 async function search() {
   const query = document.getElementById('searchQuery').value.trim();
   const results = document.getElementById('searchResults');
@@ -98,6 +114,7 @@ async function search() {
             <span>${esc(post.board_id || 'general')}</span>
             <span>@${esc(post.display_name || post.username || '匿名用户')}</span>
             <span>${timeAgo(post.created_at)}</span>
+            ${lotteryMeta(post)}
             <span>回复 ${post.comment_count || 0}</span>
           </div>
         </a>`).join('');

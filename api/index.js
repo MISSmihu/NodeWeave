@@ -6,6 +6,8 @@ import { auth } from './auth.js';
 import { oauth } from './oauth.js';
 import { account } from './account.js';
 import { posts } from './posts.js';
+import { linksRouter } from './links.js';
+import { lotteriesRouter } from './lotteries.js';
 import { comments } from './comments.js';
 import { level } from './level.js';
 import { users } from './users.js';
@@ -393,6 +395,17 @@ async function runMigrations(db) {
     `ALTER TABLE posts ADD COLUMN reply_reward_min INTEGER DEFAULT 0`,
     `ALTER TABLE posts ADD COLUMN reply_reward_max INTEGER DEFAULT 0`,
     `ALTER TABLE posts ADD COLUMN reply_reward_claimed_count INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN lottery_enabled INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN lottery_status TEXT DEFAULT 'none'`,
+    `ALTER TABLE posts ADD COLUMN lottery_prize_name TEXT DEFAULT ''`,
+    `ALTER TABLE posts ADD COLUMN lottery_prize_description TEXT DEFAULT ''`,
+    `ALTER TABLE posts ADD COLUMN lottery_prize_type TEXT DEFAULT 'text'`,
+    `ALTER TABLE posts ADD COLUMN lottery_prize_coin_total INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN lottery_entry_fee INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN lottery_winner_count INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN lottery_start_at INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN lottery_end_at INTEGER DEFAULT 0`,
+    `ALTER TABLE posts ADD COLUMN lottery_drawn_at INTEGER DEFAULT 0`,
     `ALTER TABLE posts ADD COLUMN updated_at INTEGER DEFAULT 0`,
     `ALTER TABLE comments ADD COLUMN user_id TEXT DEFAULT ''`,
     `ALTER TABLE comments ADD COLUMN author_id TEXT DEFAULT ''`,
@@ -472,6 +485,13 @@ async function runMigrations(db) {
   await db.prepare(`CREATE TABLE IF NOT EXISTS bounty_logs (id TEXT PRIMARY KEY, post_id TEXT NOT NULL, from_user TEXT NOT NULL, to_user TEXT NOT NULL, amount INTEGER NOT NULL, created_at INTEGER NOT NULL)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS reply_reward_logs (id TEXT PRIMARY KEY, post_id TEXT NOT NULL, user_id TEXT NOT NULL, comment_id TEXT DEFAULT '', amount INTEGER NOT NULL, created_at INTEGER NOT NULL, UNIQUE(post_id, user_id))`).run();
   await db.prepare(`CREATE INDEX IF NOT EXISTS idx_reply_rewards_post ON reply_reward_logs(post_id, created_at)`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS lottery_entries (id TEXT PRIMARY KEY, post_id TEXT NOT NULL, user_id TEXT NOT NULL, entry_fee INTEGER DEFAULT 0, status TEXT DEFAULT 'joined', joined_at INTEGER NOT NULL, UNIQUE(post_id, user_id))`).run();
+  await db.prepare(`CREATE INDEX IF NOT EXISTS idx_lottery_entries_post ON lottery_entries(post_id, joined_at)`).run();
+  await db.prepare(`CREATE INDEX IF NOT EXISTS idx_lottery_entries_user ON lottery_entries(user_id, joined_at)`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS lottery_winners (id TEXT PRIMARY KEY, post_id TEXT NOT NULL, user_id TEXT NOT NULL, prize_coin_amount INTEGER DEFAULT 0, position INTEGER DEFAULT 0, created_at INTEGER NOT NULL, UNIQUE(post_id, user_id))`).run();
+  await db.prepare(`CREATE INDEX IF NOT EXISTS idx_lottery_winners_post ON lottery_winners(post_id, position)`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS link_previews (url TEXT PRIMARY KEY, final_url TEXT DEFAULT '', title TEXT DEFAULT '', description TEXT DEFAULT '', site_name TEXT DEFAULT '', image TEXT DEFAULT '', favicon TEXT DEFAULT '', host TEXT DEFAULT '', status TEXT DEFAULT 'ok', fetched_at INTEGER NOT NULL)`).run();
+  await db.prepare(`CREATE INDEX IF NOT EXISTS idx_link_previews_fetched ON link_previews(fetched_at)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS user_bans (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, type TEXT NOT NULL, reason TEXT, banned_until INTEGER, banned_by TEXT NOT NULL, created_at INTEGER NOT NULL)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS reports (id TEXT PRIMARY KEY, item_type TEXT NOT NULL, item_id TEXT NOT NULL, reporter_id TEXT NOT NULL, target_user_id TEXT DEFAULT '', ref_post_id TEXT DEFAULT '', reason TEXT NOT NULL, detail TEXT DEFAULT '', status TEXT DEFAULT 'pending', reviewer_id TEXT DEFAULT '', review_note TEXT DEFAULT '', created_at INTEGER NOT NULL, reviewed_at INTEGER)`).run();
   await db.prepare(`CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status, created_at)`).run();
@@ -756,7 +776,13 @@ app.use('*', async (c, next) => {
   await next();
   const contentType = c.res.headers.get('content-type');
   if (contentType && contentType.startsWith('application/json') && !contentType.includes('charset=')) {
-    c.res.headers.set('content-type', 'application/json; charset=utf-8');
+    const headers = new Headers(c.res.headers);
+    headers.set('content-type', 'application/json; charset=utf-8');
+    c.res = new Response(c.res.body, {
+      status: c.res.status,
+      statusText: c.res.statusText,
+      headers,
+    });
   }
 });
 app.use('*', logger());
@@ -776,6 +802,8 @@ app.route('/api/auth', auth);
 app.route('/api/oauth', oauth);
 app.route('/api/account', account);
 app.route('/api/posts', posts);
+app.route('/api/links', linksRouter);
+app.route('/api/lotteries', lotteriesRouter);
 app.route('/api/comments', comments);
 app.route('/api/level', level);
 app.route('/api/users', users);
