@@ -50,7 +50,7 @@ async function load() {
     var j = await r.json();
     if (j.code!==0) { list.innerHTML='<p style="color:var(--text-mute);text-align:center;padding:40px">请先登录</p>'; return; }
     if (!j.data.notifications.length) { list.innerHTML='<p style="color:var(--text-mute);text-align:center;padding:40px">暂无通知</p>'; return; }
-    var icons = {comment:'💬',reply:'↩️',mention:'@',like:'👍',comment_like:'👍',downvote:'👎',rating:'⭐',follow:'👤',message:'✉️',tip:'💰',accepted:'✅',lottery_win:'🎲',lottery_drawn:'🎲',lottery_cancelled:'🎲',moderation:'🛡️',report:'🚨',report_result:'📮',violation:'⚠️',announcement:'📢',system:'📢',achievement:'🏆',admin_grant:'🏅',admin_revoke:'♻️',invite:'🎟️',role:'🪪',profile_admin:'👤',asset_admin:'💳',ban:'⛔',ban_lifted:'✅'};
+    var icons = {comment:'💬',reply:'↩️',mention:'@',like:'👍',comment_like:'👍',downvote:'👎',rating:'⭐',follow:'👤',message:'✉️',tip:'💰',reply_reward:'🧧',accepted:'✅',lottery_win:'🎲',lottery_drawn:'🎲',lottery_cancelled:'🎲',moderation:'🛡️',report:'🚨',report_result:'📮',violation:'⚠️',announcement:'📢',system:'📢',achievement:'🏆',admin_grant:'🏅',admin_revoke:'♻️',invite:'🎟️',role:'🪪',profile_admin:'👤',asset_admin:'💳',ban:'⛔',ban_lifted:'✅'};
     list.innerHTML = j.data.notifications.map(function(n){
       var href = notificationHref(n);
       return '<a class="notif-item'+(n.is_read?'':' unread')+'" href="'+href+'" data-id="'+h(n.id)+'">'+
@@ -93,6 +93,7 @@ function typeLabel(type) {
     rating:'内容评分',
     message:'站内私信',
     tip:'论坛币打赏',
+    reply_reward:'回帖红包',
     accepted:'回答采纳',
     lottery_win:'抽奖中奖',
     lottery_drawn:'抽奖开奖',

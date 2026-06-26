@@ -64,9 +64,11 @@ comments.get('/', async (c) => {
   const offset = (page - 1) * pageSize;
 
   const rows = await c.env.DB.prepare(
-    `SELECT c.*, ${authorExpr('c')} AS author_id, u.username, u.display_name, u.avatar_color
+    `SELECT c.*, ${authorExpr('c')} AS author_id, u.username, u.display_name, u.avatar_color,
+            COALESCE(rr.amount,0) AS reply_reward_amount
        FROM comments c
        LEFT JOIN users u ON ${authorExpr('c')}=u.id
+       LEFT JOIN reply_reward_logs rr ON rr.comment_id=c.id
       WHERE c.post_id=? AND COALESCE(c.is_hidden,0)=0
       ORDER BY c.created_at ASC
       LIMIT ? OFFSET ?`

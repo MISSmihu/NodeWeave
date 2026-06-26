@@ -304,15 +304,19 @@ posts.get('/:id', optLogin, async (c) => {
   }
   const editWindowMinutes = await getPostEditWindowMinutes(c.env);
   const canStaffEdit = isStaffRole(role);
-  const canAuthorEdit = signedIn && viewerId === post.author_id && (editWindowMinutes <= 0 || Date.now() <= Number(post.created_at || 0) + editWindowMinutes * 60000);
+  const editWindowEndAt = editWindowMinutes > 0 ? Number(post.created_at || 0) + editWindowMinutes * 60000 : 0;
+  const editWindowApplies = signedIn && viewerId === post.author_id && !canStaffEdit && editWindowMinutes > 0;
+  const canAuthorEdit = signedIn && viewerId === post.author_id && (editWindowMinutes <= 0 || Date.now() <= editWindowEndAt);
   const shaped = publicPostShape({
     ...post,
     tags: (tags.results || []).map(t => t.tag),
     view_count: (post.view_count || 0) + 1,
     can_edit: !!(canStaffEdit || canAuthorEdit),
-    can_edit_until: editWindowMinutes > 0 ? Number(post.created_at || 0) + editWindowMinutes * 60000 : 0,
+    can_edit_until: editWindowApplies ? editWindowEndAt : 0,
     edit_window_minutes: editWindowMinutes,
-    edit_window_expired: !!(signedIn && viewerId === post.author_id && !canStaffEdit && editWindowMinutes > 0 && Date.now() > Number(post.created_at || 0) + editWindowMinutes * 60000),
+    edit_window_applies: !!editWindowApplies,
+    edit_unrestricted: !!canStaffEdit,
+    edit_window_expired: !!(editWindowApplies && Date.now() > editWindowEndAt),
   }, signedIn);
   shaped.lottery = await buildLotteryShape(c.env, post, viewerId, role);
   return ok(c, shaped);

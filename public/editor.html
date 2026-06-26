@@ -618,14 +618,32 @@ async function loadEditPost() {
     return;
   }
   const post = json.data;
-  if (post.edit_window_minutes > 0) {
-    const note = $('editWindowNote');
+  const note = $('editWindowNote');
+  if (!post.can_edit) {
     note.classList.add('show');
-    if (post.can_edit_until) {
+    note.textContent = '当前账号没有编辑这篇内容的权限。';
+    $('btnPublish').disabled = true;
+    showMessage('当前账号没有编辑这篇内容的权限', false);
+    return;
+  }
+  if (post.edit_unrestricted) {
+    note.classList.add('show');
+    note.textContent = '管理组编辑模式：站长、管理员和版主不受普通用户编辑时限限制。';
+  } else if (post.edit_window_applies && post.edit_window_minutes > 0) {
+    note.classList.add('show');
+    if (post.edit_window_expired) {
+      note.textContent = `帖子发布超过 ${post.edit_window_minutes} 分钟，普通用户已不能自行编辑，请联系版主或管理员。`;
+      $('btnPublish').disabled = true;
+      showMessage('编辑窗口已结束，请联系版主或管理员', false);
+      return;
+    } else if (post.can_edit_until) {
       note.textContent = `普通用户可在发布后 ${post.edit_window_minutes} 分钟内自由修改；本帖截止 ${new Date(post.can_edit_until).toLocaleString('zh-CN')}。管理组不受此限制。`;
     } else {
       note.textContent = `普通用户可在发布后 ${post.edit_window_minutes} 分钟内自由修改；超时后需联系版主或管理员。`;
     }
+  } else {
+    note.classList.remove('show');
+    note.textContent = '';
   }
   $('postType').value = post.type || 'post';
   $('postBoard').value = post.board_id || 'general';

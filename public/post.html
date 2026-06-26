@@ -81,6 +81,7 @@
 .comment-time{font-size:11px;color:var(--text-mute)}
 .comment-body{color:var(--text-dim);font-size:14px;line-height:1.7;white-space:pre-wrap}
 .accepted{display:inline-flex;padding:2px 7px;border-radius:999px;border:1px solid rgba(127,255,0,.25);color:var(--green);font-size:10px;font-family:var(--font-mono)}
+.reply-reward-badge{display:inline-flex;padding:2px 7px;border-radius:999px;border:1px solid rgba(127,255,0,.28);background:rgba(127,255,0,.08);color:var(--green);font-size:10px;font-family:var(--font-mono)}
 .accept-btn{margin-left:auto;padding:5px 8px;border:1px solid rgba(127,255,0,.25);background:rgba(127,255,0,.06);border-radius:6px;color:var(--green);font-family:var(--font-mono);font-size:11px}
 .comment-like{margin-top:8px;padding:4px 8px;border:1px solid var(--border);background:var(--surface-2);border-radius:6px;color:var(--text-mute);font-family:var(--font-mono);font-size:11px}
 .comment-like:hover{border-color:var(--cyan);color:var(--cyan)}
@@ -290,7 +291,9 @@ function renderPost() {
   if (p.is_ai_generated) statusTags.push('<span class="status-tag">AI 辅助</span>');
   const canEdit = !!p.can_edit;
   let editNote = '';
-  if (currentUser && p.author_id === currentUser.id && !isStaff) {
+  if (p.edit_unrestricted) {
+    editNote = '<div class="edit-note">管理组编辑模式：不受普通用户编辑时限限制。</div>';
+  } else if (currentUser && p.author_id === currentUser.id && p.edit_window_applies) {
     if (p.edit_window_expired) {
       editNote = `<div class="edit-note">编辑窗口已结束：普通用户发布后 ${p.edit_window_minutes || 30} 分钟内可自由修改，之后请联系版主或管理员。</div>`;
     } else if (p.can_edit_until) {
@@ -525,6 +528,7 @@ async function loadComments() {
         <span class="comment-author">@${esc(comment.display_name || comment.username || '匿名用户')}</span>
         <span class="comment-time">${new Date(comment.created_at).toLocaleString('zh-CN')}</span>
         ${comment.is_accepted ? '<span class="accepted">已采纳</span>' : ''}
+        ${Number(comment.reply_reward_amount || 0) > 0 ? `<span class="reply-reward-badge">红包 +${Number(comment.reply_reward_amount || 0)}</span>` : ''}
         ${canAccept ? `<button class="accept-btn" type="button" onclick="acceptAnswer('${esc(comment.id)}')">采纳并发放悬赏</button>` : ''}
       </div>
       <div class="comment-body">${esc(comment.content)}</div>
