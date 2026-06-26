@@ -739,8 +739,14 @@ function insertLink() {
   const url = prompt('输入链接地址（https://...）');
   if (!url) return;
   const range = getEditorRange();
-  const text = range.selected === '文本' ? '链接文字' : range.selected;
-  replaceEditorRange(`[${text}](${url.trim()})`, 1, text.length);
+  const cleanUrl = url.trim();
+  if (!cleanUrl) return;
+  if (range.selected === '文本') {
+    replaceEditorRange(cleanUrl, 0, cleanUrl.length);
+    return;
+  }
+  const text = range.selected;
+  replaceEditorRange(`[${text}](${cleanUrl})`, 1, text.length);
 }
 
 function insertCodeBlock() {

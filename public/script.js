@@ -332,7 +332,7 @@
       })
       .replace(/\[([^\]\n]{1,120})\]\(([^)\s]+)\)/g, (_, text, url) => {
         const safeUrl = safeRichUrl(url, false);
-        return safeUrl ? `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer nofollow">${text}</a>` : text;
+        return safeUrl ? `<a href="${safeUrl}" data-nw-preview-url="${safeUrl}" target="_blank" rel="noopener noreferrer nofollow">${text}</a>` : text;
       })
       .replace(/`([^`\n]+)`/g, '<code class="nw-inline-code">$1</code>')
       .replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>')
@@ -449,10 +449,46 @@
       </a>`;
   }
 
+  function previewUrlSet(previews) {
+    const urls = new Set();
+    previews.forEach(preview => {
+      [preview.url, preview.final_url].forEach(value => {
+        const url = cleanPreviewUrl(value);
+        if (url) urls.add(url);
+      });
+    });
+    return urls;
+  }
+
+  function hidePreviewSourceLines(container, previews) {
+    const root = container.matches?.('.nw-rich-content') ? container : (container.querySelector?.('.nw-rich-content') || container);
+    const urls = previewUrlSet(previews);
+    root.querySelectorAll('p.nw-link-source-hidden').forEach(p => p.classList.remove('nw-link-source-hidden'));
+    if (!urls.size) return;
+    root.querySelectorAll('p').forEach(p => {
+      const links = Array.from(p.querySelectorAll('a[href]'));
+      const text = String(p.textContent || '').trim();
+      if (!text) return;
+      if (!links.length) {
+        const textUrl = cleanPreviewUrl(text);
+        if (textUrl && urls.has(textUrl)) p.classList.add('nw-link-source-hidden');
+        return;
+      }
+      if (links.length !== 1) return;
+      const clone = p.cloneNode(true);
+      clone.querySelector('a[href]')?.remove();
+      if (String(clone.textContent || '').trim()) return;
+      const href = cleanPreviewUrl(links[0].getAttribute('href') || links[0].href);
+      if (href && urls.has(href)) p.classList.add('nw-link-source-hidden');
+    });
+  }
+
   async function renderLinkPreviews(container, sourceText) {
     if (!container) return [];
     const existing = container.querySelector(':scope > .nw-link-preview-panel');
     if (existing) existing.remove();
+    const root = container.matches?.('.nw-rich-content') ? container : (container.querySelector?.('.nw-rich-content') || container);
+    root.querySelectorAll('p.nw-link-source-hidden').forEach(p => p.classList.remove('nw-link-source-hidden'));
     const urls = extractPreviewUrls(sourceText);
     if (!urls.length) return [];
 
@@ -478,6 +514,7 @@
       panel.innerHTML = '<div class="nw-link-preview-hint">暂无可用的链接预览</div>';
       return [];
     }
+    hidePreviewSourceLines(container, previews);
     panel.innerHTML = previews.map(renderPreviewCard).join('');
     return previews;
   }
@@ -502,19 +539,73 @@
       const href = link.getAttribute('href') || '';
       if (!isExternalUrl(href)) return;
       const url = new URL(href, location.href);
-      const message = `即将访问外部网站：\n${url.hostname}\n\n${url.href}\n\n确定继续吗？`;
-      if (!window.confirm(message)) {
-        event.preventDefault();
-        event.stopPropagation();
-        return;
-      }
       event.preventDefault();
-      if (link.target === '_blank') {
-        window.open(url.href, '_blank', 'noopener,noreferrer');
-      } else {
-        location.href = url.href;
-      }
+      event.stopPropagation();
+      confirmExternalLink(url).then(confirmed => {
+        if (!confirmed) return;
+        if (link.target === '_blank') {
+          window.open(url.href, '_blank', 'noopener,noreferrer');
+        } else {
+          location.href = url.href;
+        }
+      });
     }, true);
+  }
+
+  function confirmExternalLink(url) {
+    return new Promise(resolve => {
+      const dialog = ensureExternalLinkDialog();
+      const host = dialog.querySelector('[data-external-host]');
+      const full = dialog.querySelector('[data-external-url]');
+      const confirm = dialog.querySelector('[data-external-confirm]');
+      const cancel = dialog.querySelector('[data-external-cancel]');
+      const close = (value) => {
+        dialog.classList.remove('show');
+        dialog.setAttribute('aria-hidden', 'true');
+        document.removeEventListener('keydown', onKeydown);
+        confirm.onclick = null;
+        cancel.onclick = null;
+        resolve(value);
+      };
+      const onKeydown = (event) => {
+        if (event.key === 'Escape') close(false);
+      };
+      host.textContent = url.hostname.replace(/^www\./i, '');
+      full.textContent = url.href;
+      confirm.onclick = () => close(true);
+      cancel.onclick = () => close(false);
+      dialog.onclick = event => {
+        if (event.target === dialog) close(false);
+      };
+      dialog.classList.add('show');
+      dialog.setAttribute('aria-hidden', 'false');
+      document.addEventListener('keydown', onKeydown);
+      cancel.focus();
+    });
+  }
+
+  function ensureExternalLinkDialog() {
+    let dialog = document.querySelector('.nw-external-dialog');
+    if (dialog) return dialog;
+    dialog = document.createElement('div');
+    dialog.className = 'nw-external-dialog';
+    dialog.setAttribute('aria-hidden', 'true');
+    dialog.innerHTML = `
+      <div class="nw-external-card" role="dialog" aria-modal="true" aria-labelledby="nwExternalTitle">
+        <div class="nw-external-kicker">EXTERNAL LINK</div>
+        <h2 id="nwExternalTitle">确认离开 NodeWeave</h2>
+        <p>你即将访问外部网站，请确认链接来源可信后再继续。</p>
+        <div class="nw-external-target">
+          <span data-external-host></span>
+          <strong data-external-url></strong>
+        </div>
+        <div class="nw-external-actions">
+          <button class="btn-ghost" type="button" data-external-cancel>取消</button>
+          <button class="btn-primary" type="button" data-external-confirm>继续访问</button>
+        </div>
+      </div>`;
+    document.body.appendChild(dialog);
+    return dialog;
   }
 
   window.NodeWeave = {
