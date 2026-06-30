@@ -181,6 +181,12 @@ let userId = new URLSearchParams(location.search).get('id');
 let currentUser = null;
 let bgAnimationId = null;
 const esc = (value) => window.NodeWeave.escapeHtml(value);
+function sanitizeProfileCss(css) {
+  const text = String(css || '').slice(0, 8000);
+  if (/<\/?(script|style|iframe|object|embed|link|meta)/i.test(text)) return '';
+  if (/@import/i.test(text) || /javascript\s*:/i.test(text) || /expression\s*\(/i.test(text)) return '';
+  return text;
+}
 
 async function resolveUserId() {
   currentUser = await window.NodeWeave.currentUser(true);
@@ -285,7 +291,9 @@ function toggleCustomize() {
 
 async function saveCustomize() {
   const active = document.querySelector('.bg-preset.active');
-  const profile_css = document.getElementById('customCSS').value;
+  const raw_css = document.getElementById('customCSS').value;
+  const profile_css = sanitizeProfileCss(raw_css);
+  if (raw_css && !profile_css) { alert('自定义装扮只支持 CSS，不支持 script、HTML、@import 或 javascript 链接。'); return; }
   const profile_bg_type = active ? active.dataset.type : '';
   const json = await window.NodeWeave.apiJson('/api/account/customize', {
     method: 'PUT',
@@ -357,7 +365,7 @@ function initBgCanvas(type) {
 }
 
 function applyProfileAppearance(type, value, css) {
-  document.getElementById('customStyles').textContent = css || '';
+  document.getElementById('customStyles').textContent = sanitizeProfileCss(css);
   const layer = document.getElementById('profileBgLayer');
   layer.style.background = '';
   layer.style.backgroundImage = '';
