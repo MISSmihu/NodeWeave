@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>博客专栏 // NodeWeave</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <style id="blogCustomStyles"></style>
 <style>
@@ -16,7 +16,7 @@
 .blog-hero-main{position:relative;z-index:1;padding:34px 0 18px}
 .blog-kicker{display:inline-flex;align-items:center;gap:9px;padding:7px 14px;border:1px solid rgba(0,240,255,.22);border-radius:999px;background:rgba(0,240,255,.06);font-family:var(--font-mono);font-size:12px;color:var(--cyan);margin-bottom:20px;box-shadow:0 0 24px rgba(0,240,255,.08)}
 .blog-kicker i{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green)}
-.blog-title{font-family:var(--font-display);font-size:clamp(46px,6.2vw,86px);line-height:.98;margin:0;color:var(--text);letter-spacing:-.035em;text-shadow:0 0 34px rgba(0,240,255,.2)}
+.blog-title{font-family:var(--font-display);font-size:clamp(46px,6.2vw,86px);line-height:.98;margin:0;color:var(--text);letter-spacing:0;text-shadow:0 0 34px rgba(0,240,255,.2)}
 .blog-title span{display:block;width:max-content;max-width:100%;margin-top:8px;background:linear-gradient(90deg,var(--cyan),var(--purple) 58%,var(--magenta));-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none}
 .blog-desc{max-width:760px;margin:22px 0 0;color:var(--text-dim);font-size:16px;line-height:1.95}
 .blog-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:26px}
@@ -72,7 +72,7 @@
 <header class="nav">
   <div class="nav-inner">
     <a href="index.html" class="logo">
-      <span class="logo-mark">◈</span>
+      <span class="logo-mark" aria-hidden="true"></span>
       <span class="logo-text">Node<span class="x">Weave</span></span>
       <span class="logo-sub">// BLOG NODE</span>
     </a>

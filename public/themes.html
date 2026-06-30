@@ -3,127 +3,40 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>主题中心 // NodeWeave</title>
+<title>主题已固定 // NodeWeave</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <style>
-.theme-page{max-width:1180px;margin:0 auto;padding:72px 24px 100px}
-.theme-hero{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:22px;align-items:stretch;margin-bottom:24px}
-.theme-panel{border:1px solid var(--border);background:linear-gradient(180deg,rgba(18,18,30,.92),rgba(10,10,15,.92));border-radius:20px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.22)}
-.theme-kicker{font-family:var(--font-mono);font-size:12px;letter-spacing:.16em;color:var(--cyan);margin-bottom:10px}
-.theme-title{font-family:var(--font-display);font-size:34px;line-height:1.15;color:var(--text);margin-bottom:10px}
-.theme-desc{color:var(--text-dim);font-size:14px;max-width:700px}
-.theme-preview{position:relative;overflow:hidden;min-height:230px}
-.theme-preview::before{content:'';position:absolute;inset:auto -30% -40% auto;width:220px;height:220px;background:radial-gradient(circle,var(--cyan),transparent 65%);opacity:.18}
-.preview-card{position:relative;border:1px solid var(--border);background:var(--surface);border-radius:16px;padding:18px;margin-top:14px}
-.preview-bar{display:flex;gap:8px;margin-bottom:16px}
-.preview-dot{width:10px;height:10px;border-radius:999px;background:var(--cyan);box-shadow:var(--glow-cyan)}
-.preview-dot:nth-child(2){background:var(--magenta);box-shadow:var(--glow-magenta)}
-.preview-dot:nth-child(3){background:var(--green)}
-.preview-line{height:9px;border-radius:999px;background:var(--surface-2);margin:10px 0;overflow:hidden}
-.preview-line i{display:block;height:100%;width:var(--w);background:linear-gradient(90deg,var(--cyan),var(--magenta))}
-.theme-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
-.theme-card{position:relative;overflow:hidden;text-align:left;border:1px solid var(--border);background:rgba(18,18,30,.9);border-radius:18px;padding:18px;min-height:220px;color:var(--text);transition:transform .18s,border-color .18s,box-shadow .18s}
-.theme-card:hover,.theme-card.active{transform:translateY(-3px);border-color:var(--cyan);box-shadow:0 0 0 1px rgba(0,240,255,.18),0 18px 48px rgba(0,0,0,.25)}
-.theme-swatch{height:78px;border-radius:14px;margin-bottom:16px;border:1px solid rgba(255,255,255,.12);background:linear-gradient(135deg,var(--a),var(--b) 52%,var(--c));box-shadow:0 0 28px color-mix(in srgb,var(--a),transparent 72%)}
-.theme-name{font-family:var(--font-display);font-size:17px;margin-bottom:6px}
-.theme-copy{font-size:12px;color:var(--text-dim);min-height:38px}
-.theme-state{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px;font-family:var(--font-mono);font-size:11px;color:var(--text-mute)}
-.theme-card.active .theme-state{color:var(--green)}
-.theme-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
-.theme-note{margin-top:14px;color:var(--text-mute);font-size:12px}
-@media (max-width:860px){.theme-hero{grid-template-columns:1fr}.theme-title{font-size:28px}}
+.theme-closed{max-width:760px;margin:0 auto;padding:110px 24px 120px}
+.theme-closed-card{border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg,rgba(18,18,30,.9),rgba(10,10,15,.9));padding:28px;box-shadow:0 24px 70px rgba(0,0,0,.28)}
+.theme-closed-kicker{font-family:var(--font-mono);font-size:12px;letter-spacing:.16em;color:var(--cyan);margin-bottom:12px}
+.theme-closed h1{font-family:var(--font-display);font-size:34px;line-height:1.2;color:var(--text);margin:0 0 12px}
+.theme-closed p{color:var(--text-dim);line-height:1.85;margin:0 0 22px}
 </style>
-<script>
-(function(){try{document.documentElement.dataset.theme=localStorage.getItem('nodeweave_theme')||'cyber';}catch(e){}})();
-</script>
 </head>
 <body>
 <div class="bg-grid"></div><div class="bg-scanlines"></div><div class="bg-glow"></div>
 <header class="nav">
   <div class="nav-inner">
-    <a href="index.html" class="logo"><span class="logo-mark">◆</span><span class="logo-text">Node<span class="x">Weave</span></span><span class="logo-sub">// THEMES</span></a>
+    <a href="index.html" class="logo"><span class="logo-mark" aria-hidden="true"></span><span class="logo-text">Node<span class="x">Weave</span></span><span class="logo-sub">// DEFAULT THEME</span></a>
     <div class="nav-links">
       <a href="index.html">首页</a>
       <a href="boards.html">论坛</a>
-      <a href="blogs.html">博客</a>
+      <a href="blog.html">博客</a>
       <a href="achievements.html">成就</a>
     </div>
     <div class="nav-actions" data-auth-actions></div>
   </div>
 </header>
-<main class="theme-page">
-  <section class="theme-hero">
-    <div class="theme-panel">
-      <div class="theme-kicker">VISUAL FATIGUE SWITCHER</div>
-      <h1 class="theme-title">主题中心</h1>
-      <p class="theme-desc">论坛看久了会累，所以这里准备了赛博主题和更正常的浅色主题：白色、米白、蓝白。选择后会写入本地设置，首页、论坛、博客、签到、成就等页面会自动沿用。</p>
-      <div class="theme-actions">
-        <button class="btn-primary" type="button" id="saveTheme">保存当前主题</button>
-        <button class="btn-outline" type="button" id="resetTheme">恢复霓虹默认</button>
-      </div>
-      <p class="theme-note">提示：主题是浏览器本地偏好，不影响其他用户；以后如果需要，也可以再做成账号云同步。</p>
-    </div>
-    <div class="theme-panel theme-preview">
-      <div class="theme-kicker">LIVE PREVIEW</div>
-      <div class="preview-card">
-        <div class="preview-bar"><span class="preview-dot"></span><span class="preview-dot"></span><span class="preview-dot"></span></div>
-        <div class="theme-name" id="previewName">霓虹</div>
-        <div class="preview-line"><i style="--w:78%"></i></div>
-        <div class="preview-line"><i style="--w:52%"></i></div>
-        <div class="preview-line"><i style="--w:64%"></i></div>
-      </div>
-    </div>
+<main class="theme-closed">
+  <section class="theme-closed-card">
+    <div class="theme-closed-kicker">THEME LOCKED</div>
+    <h1>主题系统已关闭</h1>
+    <p>NodeWeave 现在固定使用默认视觉风格，不再提供前台主题切换。旧的本地主题偏好不会继续生效。</p>
+    <a class="btn-primary" href="index.html">返回首页</a>
   </section>
-  <section class="theme-grid" id="themeGrid"></section>
 </main>
 <script src="script.js"></script>
-<script>
-var themes = [
-  { id:'cyber', name:'霓虹', copy:'默认赛博青粉，适合高对比和夜间浏览。', colors:['#00f0ff','#ff003c','#9d00ff'] },
-  { id:'aurora', name:'极光', copy:'青绿色极光感，整体更柔和，长时间阅读更舒服。', colors:['#4dffe1','#ff5edb','#7c5cff'] },
-  { id:'ember', name:'余烬', copy:'暖色火光主题，适合博客、长文和夜间闲聊。', colors:['#ffb86b','#ff3d6e','#ff7a1a'] },
-  { id:'matrix', name:'矩阵', copy:'绿色终端风格，适合极客区和技术讨论。', colors:['#7fff00','#00f0ff','#39ff88'] },
-  { id:'midnight', name:'午夜', copy:'低饱和蓝紫主题，视觉压力最低。', colors:['#7aa2ff','#c084fc','#6d5dfc'] },
-  { id:'daylight', name:'白色', copy:'干净白底配蓝色主调，适合白天办公和长时间浏览。', colors:['#ffffff','#2563eb','#e11d48'] },
-  { id:'paper', name:'米白', copy:'纸张感暖色背景，博客和长文阅读更自然。', colors:['#fffaf2','#9a5f23','#b83250'] },
-  { id:'ocean', name:'蓝白', copy:'清爽蓝白主题，保留科技感但不刺眼。', colors:['#ffffff','#0e7490','#2563eb'] },
-];
-var selected = document.documentElement.dataset.theme || 'cyber';
-
-function setTheme(id, persist) {
-  selected = themes.some(function(theme){ return theme.id === id; }) ? id : 'cyber';
-  if (window.NodeWeave && window.NodeWeave.applyTheme) window.NodeWeave.applyTheme(selected);
-  else document.documentElement.dataset.theme = selected;
-  if (persist) {
-    try { localStorage.setItem('nodeweave_theme', selected); } catch (error) {}
-  }
-  renderThemes();
-}
-
-function renderThemes() {
-  var active = themes.find(function(theme){ return theme.id === selected; }) || themes[0];
-  document.getElementById('previewName').textContent = active.name;
-  document.getElementById('themeGrid').innerHTML = themes.map(function(theme){
-    var activeClass = theme.id === selected ? ' active' : '';
-    return '<button class="theme-card'+activeClass+'" type="button" data-theme-id="'+theme.id+'">'+
-      '<div class="theme-swatch" style="--a:'+theme.colors[0]+';--b:'+theme.colors[1]+';--c:'+theme.colors[2]+'"></div>'+
-      '<div class="theme-name">'+theme.name+'</div>'+
-      '<div class="theme-copy">'+theme.copy+'</div>'+
-      '<div class="theme-state"><span>'+theme.id.toUpperCase()+'</span><span>'+(theme.id === selected ? '当前使用' : '点击预览')+'</span></div>'+
-    '</button>';
-  }).join('');
-}
-
-document.getElementById('themeGrid').addEventListener('click', function(event){
-  var card = event.target.closest('[data-theme-id]');
-  if (!card) return;
-  setTheme(card.dataset.themeId, true);
-});
-document.getElementById('saveTheme').addEventListener('click', function(){ setTheme(selected, true); });
-document.getElementById('resetTheme').addEventListener('click', function(){ setTheme('cyber', true); });
-renderThemes();
-</script>
 </body>
 </html>

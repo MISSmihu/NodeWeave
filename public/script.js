@@ -2,29 +2,7 @@
 (function () {
   const PUBLIC_ORIGIN = 'https://nodeweave.wiltonmaggiojb.workers.dev';
   const state = { user: null, userLoaded: false };
-  const THEMES = [
-    { id: 'cyber', name: '霓虹' },
-    { id: 'aurora', name: '极光' },
-    { id: 'ember', name: '余烬' },
-    { id: 'matrix', name: '矩阵' },
-    { id: 'midnight', name: '午夜' },
-    { id: 'daylight', name: '白色' },
-    { id: 'paper', name: '米白' },
-    { id: 'ocean', name: '蓝白' },
-  ];
-
-  function applyTheme(themeId) {
-    const theme = THEMES.some(item => item.id === themeId) ? themeId : 'cyber';
-    document.documentElement.dataset.theme = theme;
-    try { localStorage.setItem('nodeweave_theme', theme); } catch (error) {}
-    document.querySelectorAll('[data-theme-picker]').forEach(el => {
-      el.value = theme;
-    });
-  }
-
-  applyTheme((() => {
-    try { return localStorage.getItem('nodeweave_theme') || 'cyber'; } catch (error) { return 'cyber'; }
-  })());
+  document.documentElement.removeAttribute('data-theme');
 
   function escapeHtml(value) {
     const div = document.createElement('div');
@@ -156,10 +134,8 @@
           : `当前 Lv${level.level} ${level.name}，已满级`;
         el.innerHTML = `
           ${adminLink}
-          <a class="btn-ghost" href="${assetUrl('themes.html')}" title="Theme Center">主题</a>
           <a class="btn-ghost" href="${assetUrl('notifications.html')}" title="消息中心：私信 / 通知">消息<span data-message-badge style="display:none;margin-left:5px;color:var(--magenta)"></span></a>
           <a class="btn-ghost" href="${assetUrl('announcements.html')}" title="站内公告">公告</a>
-          ${themePickerMarkup()}
           <a class="level-chip" href="${assetUrl('levels.html')}" title="${escapeHtml(levelTitle)}" style="--level-color:${escapeHtml(level.color || '#00f0ff')}">Lv${level.level}</a>
           <a class="btn-ghost account-chip" href="${assetUrl('account/settings.html')}" title="账号设置">${escapeHtml(user.display_name || user.username || '我的账号')}</a>
           <button class="btn-ghost" type="button" data-logout>退出</button>
@@ -167,13 +143,10 @@
         updateMessageBadge();
       } else {
         el.innerHTML = `
-          <a class="btn-ghost" href="${assetUrl('themes.html')}" title="Theme Center">主题</a>
-          ${themePickerMarkup()}
           <a class="btn-ghost" href="${assetUrl('login.html')}">登录</a>
           <a class="btn-primary" href="${assetUrl('login.html?tab=register')}">注册</a>`;
       }
     });
-    setupThemePicker();
   }
 
   async function updateNotificationBadge() {
@@ -236,30 +209,6 @@
         closeMobileNav();
       }
     });
-    document.addEventListener('change', (event) => {
-      const picker = event.target.closest('[data-theme-picker]');
-      if (picker) applyTheme(picker.value);
-    });
-  }
-
-  function themePickerMarkup() {
-    return `<select class="theme-picker" data-theme-picker aria-label="切换主题">${
-      THEMES.map(theme => `<option value="${theme.id}">${theme.name}</option>`).join('')
-    }</select>`;
-  }
-
-  function setupThemePicker() {
-    document.querySelectorAll('[data-auth-actions]').forEach(el => {
-      if (!el.querySelector('[data-theme-picker]')) {
-        const notificationLink = el.querySelector('a[href*="notifications.html"]');
-        if (notificationLink) notificationLink.insertAdjacentHTML('afterend', themePickerMarkup());
-        else el.insertAdjacentHTML('afterbegin', themePickerMarkup());
-      }
-    });
-    if (!document.querySelector('[data-auth-actions]') && !document.querySelector('.theme-fab')) {
-      document.body.insertAdjacentHTML('beforeend', `<div class="theme-fab"><span style="font-family:var(--font-mono);font-size:11px;color:var(--text-mute)">主题</span>${themePickerMarkup()}</div>`);
-    }
-    applyTheme(document.documentElement.dataset.theme || 'cyber');
   }
 
   function setupMobileNav() {
@@ -617,12 +566,10 @@
     updateMessageBadge,
     logout,
     redirectLogin,
-    applyTheme,
     escapeHtml,
     renderRichText,
     renderLinkPreviews,
     timeAgo,
-    THEMES,
     state,
   };
 
@@ -633,7 +580,6 @@
     setupExternalLinkGuard();
     setupCounters();
     setupMobileNav();
-    setupThemePicker();
     currentUser();
   });
 })();

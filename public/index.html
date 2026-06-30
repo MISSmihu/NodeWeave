@@ -3,62 +3,56 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NodeWeave // 赛博社区</title>
+<title>NodeWeave // 柔暗玻璃社区</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0a0a0f">
 <style>
-.home-hero{max-width:1400px;margin:0 auto;padding:86px 28px 48px;display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:34px;align-items:end}
-.hero-copy h1{font-family:var(--font-display);font-size:clamp(42px,6vw,76px);line-height:1.04;margin:0;color:var(--text);text-shadow:0 0 30px rgba(0,240,255,.22)}
-.hero-copy h1 span{display:block;color:var(--cyan);text-shadow:var(--glow-cyan)}
-.hero-copy p{max-width:680px;margin:20px 0 28px;color:var(--text-dim);font-size:17px;line-height:1.85}
-.hero-actions{display:flex;gap:12px;flex-wrap:wrap}
-.hero-card{border:1px solid var(--border);border-radius:18px;background:linear-gradient(145deg,rgba(0,240,255,.10),rgba(157,0,255,.08)),var(--surface);padding:22px;box-shadow:0 24px 80px rgba(0,0,0,.3)}
-.hero-card h3{font-family:var(--font-display);font-size:15px;color:var(--cyan);margin-bottom:12px}
-.hero-card .line{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-2);font-family:var(--font-mono);font-size:12px;color:var(--text-dim)}
-.hero-card .line:last-child{border-bottom:0}
-.hero-card b{color:var(--text);font-size:15px}
-.home-layout{max-width:1400px;margin:0 auto;padding:0 28px 90px;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:30px}
-.feed-panel,.side-panel{background:rgba(18,18,30,.66);border:1px solid var(--border);border-radius:14px;padding:18px}
-.feed-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px}
-.feed-tabs{margin:0;padding:0;border:0}
-.feed-list{display:grid;gap:14px}
-.post-card{display:block;text-decoration:none;color:inherit;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;transition:all .2s}
-.post-card:hover{transform:translateY(-3px);border-color:var(--cyan);box-shadow:0 18px 50px rgba(0,240,255,.08)}
-.post-card.is-pinned{border-color:rgba(255,0,60,.26);box-shadow:inset 2px 0 0 var(--magenta),0 0 28px rgba(255,0,60,.055)}
-.post-card.is-featured{background:linear-gradient(135deg,rgba(127,255,0,.055),rgba(18,18,30,.92) 42%,rgba(157,0,255,.04))}
-.feed-badges{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:9px}
-.feed-badge{padding:3px 8px;border:1px solid rgba(0,240,255,.18);border-radius:999px;background:rgba(0,240,255,.06);color:var(--cyan);font-family:var(--font-mono);font-size:10px}
-.feed-badge.pin{border-color:rgba(255,0,60,.28);background:rgba(255,0,60,.08);color:var(--magenta)}
-.feed-badge.feature{border-color:rgba(127,255,0,.26);background:rgba(127,255,0,.07);color:var(--green)}
-.feed-badge.reward{border-color:rgba(255,215,0,.28);background:rgba(255,215,0,.08);color:#ffd700}
-.post-card .meta{display:flex;gap:10px;flex-wrap:wrap;color:var(--text-mute);font-family:var(--font-mono);font-size:11px;margin-bottom:8px}
-.post-card h2{font-family:var(--font-display);font-size:19px;color:var(--text);margin:0 0 8px}
-.post-card p{color:var(--text-dim);font-size:13px;line-height:1.72;margin:0 0 12px}
-.post-stats{display:flex;gap:16px;color:var(--text-mute);font-family:var(--font-mono);font-size:12px}
-.empty{padding:48px 18px;text-align:center;color:var(--text-mute);border:1px dashed var(--border);border-radius:12px}
-.side-panel{display:grid;gap:16px;align-content:start}
-.widget h3{font-family:var(--font-display);font-size:15px;color:var(--cyan);margin-bottom:10px}
-.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.quick-grid a{display:block;padding:12px;border:1px solid var(--border);border-radius:10px;text-decoration:none;color:var(--text-dim);background:var(--surface);font-family:var(--font-mono);font-size:12px}
-.quick-grid a:hover{border-color:var(--cyan);color:var(--cyan)}
-.join-box{padding:16px;border-radius:12px;background:linear-gradient(145deg,rgba(0,240,255,.08),rgba(255,0,60,.06));border:1px solid var(--border)}
-.join-box p{color:var(--text-dim);font-size:13px;line-height:1.7;margin:8px 0 12px}
-@media(max-width:980px){.home-hero,.home-layout{grid-template-columns:1fr}.home-hero{padding-top:54px}.hero-card{max-width:none}}
-@media(max-width:640px){.home-hero,.home-layout{padding-left:16px;padding-right:16px}.quick-grid{grid-template-columns:1fr}.nav-search{display:none}}
+body.home-page{--home-bg:#08080e;--home-panel:rgba(255,255,255,.04);--home-panel-2:rgba(255,255,255,.06);--home-line:rgba(255,255,255,.08);--home-line-2:rgba(255,255,255,.12);--home-muted:rgba(255,255,255,.48);--home-quiet:rgba(255,255,255,.34);--home-purple:#7c3aed;--home-purple-2:#a78bfa;--home-cyan:#06b6d4;--home-cyan-2:#22d3ee;--home-pink:#ec4899;--home-green:#34d399;--home-gold:#fbbf24;background:#08080e;font-family:'Inter','Noto Sans SC','Microsoft YaHei',system-ui,sans-serif}
+body.home-page::before{content:'';position:fixed;inset:0;z-index:-4;background:radial-gradient(ellipse at 18% 35%,rgba(124,58,237,.13),transparent 48%),radial-gradient(ellipse at 82% 12%,rgba(6,182,212,.1),transparent 45%),radial-gradient(ellipse at 55% 86%,rgba(236,72,153,.08),transparent 48%);pointer-events:none}
+body.home-page .bg-grid,body.home-page .bg-scanlines{display:none}
+body.home-page .bg-glow{background:radial-gradient(ellipse at 20% 12%,rgba(124,58,237,.12),transparent 58%),radial-gradient(ellipse at 82% 10%,rgba(6,182,212,.09),transparent 54%);z-index:-3}
+#particles-canvas{position:fixed;inset:0;width:100%;height:100%;z-index:-2;pointer-events:none;opacity:.9}
+body.home-page .nav{background:rgba(8,8,14,.62);border-bottom:1px solid rgba(255,255,255,.08);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
+body.home-page .logo-mark{position:relative;background:linear-gradient(135deg,var(--home-purple),var(--home-cyan));color:transparent;border:0;box-shadow:0 12px 30px rgba(124,58,237,.24);overflow:hidden}
+body.home-page .logo-mark::before{content:'';position:absolute;inset:9px;border:2px solid rgba(255,255,255,.88);border-radius:50%;box-shadow:0 0 0 4px rgba(255,255,255,.08)}
+body.home-page .logo-mark::after{content:'';position:absolute;left:50%;top:50%;width:4px;height:4px;border-radius:50%;background:#fff;box-shadow:-8px -7px 0 rgba(255,255,255,.86),9px 7px 0 rgba(255,255,255,.86);transform:translate(-50%,-50%)}
+body.home-page .logo-text,body.home-page .footer-brand{font-family:var(--font-body);letter-spacing:0;color:#f0f0f5}body.home-page .logo-text .x,body.home-page .footer-brand span[style]{color:var(--home-purple-2)!important}body.home-page .logo-sub{color:var(--home-quiet);letter-spacing:.08em}
+body.home-page .nav-links a{font-family:var(--font-body);letter-spacing:0;color:var(--home-muted)}body.home-page .nav-links a.active,body.home-page .nav-links a:hover{color:#fff;text-shadow:none}body.home-page .nav-links a.active::after{background:linear-gradient(90deg,var(--home-purple),var(--home-cyan));box-shadow:none}
+body.home-page .nav-search{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.08);border-radius:14px}body.home-page .nav-search input{font-family:var(--font-body);color:#fff}body.home-page .search-ico{color:var(--home-quiet)}
+body.home-page .btn-primary,body.home-page .btn-outline,body.home-page .btn-ghost{clip-path:none;border-radius:14px;font-family:var(--font-body);letter-spacing:0;text-transform:none;transition:.22s ease}body.home-page .btn-primary{border:1px solid rgba(255,255,255,.1);background:linear-gradient(135deg,var(--home-purple),var(--home-cyan));color:#fff;box-shadow:0 14px 34px rgba(124,58,237,.22)}body.home-page .btn-primary:hover{transform:translateY(-2px);box-shadow:0 18px 42px rgba(6,182,212,.18)}body.home-page .btn-outline{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.055);color:rgba(255,255,255,.82)}body.home-page .btn-outline:hover,body.home-page .btn-ghost:hover{border-color:rgba(124,58,237,.32);background:rgba(124,58,237,.14);color:#fff;box-shadow:none}
+.home-shell{position:relative;z-index:1;max-width:1440px;margin:0 auto;padding:34px 28px 90px}
+.home-glass,.home-glass-light,.thread-card{background:var(--home-panel);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid var(--home-line);box-shadow:0 24px 70px rgba(0,0,0,.36)}
+.home-glass{border-radius:24px}.home-glass-light{border-radius:18px;background:var(--home-panel-2)}
+.home-hero{min-height:360px;padding:42px;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:28px;align-items:end;margin-bottom:20px}
+.home-badge{display:inline-flex;align-items:center;width:max-content;padding:6px 14px;border-radius:999px;background:rgba(124,58,237,.14);border:1px solid rgba(124,58,237,.25);color:var(--home-purple-2);font-size:12px;font-weight:800;letter-spacing:.08em}
+.hero-copy h1{max-width:780px;margin:18px 0 16px;color:#f0f0f5;font-family:var(--font-body);font-size:clamp(34px,5vw,64px);font-weight:900;line-height:1.06;letter-spacing:0;text-shadow:none}
+.hero-copy h1 span{display:block;background:linear-gradient(135deg,var(--home-purple-2),var(--home-cyan-2),var(--home-pink));-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none}
+.hero-copy p{max-width:720px;margin:0;color:var(--home-muted);font-size:16px;line-height:1.8}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}
+.hero-panel{display:grid;gap:12px}.metric{padding:18px;border-radius:18px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.075)}.metric strong{display:block;font-size:30px;line-height:1;background:linear-gradient(135deg,var(--home-purple-2),var(--home-cyan-2));-webkit-background-clip:text;background-clip:text;color:transparent}.metric span{display:block;margin-top:7px;color:var(--home-quiet);font-size:13px}
+.home-layout{display:grid;grid-template-columns:230px minmax(0,1fr) 300px;gap:20px}.channel-rail,.side-panel{display:grid;align-content:start;gap:14px}.channel-rail{padding:18px}.channel-rail h3,.widget h3{margin:0 0 10px;color:#f0f0f5;font-family:var(--font-body);font-size:15px}.channel-rail a{display:flex;justify-content:space-between;gap:12px;padding:11px 12px;border-radius:12px;color:var(--home-muted);font-weight:650;text-decoration:none}.channel-rail a.active,.channel-rail a:hover{background:rgba(255,255,255,.07);color:#fff}.channel-rail b{color:var(--home-quiet)}
+.coin-card{margin-top:12px;padding:16px;border-radius:16px;background:linear-gradient(135deg,rgba(124,58,237,.18),rgba(6,182,212,.1));border:1px solid rgba(255,255,255,.1)}.coin-card small{display:block;color:var(--home-quiet)}.coin-card strong{display:block;margin:6px 0 12px;font-size:34px;color:#fff}.coin-card a{display:block;text-align:center;padding:9px;border-radius:10px;background:#fff;color:#20153b;font-weight:850;text-decoration:none}
+.feed-panel{display:grid;gap:14px;background:transparent;border:0;border-radius:0;padding:0}.feed-head{display:flex;align-items:end;justify-content:space-between;gap:18px;margin:0;padding:4px 2px 2px}.feed-head h2{margin:8px 0 0;color:#fff;font-size:28px;letter-spacing:0}.feed-tabs{display:flex;gap:8px;margin:0;padding:0;border:0}.feed-tabs .tab{padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.08);color:var(--home-muted);font-family:var(--font-body);font-weight:700;font-size:13px;letter-spacing:0}.feed-tabs .tab.active{color:#fff;border-color:rgba(124,58,237,.3);background:rgba(124,58,237,.16)}.feed-tabs .tab:hover{color:#fff;background:rgba(255,255,255,.08)}
+.feed-list{display:grid;gap:14px}.thread-card{display:grid;grid-template-columns:46px 1fr;gap:14px;padding:18px;border-radius:18px;color:inherit;text-decoration:none;transition:.28s ease}.thread-card:hover{transform:translateY(-4px);border-color:rgba(124,58,237,.32);box-shadow:0 18px 60px rgba(124,58,237,.14)}.thread-card.is-pinned{background:linear-gradient(135deg,rgba(124,58,237,.1),rgba(255,255,255,.035))}.thread-card.is-featured{background:linear-gradient(135deg,rgba(52,211,153,.08),rgba(255,255,255,.035))}
+.thread-avatar{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:900;background:linear-gradient(135deg,var(--home-purple),var(--home-purple-2))}.thread-avatar.blog{background:linear-gradient(135deg,var(--home-cyan),var(--home-green))}.thread-avatar.qa{background:linear-gradient(135deg,var(--home-pink),#f59e0b)}
+.thread-line,.thread-stats{display:flex;gap:10px;flex-wrap:wrap;color:var(--home-quiet);font-size:12px}.feed-badges{display:flex;gap:7px;flex-wrap:wrap;margin:0}.feed-badge{padding:2px 8px;border-radius:6px;font-weight:800;font-family:var(--font-body);font-size:11px;background:rgba(255,255,255,.06);color:var(--home-muted);border:1px solid rgba(255,255,255,.08)}.feed-badge.pin{color:var(--home-purple-2);background:rgba(124,58,237,.16);border-color:rgba(124,58,237,.22)}.feed-badge.feature{color:var(--home-green);background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.18)}.feed-badge.reward{color:var(--home-gold);background:rgba(251,191,36,.12);border-color:rgba(251,191,36,.18)}
+.thread-card h2{margin:8px 0 8px;color:#f0f0f5;font-family:var(--font-body);font-size:20px;font-weight:800;line-height:1.35;letter-spacing:0}.thread-card p{margin:0 0 12px;color:var(--home-muted);font-size:14px;line-height:1.72}.empty{padding:48px 18px;text-align:center;color:var(--home-quiet);border:1px dashed var(--home-line);border-radius:18px;background:rgba(255,255,255,.03)}
+.side-panel{background:transparent;border:0;border-radius:0;padding:0}.widget{padding:18px}.chips,.quick-grid{display:flex;gap:8px;flex-wrap:wrap}.chips span,.quick-grid a{padding:6px 10px;border-radius:9px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07);color:rgba(255,255,255,.62);font-size:13px;text-decoration:none}.quick-grid a:hover{color:#fff;border-color:rgba(124,58,237,.3)}.join-box{padding:18px;border-radius:18px;background:linear-gradient(135deg,rgba(236,72,153,.11),rgba(124,58,237,.09));border:1px solid rgba(236,72,153,.18)}.join-box p,.widget p{margin:0 0 12px;color:var(--home-muted);font-size:14px;line-height:1.75}.btn-loadmore{border-radius:14px;border:1px solid var(--home-line);background:rgba(255,255,255,.06);color:rgba(255,255,255,.82);padding:12px 16px;font-weight:750}
+@media(max-width:1100px){.home-layout{grid-template-columns:1fr}.channel-rail{grid-template-columns:repeat(2,minmax(0,1fr))}.side-panel{grid-template-columns:repeat(3,1fr)}.home-hero{grid-template-columns:1fr}}
+@media(max-width:760px){#particles-canvas{opacity:.48}.home-shell{padding:22px 14px 70px}.home-hero{min-height:0;padding:24px}.hero-panel{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.metric{padding:12px 8px}.metric strong{font-size:22px}.metric span{font-size:11px}.side-panel,.channel-rail{grid-template-columns:1fr}.thread-card{grid-template-columns:1fr}.feed-tabs{display:none}.hero-copy h1{font-size:36px}.nav-search{display:none}}
 </style>
 </head>
-<body>
+<body class="home-page">
+<canvas id="particles-canvas" aria-hidden="true"></canvas>
 <div class="bg-grid"></div><div class="bg-scanlines"></div><div class="bg-glow"></div>
 
 <header class="nav">
   <div class="nav-inner">
     <a href="index.html" class="logo">
-      <span class="logo-mark">◈</span>
-      <span class="logo-text">Node<span class="x">Weave</span></span>
-      <span class="logo-sub">// CYBER COMMUNITY</span>
+      <span class="logo-mark" aria-hidden="true"></span><span class="logo-text">Node<span class="x">Weave</span></span><span class="logo-sub">// GLASS COMMUNITY</span>
     </a>
     <nav class="nav-links">
       <a href="index.html" class="active">动态</a>
@@ -80,68 +74,69 @@
   </div>
 </header>
 
-<section class="home-hero">
-  <div class="hero-copy">
-    <h1>未来已来<span>只是尚未均匀分布</span></h1>
-    <p>NodeWeave 是一个面向开发者、极客与创造者的赛博社区。分享技术、记录思考、发起问答悬赏，也可以在闲聊区交换灵感。</p>
-    <div class="hero-actions">
-      <a class="btn-primary btn-lg" href="boards.html">进入板块广场</a>
-      <a class="btn-outline btn-lg" href="editor.html">撰写内容</a>
-      <a class="btn-outline btn-lg" href="login.html?tab=register" data-auth-guest>加入社区</a>
-    </div>
-  </div>
-  <aside class="hero-card">
-    <h3>社区概览</h3>
-    <div class="line"><span>帖子总数</span><b id="statPosts">--</b></div>
-    <div class="line"><span>开放板块</span><b id="statBoards">--</b></div>
-    <div class="line"><span>我的论坛币</span><b data-user-coins>0</b></div>
-  </aside>
-</section>
-
-<main class="home-layout">
-  <section class="feed-panel">
-    <div class="feed-head">
-      <div class="feed-tabs">
-        <button class="tab active" data-sort="latest">最新</button>
-        <button class="tab" data-sort="hot">热门</button>
-        <button class="tab" data-type="blog">博客</button>
+<div class="home-shell">
+  <section class="home-hero home-glass">
+    <div class="hero-copy">
+      <span class="home-badge">SOFT GLASS COMMUNITY</span>
+      <h1>让高质量讨论<span>自然流动起来</span></h1>
+      <p>NodeWeave 是面向开发者、工具玩家和创造者的柔暗玻璃社区。这里可以沉淀文章、解决问题、发起悬赏，也能用论坛币参与红包与抽奖。</p>
+      <div class="hero-actions">
+        <a class="btn-primary btn-lg" href="boards.html">进入讨论</a>
+        <a class="btn-outline btn-lg" href="editor.html">撰写内容</a>
+        <a class="btn-outline btn-lg" href="login.html?tab=register" data-auth-guest>加入社区</a>
       </div>
-      <a class="btn-ghost" href="editor.html">发布</a>
     </div>
-    <div class="feed-list" id="feedList">
-      <div class="empty">正在加载社区动态...</div>
-    </div>
-    <button class="btn-loadmore" id="btnLoadmore" type="button" style="display:none;margin-top:16px">加载更多</button>
+    <aside class="hero-panel">
+      <div class="metric"><strong id="statPosts">--</strong><span>社区帖子</span></div>
+      <div class="metric"><strong id="statBoards">--</strong><span>开放板块</span></div>
+      <div class="metric"><strong data-user-coins>0</strong><span>我的论坛币</span></div>
+    </aside>
   </section>
 
-  <aside class="side-panel">
-    <div class="widget join-box" data-auth-guest>
-      <h3>加入 NodeWeave</h3>
-      <p>注册后即可发帖、评论、点赞、打赏，后续还会解锁徽章、签到和等级体系。</p>
-      <a class="btn-primary btn-block" href="login.html?tab=register">立即注册</a>
-    </div>
-    <div class="widget join-box" data-auth-user style="display:none">
-      <h3>欢迎回来，<span data-user-name></span></h3>
-      <p>论坛币余额：<strong data-user-coins>0</strong>。去问答区发起悬赏，或者打赏你喜欢的内容。</p>
-      <a class="btn-primary btn-block" href="editor.html">发布新内容</a>
-    </div>
-    <div class="widget">
-      <h3>快速入口</h3>
-      <div class="quick-grid">
-        <a href="board.html?board=qa">问答悬赏</a>
-        <a href="board.html?board=ai">AI 板块</a>
-        <a href="board.html?board=share">福利分享</a>
-        <a href="board.html?board=transfer">中转站</a>
-        <a href="board.html?board=promo">推广专区</a>
-        <a href="board.html?board=chat">娱乐闲聊</a>
+  <main class="home-layout">
+    <aside class="channel-rail home-glass-light">
+      <h3>频道</h3>
+      <a class="active" href="index.html"><span>全部动态</span><b>LIVE</b></a>
+      <a href="board.html?board=ai"><span>AI 工具</span><b>AI</b></a>
+      <a href="board.html?board=qa"><span>悬赏问答</span><b>QA</b></a>
+      <a href="board.html?board=transfer"><span>中转站</span><b>API</b></a>
+      <a href="board.html?board=chat"><span>娱乐闲聊</span><b>CHAT</b></a>
+      <div class="coin-card"><small>我的论坛币</small><strong data-user-coins>0</strong><a href="signin.html">签到领取</a></div>
+    </aside>
+
+    <section class="feed-panel">
+      <div class="feed-head">
+        <div><span class="home-badge">LIVE FEED</span><h2>正在讨论</h2></div>
+        <div class="feed-tabs">
+          <button class="tab active" data-sort="latest">最新</button>
+          <button class="tab" data-sort="hot">热门</button>
+          <button class="tab" data-type="blog">博客</button>
+        </div>
       </div>
-    </div>
-  </aside>
-</main>
+      <div class="feed-list" id="feedList"><div class="empty">正在加载社区动态...</div></div>
+      <button class="btn-loadmore" id="btnLoadmore" type="button" style="display:none;margin-top:16px">加载更多</button>
+    </section>
+
+    <aside class="side-panel">
+      <div class="widget join-box" data-auth-guest>
+        <h3>加入 NodeWeave</h3>
+        <p>注册后即可发帖、评论、点赞、打赏，后续还会解锁徽章、签到和等级体系。</p>
+        <a class="btn-primary btn-block" href="login.html?tab=register">立即注册</a>
+      </div>
+      <div class="widget join-box" data-auth-user style="display:none">
+        <h3>欢迎回来，<span data-user-name></span></h3>
+        <p>论坛币余额：<strong data-user-coins>0</strong>。去问答区发起悬赏，或者打赏你喜欢的内容。</p>
+        <a class="btn-primary btn-block" href="editor.html">发布新内容</a>
+      </div>
+      <div class="widget home-glass-light"><h3>热门标签</h3><div class="chips"><span>AI 安全</span><span>Workers</span><span>D1</span><span>论坛币</span><span>抽奖</span><span>权限</span></div></div>
+      <div class="widget home-glass-light"><h3>快速入口</h3><div class="quick-grid"><a href="board.html?board=qa">问答悬赏</a><a href="board.html?board=ai">AI 板块</a><a href="board.html?board=share">福利分享</a><a href="board.html?board=transfer">中转站</a><a href="board.html?board=promo">推广专区</a><a href="board.html?board=chat">娱乐闲聊</a></div></div>
+    </aside>
+  </main>
+</div>
 
 <footer class="footer">
   <div class="footer-inner">
-    <div class="footer-brand"><span class="logo-mark">◈</span> Node<span style="color:var(--magenta)">Weave</span><span class="footer-copy"> © 2026 · Cyber Community</span></div>
+    <div class="footer-brand"><span class="logo-mark" aria-hidden="true"></span> Node<span style="color:var(--magenta)">Weave</span><span class="footer-copy"> © 2026 · Glass Community</span></div>
     <div class="footer-links">
       <a href="legal/terms.html">用户协议</a>
       <a href="legal/privacy.html">隐私政策</a>
@@ -213,23 +208,29 @@ async function loadFeed(reset) {
       if (post.bounty && !post.accepted_answer_id) badges.push(`<span class="feed-badge reward">悬赏 ${post.bounty}</span>`);
       if (Number(post.lottery_enabled || 0)) badges.push(lotteryBadge(post));
       if (post.accepted_answer_id) badges.push('<span class="feed-badge feature">已解决</span>');
+      const typeLabel = post.type === 'blog' ? '博客' : '帖子';
+      const avatarClass = post.type === 'blog' ? 'blog' : (post.board_id === 'qa' ? 'qa' : '');
+      const avatarText = typeLabel.slice(0, 1);
+      const excerpt = String(post.content || '').replace(/\s+/g, ' ').trim();
       return `
-      <a class="post-card${post.is_pinned ? ' is-pinned' : ''}${post.is_featured ? ' is-featured' : ''}" href="post.html?id=${esc(post.id)}">
-        ${badges.length ? `<div class="feed-badges">${badges.join('')}</div>` : ''}
-        <div class="meta">
-          <span>${post.type === 'blog' ? '博客' : '帖子'}</span>
-          <span>${esc(post.board_id || 'general')}</span>
-          <span>@${esc(post.display_name || post.username || '匿名用户')}</span>
-          <span>${timeAgo(post.created_at)}</span>
-          ${post.bounty ? `<span style="color:#ffd700">悬赏 ${post.bounty}</span>` : ''}
-        </div>
-        <h2>${esc(post.title)}</h2>
-        <p>${esc(String(post.content || '').slice(0, 150))}${String(post.content || '').length > 150 ? '...' : ''}</p>
-        <div class="post-stats">
-          <span>浏览 ${post.view_count || 0}</span>
-          <span>评论 ${post.comment_count || 0}</span>
-          <span>赞 ${post.like_count || 0}</span>
-          <span>评分 ${post.rating_avg ? Number(post.rating_avg).toFixed(1) : '-'}</span>
+      <a class="thread-card${post.is_pinned ? ' is-pinned' : ''}${post.is_featured ? ' is-featured' : ''}" href="post.html?id=${esc(post.id)}">
+        <div class="thread-avatar ${avatarClass}">${esc(avatarText)}</div>
+        <div>
+          <div class="thread-line">
+            <span>${esc(typeLabel)}</span>
+            <span>${esc(post.board_id || 'general')}</span>
+            <span>@${esc(post.display_name || post.username || '匿名用户')}</span>
+            <span>${timeAgo(post.created_at)}</span>
+          </div>
+          <h2>${esc(post.title)}</h2>
+          <p>${esc(excerpt.slice(0, 150))}${excerpt.length > 150 ? '...' : ''}</p>
+          ${badges.length ? `<div class="feed-badges">${badges.join('')}</div>` : ''}
+          <div class="thread-stats">
+            <span>浏览 ${post.view_count || 0}</span>
+            <span>评论 ${post.comment_count || 0}</span>
+            <span>赞 ${post.like_count || 0}</span>
+            <span>评分 ${post.rating_avg ? Number(post.rating_avg).toFixed(1) : '-'}</span>
+          </div>
         </div>
       </a>`;
     }).join('');
@@ -241,7 +242,94 @@ async function loadFeed(reset) {
   }
 }
 
+function initHomeParticles() {
+  const canvas = document.getElementById('particles-canvas');
+  if (!canvas || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const ctx = canvas.getContext('2d');
+  const colors = ['rgba(124,58,237,.72)', 'rgba(6,182,212,.62)', 'rgba(236,72,153,.56)'];
+  const mouse = { x: -9999, y: -9999 };
+  let particles = [];
+  let width = 0;
+  let height = 0;
+  let rafId = 0;
+
+  function resize() {
+    const ratio = Math.min(window.devicePixelRatio || 1, 2);
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = Math.floor(width * ratio);
+    canvas.height = Math.floor(height * ratio);
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    const count = Math.min(88, Math.max(36, Math.floor(width * height / 18000)));
+    particles = Array.from({ length: count }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      vx: (Math.random() - .5) * .34,
+      vy: (Math.random() - .5) * .34,
+      r: Math.random() * 1.8 + .6,
+      color: colors[Math.floor(Math.random() * colors.length)]
+    }));
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
+    particles.forEach((p, index) => {
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x < -20) p.x = width + 20;
+      if (p.x > width + 20) p.x = -20;
+      if (p.y < -20) p.y = height + 20;
+      if (p.y > height + 20) p.y = -20;
+
+      const dx = p.x - mouse.x;
+      const dy = p.y - mouse.y;
+      const distance = Math.hypot(dx, dy);
+      if (distance < 140) {
+        p.x += dx / 220;
+        p.y += dy / 220;
+      }
+
+      ctx.beginPath();
+      ctx.fillStyle = p.color;
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = 10;
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+
+      for (let j = index + 1; j < particles.length; j += 1) {
+        const other = particles[j];
+        const gap = Math.hypot(p.x - other.x, p.y - other.y);
+        if (gap < 118) {
+          ctx.beginPath();
+          ctx.strokeStyle = `rgba(167,139,250,${(1 - gap / 118) * .12})`;
+          ctx.lineWidth = 1;
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(other.x, other.y);
+          ctx.stroke();
+        }
+      }
+    });
+    ctx.shadowBlur = 0;
+    rafId = requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', resize, { passive: true });
+  window.addEventListener('mousemove', event => {
+    mouse.x = event.clientX;
+    mouse.y = event.clientY;
+  }, { passive: true });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) cancelAnimationFrame(rafId);
+    else rafId = requestAnimationFrame(draw);
+  });
+  resize();
+  draw();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  initHomeParticles();
   loadStats();
   loadFeed(true);
   document.querySelectorAll('.feed-tabs .tab').forEach(tab => {
@@ -261,3 +349,4 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
+
