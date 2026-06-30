@@ -633,7 +633,14 @@ async function syncBadgeAchievementSeeds(db) {
 
 let migrated = false;
 
-function shouldRunMigrations(pathname) {
+function shouldRunMigrations(pathname, method = 'GET') {
+  if (method === 'GET') {
+    if (pathname === '/api/health') return false;
+    if (pathname === '/api/site-config/public') return false;
+    if (/^\/api\/boards(?:\/[^/]+)?$/.test(pathname)) return false;
+    if (/^\/api\/posts(?:\/[^/]+)?$/.test(pathname)) return false;
+    if (/^\/api\/announcements(?:\/[^/]+)?$/.test(pathname)) return false;
+  }
   if (pathname.startsWith('/api/')) return true;
   if (pathname === '/sitemap.xml') return true;
   if (pathname === '/post') return true;
@@ -771,7 +778,7 @@ const app = new Hono()
 // Run migrations lazily only for routes that need D1. Static assets should stay fast.
 app.use('*', async (c, next) => {
   const pathname = new URL(c.req.url).pathname;
-  if (!migrated && shouldRunMigrations(pathname)) {
+  if (!migrated && shouldRunMigrations(pathname, c.req.method)) {
     try {
       await runMigrations(c.env.DB);
       migrated = true;

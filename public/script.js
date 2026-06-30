@@ -14,12 +14,23 @@
     if (location.protocol === 'file:' && typeof path === 'string' && path.startsWith('/api/')) {
       path = PUBLIC_ORIGIN + path;
     }
-    const init = Object.assign({ credentials: 'include' }, options || {});
+    const sourceOptions = options || {};
+    const init = Object.assign({ credentials: 'include' }, sourceOptions);
+    const timeoutMs = Number(sourceOptions.timeoutMs || 15000);
+    let timer = 0;
+    if (!init.signal && timeoutMs > 0) {
+      const controller = new AbortController();
+      init.signal = controller.signal;
+      timer = setTimeout(() => controller.abort(), timeoutMs);
+    }
     init.headers = Object.assign({}, init.headers || {});
     if (init.body && !(init.body instanceof FormData) && !init.headers['Content-Type']) {
       init.headers['Content-Type'] = 'application/json';
     }
-    return fetch(path, init);
+    delete init.timeoutMs;
+    return fetch(path, init).finally(() => {
+      if (timer) clearTimeout(timer);
+    });
   }
 
   async function apiJson(path, options) {
