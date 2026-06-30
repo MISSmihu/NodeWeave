@@ -648,6 +648,12 @@ function shouldRunMigrations(pathname, method = 'GET') {
   return false;
 }
 
+function shouldAutoMigrate(env) {
+  const autoMigrate = String(env.AUTO_MIGRATE || '').trim().toLowerCase();
+  if (autoMigrate === '1' || autoMigrate === 'true' || autoMigrate === 'yes') return true;
+  return String(env.ENV || '').trim().toLowerCase() !== 'production';
+}
+
 function siteBaseUrl(c) {
   const configured = String(c.env.SITE_URL || '').trim();
   if (configured && !configured.includes('localhost')) return configured.replace(/\/+$/, '');
@@ -778,7 +784,7 @@ const app = new Hono()
 // Run migrations lazily only for routes that need D1. Static assets should stay fast.
 app.use('*', async (c, next) => {
   const pathname = new URL(c.req.url).pathname;
-  if (!migrated && shouldRunMigrations(pathname, c.req.method)) {
+  if (!migrated && shouldAutoMigrate(c.env) && shouldRunMigrations(pathname, c.req.method)) {
     try {
       await runMigrations(c.env.DB);
       migrated = true;
