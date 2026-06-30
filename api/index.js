@@ -633,6 +633,14 @@ async function syncBadgeAchievementSeeds(db) {
 
 let migrated = false;
 
+function shouldRunMigrations(pathname) {
+  if (pathname.startsWith('/api/')) return true;
+  if (pathname === '/sitemap.xml') return true;
+  if (pathname === '/post') return true;
+  if (pathname === '/post.html') return true;
+  return false;
+}
+
 function siteBaseUrl(c) {
   const configured = String(c.env.SITE_URL || '').trim();
   if (configured && !configured.includes('localhost')) return configured.replace(/\/+$/, '');
@@ -760,9 +768,10 @@ async function renderPostSeoHtml(c) {
 
 const app = new Hono()
 
-// Run migrations on first request
+// Run migrations lazily only for routes that need D1. Static assets should stay fast.
 app.use('*', async (c, next) => {
-  if (!migrated) {
+  const pathname = new URL(c.req.url).pathname;
+  if (!migrated && shouldRunMigrations(pathname)) {
     try {
       await runMigrations(c.env.DB);
       migrated = true;
