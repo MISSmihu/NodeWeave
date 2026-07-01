@@ -635,6 +635,7 @@ let migrated = false;
 const SEO_SITE_NAME = 'NodeWeave';
 const SEO_SITE_DESC = 'NodeWeave 是面向开发者、工具玩家和创造者的中文社区，沉淀技术文章、问答、悬赏、资源分享与社区讨论。';
 const PUBLIC_BOARD_SLUGS = ['general', 'qa', 'tech', 'dev', 'ai', 'blog', 'chat', 'promo', 'share', 'transfer'];
+const STATIC_LASTMOD = Date.UTC(2026, 6, 1);
 
 function shouldRunMigrations(pathname, method = 'GET') {
   if (method === 'GET') {
@@ -704,7 +705,6 @@ async function fetchAsset(c, pathname) {
 
 async function renderSitemap(c) {
   const base = siteBaseUrl(c);
-  const now = Date.now();
   const staticPages = [
     { path: '', priority: '1.0', changefreq: 'daily' },
     { path: 'boards.html', priority: '0.8', changefreq: 'daily' },
@@ -726,13 +726,13 @@ async function renderSitemap(c) {
   const urls = [
     ...staticPages.map(page => ({
       loc: page.path ? absoluteUrl(base, page.path) : `${base}/`,
-      lastmod: isoDate(now),
+      lastmod: isoDate(STATIC_LASTMOD),
       changefreq: page.changefreq,
       priority: page.priority,
     })),
     ...PUBLIC_BOARD_SLUGS.map(slug => ({
-      loc: absoluteUrl(base, `board.html?board=${encodeURIComponent(slug)}`),
-      lastmod: isoDate(now),
+      loc: absoluteUrl(base, `board/${encodeURIComponent(slug)}`),
+      lastmod: isoDate(STATIC_LASTMOD),
       changefreq: 'daily',
       priority: slug === 'general' ? '0.7' : '0.6',
     })),
@@ -933,6 +933,8 @@ app.get('*', async (c) => {
   }
   if (url.pathname === '/') {
     url.pathname = '/index.html';
+  } else if (/^\/board\/[^/]+\/?$/.test(url.pathname)) {
+    url.pathname = '/board.html';
   } else if (!url.pathname.includes('.') && !url.pathname.endsWith('/')) {
     url.pathname = `${url.pathname}.html`;
   }

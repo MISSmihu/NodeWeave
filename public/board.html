@@ -112,7 +112,8 @@
 
 <script src="script.js"></script>
 <script>
-const slug = new URLSearchParams(location.search).get('board') || 'general';
+const pathBoard = location.pathname.match(/\/board\/([^/]+)\/?$/)?.[1];
+const slug = pathBoard ? decodeURIComponent(pathBoard) : (new URLSearchParams(location.search).get('board') || 'general');
 let currentSort = 'latest';
 let currentUser = null;
 let boardInfo = null;
