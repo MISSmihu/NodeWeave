@@ -12,6 +12,10 @@ import { checkAchievementsForUser } from './achievements.js';
 
 const auth = new Hono();
 
+function emailConfigured(env) {
+  return Boolean(env.RESEND_API_KEY && (env.EMAIL_FROM || env.RESEND_FROM));
+}
+
 async function insertVerificationToken(db, { id, userId, type, expiresAt, createdAt }) {
   try {
     await db.prepare(
@@ -95,9 +99,11 @@ auth.post('/register', async (c) => {
 
   // 7. 生成验证 token 并发送邮件
   if (siteConfig && siteConfig.email_verification_required) {
+    if (!emailConfigured(c.env)) return err(c, CODE.SERVER_ERROR, '邮件服务未配置，暂时无法开启邮箱验证注册', 500);
     const vToken = generateId(32);
     await insertVerificationToken(c.env.DB, { id: vToken, userId, type: 'email_verify', expiresAt: now + 3600000, createdAt: now });
-    await sendVerificationEmail(email, vToken, c.env);
+    const sent = await sendVerificationEmail(email, vToken, c.env);
+    if (!sent) return err(c, CODE.SERVER_ERROR, '验证邮件发送失败，请稍后再试', 500);
     return ok(c, { message: '验证邮件已发送，请查收邮箱' }, 201);
   }
 
@@ -146,7 +152,9 @@ auth.post('/send-verification', async (c) => {
   const vToken = generateId(32);
   await insertVerificationToken(c.env.DB, { id: vToken, userId: user.id, type: 'email_verify', expiresAt: Date.now() + 3600000, createdAt: Date.now() });
 
-  await sendVerificationEmail(email, vToken, c.env);
+  if (!emailConfigured(c.env)) return err(c, CODE.SERVER_ERROR, '邮件服务未配置，暂时无法发送验证邮件', 500);
+  const sent = await sendVerificationEmail(email, vToken, c.env);
+  if (!sent) return err(c, CODE.SERVER_ERROR, '验证邮件发送失败，请稍后再试', 500);
   return ok(c, { message: '验证邮件已重新发送' });
 });
 
@@ -204,7 +212,9 @@ auth.post('/forgot-password', async (c) => {
   const rToken = generateId(32);
   await insertVerificationToken(c.env.DB, { id: rToken, userId: user.id, type: 'password_reset', expiresAt: Date.now() + 3600000, createdAt: Date.now() });
 
-  await sendPasswordResetEmail(email, rToken, c.env);
+  if (!emailConfigured(c.env)) return err(c, CODE.SERVER_ERROR, '邮件服务未配置，暂时无法发送重置邮件', 500);
+  const sent = await sendPasswordResetEmail(email, rToken, c.env);
+  if (!sent) return err(c, CODE.SERVER_ERROR, '重置邮件发送失败，请稍后再试', 500);
   return ok(c, { message: '如果该邮箱已注册，重置链接已发送' });
 });
 
@@ -236,7 +246,7 @@ auth.post('/reset-password', async (c) => {
 async function sendVerificationEmail(to, token, env) {
   const siteUrl = env.SITE_URL || 'https://nodeweave.xyz';
   const link = `${siteUrl}/verify-email.html?token=${token}`;
-  await sendEmail(to, 'NodeWeave 邮箱验证', `
+  return await sendEmail(to, 'NodeWeave 邮箱验证', `
     <h2>欢迎加入 NodeWeave 赛博社区</h2>
     <p>请点击下方链接验证您的邮箱（1小时内有效）：</p>
     <p><a href="${link}">${link}</a></p>
@@ -248,7 +258,7 @@ async function sendVerificationEmail(to, token, env) {
 async function sendPasswordResetEmail(to, token, env) {
   const siteUrl = env.SITE_URL || 'https://nodeweave.xyz';
   const link = `${siteUrl}/forgot-password.html?token=${token}`;
-  await sendEmail(to, 'NodeWeave 密码重置', `
+  return await sendEmail(to, 'NodeWeave 密码重置', `
     <h2>密码重置请求</h2>
     <p>请点击下方链接重置密码（1小时内有效）：</p>
     <p><a href="${link}">${link}</a></p>
@@ -258,22 +268,29 @@ async function sendPasswordResetEmail(to, token, env) {
 
 async function sendEmail(to, subject, html, env) {
   const apiKey = env.RESEND_API_KEY;
-  if (!apiKey) {
-    console.warn('RESEND_API_KEY not configured. Email not sent.');
+  const from = env.EMAIL_FROM || env.RESEND_FROM;
+  if (!apiKey || !from) {
+    console.warn('Email service not configured. Email not sent.');
     console.log(`[DEV] Email to ${to}: ${subject}`);
-    return;
+    return false;
   }
   try {
-    await fetch('https://api.resend.com/emails', {
+    const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: 'NodeWeave <NodeWeave@xmhcloud.com>',
+        from,
         to, subject, html,
       }),
     });
+    if (!res.ok) {
+      console.error('Failed to send email:', await res.text().catch(() => res.statusText));
+      return false;
+    }
+    return true;
   } catch(e) {
     console.error('Failed to send email:', e);
+    return false;
   }
 }
 

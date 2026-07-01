@@ -94,7 +94,8 @@
       <div class="toggle-row"><div class="info"><div class="name">邀请码注册</div><div class="desc">开启后邮箱注册必须填写有效邀请码（OAuth 注册按 GitHub 年限规则豁免）</div></div><label class="toggle"><input type="checkbox" id="cfg_invite_code_required" onchange="markChanged()"><span class="slider"></span></label></div>
       <div class="toggle-row"><div class="info"><div class="name">用户邀请入口</div><div class="desc">开启后普通用户可在邀请中心生成自己的邀请注册链接</div></div><label class="toggle"><input type="checkbox" id="cfg_user_invite_enabled" onchange="markChanged()"><span class="slider"></span></label></div>
       <div class="input-row"><div class="info"><div class="name">每月邀请次数</div><div class="desc">每个用户每月可生成的邀请码数量，默认 9 次</div></div><input type="number" id="cfg_user_invite_monthly_limit" min="0" value="9" onchange="markChanged()"></div>
-      <div class="toggle-row"><div class="info"><div class="name">邮箱验证强制</div><div class="desc">开启后未验证邮箱的用户无法登录</div></div><label class="toggle"><input type="checkbox" id="cfg_email_verification_required" onchange="markChanged()"><span class="slider"></span></label></div>
+      <div class="toggle-row"><div class="info"><div class="name">邮件服务</div><div class="desc" id="emailServiceStatus">正在检查邮件投递配置...</div></div><span class="tag" id="emailServiceBadge">--</span></div>
+      <div class="toggle-row"><div class="info"><div class="name">邮箱验证强制</div><div class="desc">开启后未验证邮箱的用户无法登录。需先配置 RESEND_API_KEY 和 EMAIL_FROM。</div></div><label class="toggle"><input type="checkbox" id="cfg_email_verification_required" onchange="markChanged()"><span class="slider"></span></label></div>
     </div>
 
     <div class="page-section">
@@ -209,6 +210,7 @@ async function loadConfig() {
     setToggle('cfg_user_invite_enabled', c.user_invite_enabled ?? 1);
     setValue('cfg_user_invite_monthly_limit', c.user_invite_monthly_limit ?? 9);
     setToggle('cfg_email_verification_required', c.email_verification_required);
+    renderEmailServiceStatus(c.email_service_configured);
 
     // 实名
     document.getElementById('cfg_real_name_mode').value = c.real_name_mode || 'off';
@@ -256,6 +258,15 @@ function setToggle(id, val) {
 
 function setValue(id, val) {
   document.getElementById(id).value = val;
+}
+
+function renderEmailServiceStatus(configured) {
+  const status = document.getElementById('emailServiceStatus');
+  const badge = document.getElementById('emailServiceBadge');
+  if (!status || !badge) return;
+  status.textContent = configured ? '已配置，可发送验证邮件和密码重置邮件。' : '未配置。请先设置 RESEND_API_KEY 和 EMAIL_FROM，再开启邮箱验证强制。';
+  badge.textContent = configured ? '已配置' : '未配置';
+  badge.className = 'tag ' + (configured ? 'tag-cyan' : 'tag-magenta');
 }
 
 function markChanged() {
@@ -321,6 +332,10 @@ function updateRewardUi() {
 
 async function saveAll() {
   updateRewardUi();
+  if (changedKeys.has('cfg_email_verification_required') && document.getElementById('cfg_email_verification_required').checked && originalConfig.email_service_configured === false) {
+    alert('邮件服务未配置，不能开启邮箱验证强制。请先配置 RESEND_API_KEY 和 EMAIL_FROM。');
+    return;
+  }
   const changed = {};
   for (const id of changedKeys) {
     const key = id.replace('cfg_', '');

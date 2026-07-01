@@ -36,9 +36,9 @@ async function requireAdmin(c, next) {
 siteConfigAdmin.get('/', requireAdmin, async (c) => {
   try {
     const cfg = await c.env.DB.prepare('SELECT * FROM site_config WHERE id=1').first();
-    if (!cfg) return ok(c, defaultConfig());
-    return ok(c, cfg);
-  } catch(e) { return ok(c, defaultConfig()); }
+    const merged = { ...(cfg || defaultConfig()), email_service_configured: Boolean(c.env.RESEND_API_KEY && (c.env.EMAIL_FROM || c.env.RESEND_FROM)) };
+    return ok(c, merged);
+  } catch(e) { return ok(c, { ...defaultConfig(), email_service_configured: Boolean(c.env.RESEND_API_KEY && (c.env.EMAIL_FROM || c.env.RESEND_FROM)) }); }
 });
 
 // PUT /api/admin/site-config - 修改配置
