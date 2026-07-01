@@ -920,7 +920,18 @@ app.get('/robots.txt', (c) => {
   });
 });
 
-app.get('/sitemap.xml', renderSitemap);
+app.get('/sitemap.xml', async (c) => {
+  const response = await fetchAsset(c, '/sitemap.xml');
+  if (response.ok) {
+    const headers = new Headers(response.headers);
+    headers.set('content-type', 'application/xml; charset=utf-8');
+    headers.set('cache-control', 'public, max-age=3600');
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+  }
+  return renderSitemap(c);
+});
+
+app.get('/sitemap-dynamic.xml', renderSitemap);
 
 app.get('/post', renderPostSeoHtml);
 
