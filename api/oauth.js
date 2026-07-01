@@ -40,6 +40,16 @@ function boolEnabled(value) {
   return value === 1 || value === true || value === '1' || value === 'true';
 }
 
+function normalizeUsername(value, fallbackPrefix = 'user') {
+  const clean = String(value || '')
+    .trim()
+    .replace(/[^a-zA-Z0-9_]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 20);
+  return clean || `${fallbackPrefix}_${generateId(8)}`;
+}
+
 function oauthEmail(provider, providerUid, email) {
   return email || `${provider}_${providerUid}@oauth.local`;
 }
@@ -69,7 +79,7 @@ async function ensureRegistrationOpen(c) {
 async function createOAuthUserWithMeta(c, { provider, provider_uid, username, email, displayName, avatar }) {
   const userId = 'u_' + generateId();
   const now = Date.now();
-  const safeUsername = username || `user_${generateId(8)}`;
+  const safeUsername = normalizeUsername(username, provider);
   const existingName = await c.env.DB.prepare('SELECT id FROM users WHERE username=?').bind(safeUsername).first();
   const finalUsername = existingName ? `${safeUsername}_${generateId(4)}` : safeUsername;
   const safeEmail = oauthEmail(provider, provider_uid, email);
@@ -103,9 +113,40 @@ async function validateInviteCode(c, inviteCode, cfg) {
   return invite;
 }
 
+async function requireOAuthProvider(c, provider, requiredSecrets) {
+  const cfg = await siteConfig(c);
+  if (!boolEnabled(cfg[`oauth_${provider}_enabled`])) {
+    return { cfg, response: c.text(`${provider} OAuth 未开启`, 403) };
+  }
+  const missing = requiredSecrets.filter(key => !String(c.env[key] || '').trim());
+  if (missing.length) {
+    return { cfg, response: c.text(`${provider} OAuth 未配置：${missing.join(', ')}`, 503) };
+  }
+  return { cfg, response: null };
+}
+
+async function fetchGitHubPrimaryEmail(accessToken) {
+  try {
+    const rows = await fetch('https://api.github.com/user/emails', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: 'application/vnd.github+json',
+        'User-Agent': 'NodeWeave',
+      },
+    }).then(r => r.ok ? r.json() : []);
+    if (!Array.isArray(rows)) return '';
+    const primary = rows.find(item => item && item.primary && item.verified && item.email);
+    const verified = rows.find(item => item && item.verified && item.email);
+    return String((primary || verified)?.email || '').trim();
+  } catch (error) {
+    return '';
+  }
+}
+
 oauth.get('/github/authorize', async (c) => {
+  const check = await requireOAuthProvider(c, 'github', ['GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET']);
+  if (check.response) return check.response;
   const clientId = c.env.GITHUB_CLIENT_ID;
-  if (!clientId) return c.text('GitHub OAuth 未配置', 503);
 
   const state = crypto.randomUUID();
   setStateCookie(c, state);
@@ -117,7 +158,10 @@ oauth.get('/github/authorize', async (c) => {
 oauth.get('/github/callback', async (c) => {
   const { code, state } = c.req.query();
   if (!state || state !== getCookie(c, 'oauth_state')) return err(c, CODE.BAD_REQUEST, 'OAuth 状态校验失败', 403);
+  const check = await requireOAuthProvider(c, 'github', ['GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET']);
+  if (check.response) return check.response;
 
+  const redirectUri = `${SITE_URL(c.env)}/api/oauth/github/callback`;
   const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
     method: 'POST',
     headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
@@ -125,6 +169,7 @@ oauth.get('/github/callback', async (c) => {
       client_id: c.env.GITHUB_CLIENT_ID,
       client_secret: c.env.GITHUB_CLIENT_SECRET,
       code,
+      redirect_uri: redirectUri,
     }),
   }).then(r => r.json());
   if (!tokenRes.access_token) return err(c, CODE.UNAUTHORIZED, 'GitHub 授权失败', 401);
@@ -133,6 +178,7 @@ oauth.get('/github/callback', async (c) => {
     headers: { Authorization: `Bearer ${tokenRes.access_token}`, 'User-Agent': 'NodeWeave' },
   }).then(r => r.json());
   if (!ghUser.id) return err(c, CODE.UNAUTHORIZED, '获取 GitHub 用户信息失败', 401);
+  const ghEmail = String(ghUser.email || '').trim() || await fetchGitHubPrimaryEmail(tokenRes.access_token);
 
   const exist = await c.env.DB.prepare(
     'SELECT user_id FROM oauth_accounts WHERE provider=? AND provider_uid=?'
@@ -151,7 +197,7 @@ oauth.get('/github/callback', async (c) => {
       provider_uid: String(ghUser.id),
       name: ghUser.login,
       avatar: ghUser.avatar_url,
-      email: ghUser.email || '',
+      email: ghEmail,
       github_created_at: ghUser.created_at,
     });
     return c.redirect(SITE_URL(c.env) + '/oauth/complete.html', 302);
@@ -161,7 +207,7 @@ oauth.get('/github/callback', async (c) => {
     provider: 'github',
     provider_uid: String(ghUser.id),
     username: ghUser.login,
-    email: ghUser.email || '',
+    email: ghEmail,
     displayName: ghUser.name || ghUser.login,
     avatar: ghUser.avatar_url,
   });

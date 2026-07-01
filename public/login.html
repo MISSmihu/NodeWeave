@@ -131,9 +131,9 @@
     <div class="auth-divider"><span>OR</span></div>
 
     <div class="oauth-btns">
-      <button id="oauthGithub" style="display:none">GitHub</button>
-      <button id="oauthQQ" style="display:none">QQ</button>
-      <button id="oauthGoogle" style="display:none">Google</button>
+      <button id="oauthGithub" style="display:none">使用 GitHub 登录</button>
+      <button id="oauthQQ" style="display:none">使用 QQ 登录</button>
+      <button id="oauthGoogle" style="display:none">使用 Google 登录</button>
     </div>
   </div>
 </div>
@@ -231,9 +231,9 @@ async function loadConfig() {
     const json = await res.json();
     if (json.code !== 0) return;
     const cfg = json.data;
-    if (cfg.oauth_github_enabled) document.getElementById('oauthGithub').style.display = '';
-    if (cfg.oauth_qq_enabled) document.getElementById('oauthQQ').style.display = '';
-    if (cfg.oauth_google_enabled) document.getElementById('oauthGoogle').style.display = '';
+    if (cfg.oauth_github_enabled && cfg.oauth_github_configured) document.getElementById('oauthGithub').style.display = '';
+    if (cfg.oauth_qq_enabled && cfg.oauth_qq_configured) document.getElementById('oauthQQ').style.display = '';
+    if (cfg.oauth_google_enabled && cfg.oauth_google_configured) document.getElementById('oauthGoogle').style.display = '';
     if (cfg.invite_code_required || inviteFromUrl) document.getElementById('inviteCodeGroup').style.display = '';
     if (!cfg.registration_enabled) {
       document.querySelector('.tab-btn[data-tab="register"]').style.display = 'none';
