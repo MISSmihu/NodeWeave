@@ -632,6 +632,9 @@ async function syncBadgeAchievementSeeds(db) {
 }
 
 let migrated = false;
+const SEO_SITE_NAME = 'NodeWeave';
+const SEO_SITE_DESC = 'NodeWeave 是面向开发者、工具玩家和创造者的中文社区，沉淀技术文章、问答、悬赏、资源分享与社区讨论。';
+const PUBLIC_BOARD_SLUGS = ['general', 'qa', 'tech', 'dev', 'ai', 'blog', 'chat', 'promo', 'share', 'transfer'];
 
 function shouldRunMigrations(pathname, method = 'GET') {
   if (method === 'GET') {
@@ -674,6 +677,15 @@ function escapeXml(value) {
   return escapeHtml(value);
 }
 
+function isoDate(value) {
+  const time = Number(value || Date.now());
+  return new Date(Number.isFinite(time) && time > 0 ? time : Date.now()).toISOString();
+}
+
+function absoluteUrl(base, path) {
+  return `${base}/${String(path || '').replace(/^\/+/, '')}`;
+}
+
 function plainText(value, maxLength = 180) {
   const text = String(value || '')
     .replace(/!\[[^\]]*]\([^)]*\)/g, '')
@@ -692,33 +704,50 @@ async function fetchAsset(c, pathname) {
 
 async function renderSitemap(c) {
   const base = siteBaseUrl(c);
-  const staticPages = ['', 'boards.html', 'blog.html', 'search.html', 'announcements.html', 'levels.html'];
+  const now = Date.now();
+  const staticPages = [
+    { path: '', priority: '1.0', changefreq: 'daily' },
+    { path: 'boards.html', priority: '0.8', changefreq: 'daily' },
+    { path: 'blog.html', priority: '0.8', changefreq: 'daily' },
+    { path: 'announcements.html', priority: '0.6', changefreq: 'weekly' },
+    { path: 'levels.html', priority: '0.5', changefreq: 'weekly' },
+  ];
   let posts = [];
   try {
     const rows = await c.env.DB.prepare(
-      `SELECT id, updated_at, created_at
+      `SELECT id, type, board_id, comment_count, updated_at, created_at
          FROM posts
         WHERE COALESCE(is_hidden,0)=0
         ORDER BY COALESCE(updated_at, created_at) DESC
-        LIMIT 500`
+        LIMIT 1000`
     ).all();
     posts = rows.results || [];
   } catch (error) {}
   const urls = [
     ...staticPages.map(page => ({
-      loc: page ? `${base}/${page}` : `${base}/`,
-      lastmod: new Date().toISOString(),
+      loc: page.path ? absoluteUrl(base, page.path) : `${base}/`,
+      lastmod: isoDate(now),
+      changefreq: page.changefreq,
+      priority: page.priority,
+    })),
+    ...PUBLIC_BOARD_SLUGS.map(slug => ({
+      loc: absoluteUrl(base, `board.html?board=${encodeURIComponent(slug)}`),
+      lastmod: isoDate(now),
+      changefreq: 'daily',
+      priority: slug === 'general' ? '0.7' : '0.6',
     })),
     ...posts.map(post => ({
-      loc: `${base}/post.html?id=${encodeURIComponent(post.id)}`,
-      lastmod: new Date(Number(post.updated_at || post.created_at || Date.now())).toISOString(),
+      loc: absoluteUrl(base, `post.html?id=${encodeURIComponent(post.id)}`),
+      lastmod: isoDate(post.updated_at || post.created_at),
+      changefreq: Number(post.comment_count || 0) > 0 ? 'weekly' : 'monthly',
+      priority: post.type === 'blog' ? '0.8' : '0.7',
     })),
   ];
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    urls.map(item => `  <url><loc>${escapeXml(item.loc)}</loc><lastmod>${escapeXml(item.lastmod)}</lastmod></url>`).join('\n') +
+    urls.map(item => `  <url><loc>${escapeXml(item.loc)}</loc><lastmod>${escapeXml(item.lastmod)}</lastmod><changefreq>${escapeXml(item.changefreq)}</changefreq><priority>${escapeXml(item.priority)}</priority></url>`).join('\n') +
     `\n</urlset>`;
-  return new Response(xml, { headers: { 'content-type': 'application/xml; charset=utf-8' } });
+  return new Response(xml, { headers: { 'content-type': 'application/xml; charset=utf-8', 'cache-control': 'public, max-age=900' } });
 }
 
 async function renderPostSeoHtml(c) {
@@ -726,16 +755,25 @@ async function renderPostSeoHtml(c) {
   const postId = url.searchParams.get('id');
   if (!postId) return fetchAsset(c, '/post.html');
 
-  const [assetResponse, post] = await Promise.all([
+  const [assetResponse, post, commentsRows] = await Promise.all([
     fetchAsset(c, '/post.html'),
     c.env.DB.prepare(
       `SELECT p.id, p.title, p.content, p.type, p.board_id, p.created_at, p.updated_at,
+              p.view_count, p.like_count, p.comment_count,
               COALESCE(NULLIF(p.author_id,''), p.user_id) AS author_id,
               u.username, u.display_name
          FROM posts p
          LEFT JOIN users u ON COALESCE(NULLIF(p.author_id,''), p.user_id)=u.id
         WHERE p.id=? AND COALESCE(p.is_hidden,0)=0`
     ).bind(postId).first().catch(() => null),
+    c.env.DB.prepare(
+      `SELECT c.id, c.content, c.created_at, u.username, u.display_name
+         FROM comments c
+         LEFT JOIN users u ON COALESCE(NULLIF(c.author_id,''), c.user_id)=u.id
+        WHERE c.post_id=? AND COALESCE(c.is_hidden,0)=0
+        ORDER BY c.created_at ASC
+        LIMIT 8`
+    ).bind(postId).all().catch(() => ({ results: [] })),
   ]);
   if (!post || !assetResponse.ok) return assetResponse;
 
@@ -743,37 +781,50 @@ async function renderPostSeoHtml(c) {
   const base = siteBaseUrl(c);
   const canonical = `${base}/post.html?id=${encodeURIComponent(post.id)}`;
   const title = `${post.title || '内容详情'} // NodeWeave`;
+  const fullText = plainText(post.content, 2600);
   const description = plainText(post.content, 180) || 'NodeWeave 赛博社区内容详情。';
   const author = post.display_name || post.username || 'NodeWeave 用户';
+  const comments = commentsRows.results || [];
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': post.type === 'blog' ? 'BlogPosting' : 'DiscussionForumPosting',
     headline: post.title,
     description,
+    articleBody: fullText,
     author: { '@type': 'Person', name: author },
     datePublished: new Date(Number(post.created_at || Date.now())).toISOString(),
     dateModified: new Date(Number(post.updated_at || post.created_at || Date.now())).toISOString(),
     mainEntityOfPage: canonical,
+    interactionStatistic: [
+      { '@type': 'InteractionCounter', interactionType: 'https://schema.org/ViewAction', userInteractionCount: Number(post.view_count || 0) },
+      { '@type': 'InteractionCounter', interactionType: 'https://schema.org/LikeAction', userInteractionCount: Number(post.like_count || 0) },
+      { '@type': 'InteractionCounter', interactionType: 'https://schema.org/CommentAction', userInteractionCount: Number(post.comment_count || 0) },
+    ],
   };
   const jsonLdText = JSON.stringify(jsonLd).replace(/</g, '\\u003c');
   const meta = [
     `<title>${escapeHtml(title)}</title>`,
     `<meta name="description" content="${escapeHtml(description)}">`,
+    `<meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1">`,
     `<link rel="canonical" href="${escapeHtml(canonical)}">`,
     `<meta property="og:type" content="article">`,
     `<meta property="og:title" content="${escapeHtml(post.title)}">`,
     `<meta property="og:description" content="${escapeHtml(description)}">`,
     `<meta property="og:url" content="${escapeHtml(canonical)}">`,
+    `<meta property="og:site_name" content="${SEO_SITE_NAME}">`,
     `<meta name="twitter:card" content="summary">`,
     `<script type="application/ld+json">${jsonLdText}</script>`,
   ].join('\n');
-  const article = `<noscript><article><h1>${escapeHtml(post.title)}</h1><p>${escapeHtml(description)}</p><p>作者：${escapeHtml(author)} · 板块：${escapeHtml(post.board_id || 'general')}</p></article></noscript>`;
+  const commentsHtml = comments.length
+    ? `<section><h2>讨论</h2>${comments.map(comment => `<article><h3>${escapeHtml(comment.display_name || comment.username || 'NodeWeave 用户')}</h3><p>${escapeHtml(plainText(comment.content, 500))}</p></article>`).join('')}</section>`
+    : '';
+  const article = `<noscript><main><article><h1>${escapeHtml(post.title)}</h1><p>作者：${escapeHtml(author)} · 板块：${escapeHtml(post.board_id || 'general')} · ${escapeHtml(new Date(Number(post.created_at || Date.now())).toLocaleDateString('zh-CN'))}</p><p>${escapeHtml(fullText || description)}</p>${commentsHtml}</article></main></noscript>`;
   return new Response(
     html
       .replace(/<title>.*?<\/title>/i, '')
       .replace('</head>', `${meta}\n</head>`)
       .replace('<body>', `<body>\n${article}`),
-    { headers: { 'content-type': 'text/html; charset=utf-8' } }
+    { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=300' } }
   );
 }
 
@@ -853,8 +904,19 @@ app.get('/api/health', (c) => c.json({ code: 0, data: { status: 'online', time: 
 
 app.get('/robots.txt', (c) => {
   const base = siteBaseUrl(c);
-  return new Response(`User-agent: *\nAllow: /\nSitemap: ${base}/sitemap.xml\n`, {
-    headers: { 'content-type': 'text/plain; charset=utf-8' },
+  return new Response([
+    'User-agent: *',
+    'Allow: /',
+    'Disallow: /admin/',
+    'Disallow: /account/',
+    'Disallow: /api/',
+    'Disallow: /login.html',
+    'Disallow: /register.html',
+    'Disallow: /editor.html',
+    `Sitemap: ${base}/sitemap.xml`,
+    '',
+  ].join('\n'), {
+    headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=3600' },
   });
 });
 
