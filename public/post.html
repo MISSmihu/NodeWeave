@@ -7,8 +7,16 @@
 <link rel="stylesheet" href="style.css">
 <style id="customStyles"></style>
 <style>
-.post-page{max-width:920px;margin:0 auto;padding:82px 24px 110px;position:relative;z-index:1}
-.post-shell{background:rgba(18,18,30,.78);border:1px solid var(--border);border-radius:14px;padding:26px;box-shadow:0 22px 80px rgba(0,0,0,.22)}
+.post-page{max-width:min(1620px,calc(100vw - 56px));margin:0 auto;padding:88px 28px 120px;position:relative;z-index:1}
+.post-shell{background:linear-gradient(135deg,rgba(124,58,237,.08),rgba(6,182,212,.045)),rgba(255,255,255,.04);border:1px solid var(--border);border-radius:24px;padding:28px;box-shadow:0 28px 90px rgba(0,0,0,.30);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
+.post-layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:24px;align-items:start}
+.post-main{min-width:0}
+.post-side{position:sticky;top:86px;display:grid;gap:14px}
+.side-card{border:1px solid var(--border);border-radius:20px;background:rgba(0,0,0,.22);padding:18px;box-shadow:0 18px 48px rgba(0,0,0,.18)}
+.side-card h3{margin:0 0 12px;color:#fff;font-size:15px;font-weight:900;font-family:var(--font-body)}
+.author-box{display:grid;grid-template-columns:54px minmax(0,1fr);gap:12px;align-items:center}
+.author-avatar{width:54px;height:54px;border-radius:18px;display:grid;place-items:center;background:linear-gradient(135deg,var(--purple),var(--cyan));color:#fff;font-weight:900;font-size:20px;box-shadow:0 16px 34px rgba(124,58,237,.22)}
+.author-name{font-weight:900;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.author-meta{margin-top:3px;color:var(--text-mute);font-size:12px}.side-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.side-stat{padding:12px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07)}.side-stat span{display:block;color:var(--text-mute);font-size:11px}.side-stat strong{display:block;margin-top:4px;color:#fff;font-size:18px}.side-actions{display:grid;gap:8px}.side-actions button,.side-actions a{display:flex;align-items:center;justify-content:center;min-height:38px;border:1px solid var(--border);border-radius:13px;background:rgba(255,255,255,.055);color:rgba(255,255,255,.82);font-weight:800;text-decoration:none}.side-actions button:hover,.side-actions a:hover{border-color:rgba(124,58,237,.35);background:rgba(124,58,237,.16);color:#fff}
 .back-link{display:inline-flex;margin-bottom:18px;color:var(--text-mute);font-family:var(--font-mono);font-size:13px;text-decoration:none}
 .back-link:hover{color:var(--cyan)}
 .post-tags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -18,11 +26,12 @@
 .status-tag.pin{border-color:rgba(255,0,60,.28);background:rgba(255,0,60,.08);color:var(--magenta);box-shadow:0 0 18px rgba(255,0,60,.08)}
 .status-tag.feature{border-color:rgba(127,255,0,.26);background:rgba(127,255,0,.07);color:var(--green)}
 .status-tag.reward{border-color:rgba(255,215,0,.28);background:rgba(255,215,0,.08);color:#ffd700}
-.post-title{font-family:var(--font-display);font-size:clamp(24px,4vw,36px);line-height:1.25;margin:0;color:var(--text)}
+.post-title{font-family:var(--font-body);font-size:clamp(34px,4vw,58px);line-height:1.12;margin:4px 0 0;color:var(--text);letter-spacing:0;font-weight:950}
 .post-meta{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0 22px;color:var(--text-mute);font-size:13px}
 .post-meta a{color:var(--cyan);text-decoration:none}
 .edit-note{margin:-10px 0 16px;color:var(--text-mute);font-size:12px;line-height:1.7}
-.post-body,.hidden-reveal{word-break:break-word;line-height:1.9;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:24px}
+.post-body,.hidden-reveal{word-break:break-word;line-height:1.92;color:var(--text);background:rgba(3,5,12,.72);border:1px solid var(--border);border-radius:20px;padding:34px;font-size:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+.post-body h1,.post-body h2,.post-body h3{line-height:1.35}.post-body p{margin:0 0 1.1em}.post-body img{max-width:100%;border-radius:16px}
 .hidden-reveal{margin-top:14px;background:rgba(0,240,255,.035);border-style:dashed}
 .attach-box{display:flex;align-items:center;gap:12px;margin:16px 0;padding:14px 16px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px}
 .attach-box a{color:var(--cyan);font-family:var(--font-mono);font-size:12px}
@@ -102,7 +111,8 @@
 .msg.err{display:block;background:rgba(255,0,60,.1);border:1px solid rgba(255,0,60,.22);color:var(--magenta)}
 .spinner{width:34px;height:34px;border:2px solid var(--border);border-top-color:var(--cyan);border-radius:50%;animation:spin .8s linear infinite;margin:80px auto}
 @keyframes spin{to{transform:rotate(360deg)}}
-@media(max-width:720px){.post-shell{padding:18px}.post-page{padding-left:16px;padding-right:16px}.reward-grid,.lottery-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:1180px){.post-layout{grid-template-columns:1fr}.post-side{position:static;grid-template-columns:repeat(2,minmax(0,1fr))}.side-card:first-child{grid-column:1/-1}}
+@media(max-width:720px){.post-shell{padding:18px;border-radius:20px}.post-page{max-width:100%;padding-left:14px;padding-right:14px}.post-title{font-size:32px}.post-body,.hidden-reveal{padding:22px;font-size:15px}.post-side{grid-template-columns:1fr}.reward-grid,.lottery-grid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -348,48 +358,92 @@ function renderPost() {
       </div>
     </div>` : '';
   const lotteryPanel = renderLotteryPanel(p.lottery);
+  const authorInitial = String(p.display_name || p.username || 'N').slice(0, 1).toUpperCase();
+  const typeLabel = p.type === 'blog' ? '博客' : '帖子';
+  const rewardSummary = Number(p.reply_reward_total || 0) > 0
+    ? `${Number(p.reply_reward_remaining || 0)} / ${Number(p.reply_reward_total || 0)} 剩余`
+    : '未开启';
+  const lotterySummary = p.lottery?.enabled ? lotteryStatusLabel(p.lottery.status) : '未开启';
   shell.innerHTML = `
-    <div class="post-status-tags">${statusTags.join('')}</div>
-    <div class="post-tags">${tags || `<span>${p.type === 'blog' ? '博客' : '帖子'}</span>`}</div>
-    <h1 class="post-title">${esc(p.title)}</h1>
-    <div class="post-meta">
-      <a href="profile.html?id=${esc(p.author_id)}">@${esc(p.display_name || p.username || '匿名用户')}</a>
-      <span>${date}</span>
-      ${lastReply ? `<span>最后回复 ${lastReply}</span>` : ''}
-      <span>${p.view_count || 0} 浏览</span>
-      <span>${p.board_id || 'general'}</span>
-      ${p.bounty ? `<span style="color:#ffd700">悬赏 ${p.bounty} 论坛币</span>` : ''}
-      ${canEdit ? `<a href="editor.html?edit=${esc(p.id)}">编辑</a>` : ''}
-    </div>
-    ${editNote}
-    ${staffBar}
-    ${rewardPanel}
-    ${lotteryPanel}
-    <div id="postBodyWrap">
-      <div class="post-body nw-rich-content">${window.NodeWeave.renderRichText(p.content)}</div>
-    </div>
-    ${guestLock}
-    ${attachment}
-    ${hidden}
-    <div class="interact-bar">
-      <button class="interact-btn${interactState.liked ? ' active' : ''}" onclick="toggleLike()">👍 <span>${p.like_count || 0}</span></button>
-      <button class="interact-btn${interactState.downvoted ? ' downvoted' : ''}" onclick="toggleDownvote()">👎 <span>${p.downvote_count || 0}</span></button>
-      <button class="interact-btn" onclick="openTip()">打赏 <span>${p.tip_count || 0}</span></button>
-      <button class="interact-btn" onclick="openReport('post','${esc(p.id)}')">举报</button>
-      <span class="rate-stars">${stars}</span>
-      <span style="color:#ffd700;font-family:var(--font-mono);font-size:12px">${p.rating_avg ? Number(p.rating_avg).toFixed(1) : '-'} (${p.rating_count || 0})</span>
-    </div>
-    <section class="comments-section">
-      <h2>评论 <span id="commentCount">${p.comment_count || 0}</span></h2>
-      <div class="comment-form${currentUser ? '' : ' guest'}">
-        <textarea id="commentInput" placeholder="${currentUser ? '写下你的评论...' : '游客可阅读评论，登录后才能回复互动。'}" ${guestCommentAttrs}></textarea>
-        <div class="comment-actions">
-          <span>${currentUser ? '以 ' + (currentUser.display_name || currentUser.username) + ' 身份评论' : '登录后可评论、点赞、打赏'}</span>
-          <button class="btn-primary" type="button" onclick="submitComment()">${commentButtonText}</button>
+    <div class="post-layout">
+      <div class="post-main">
+        <div class="post-status-tags">${statusTags.join('')}</div>
+        <div class="post-tags">${tags || `<span>${typeLabel}</span>`}</div>
+        <h1 class="post-title">${esc(p.title)}</h1>
+        <div class="post-meta">
+          <a href="profile.html?id=${esc(p.author_id)}">@${esc(p.display_name || p.username || '匿名用户')}</a>
+          <span>${date}</span>
+          ${lastReply ? `<span>最后回复 ${lastReply}</span>` : ''}
+          <span>${p.view_count || 0} 浏览</span>
+          <span>${p.board_id || 'general'}</span>
+          ${p.bounty ? `<span style="color:#ffd700">悬赏 ${p.bounty} 论坛币</span>` : ''}
+          ${canEdit ? `<a href="editor.html?edit=${esc(p.id)}">编辑</a>` : ''}
         </div>
+        ${editNote}
+        ${staffBar}
+        ${rewardPanel}
+        ${lotteryPanel}
+        <div id="postBodyWrap">
+          <div class="post-body nw-rich-content">${window.NodeWeave.renderRichText(p.content)}</div>
+        </div>
+        ${guestLock}
+        ${attachment}
+        ${hidden}
+        <div class="interact-bar">
+          <button class="interact-btn${interactState.liked ? ' active' : ''}" onclick="toggleLike()">👍 <span>${p.like_count || 0}</span></button>
+          <button class="interact-btn${interactState.downvoted ? ' downvoted' : ''}" onclick="toggleDownvote()">👎 <span>${p.downvote_count || 0}</span></button>
+          <button class="interact-btn" onclick="openTip()">打赏 <span>${p.tip_count || 0}</span></button>
+          <button class="interact-btn" onclick="openReport('post','${esc(p.id)}')">举报</button>
+          <span class="rate-stars">${stars}</span>
+          <span style="color:#ffd700;font-family:var(--font-mono);font-size:12px">${p.rating_avg ? Number(p.rating_avg).toFixed(1) : '-'} (${p.rating_count || 0})</span>
+        </div>
+        <section class="comments-section">
+          <h2>评论 <span id="commentCount">${p.comment_count || 0}</span></h2>
+          <div class="comment-form${currentUser ? '' : ' guest'}">
+            <textarea id="commentInput" placeholder="${currentUser ? '写下你的评论...' : '游客可阅读评论，登录后才能回复互动。'}" ${guestCommentAttrs}></textarea>
+            <div class="comment-actions">
+              <span>${currentUser ? '以 ' + (currentUser.display_name || currentUser.username) + ' 身份评论' : '登录后可评论、点赞、打赏'}</span>
+              <button class="btn-primary" type="button" onclick="submitComment()">${commentButtonText}</button>
+            </div>
+          </div>
+          <div id="commentsList"><div class="spinner" style="margin:28px auto"></div></div>
+        </section>
       </div>
-      <div id="commentsList"><div class="spinner" style="margin:28px auto"></div></div>
-    </section>`;
+      <aside class="post-side">
+        <div class="side-card">
+          <h3>作者</h3>
+          <a class="author-box" href="profile.html?id=${esc(p.author_id)}" style="text-decoration:none">
+            <div class="author-avatar">${esc(authorInitial)}</div>
+            <div><div class="author-name">${esc(p.display_name || p.username || '匿名用户')}</div><div class="author-meta">@${esc(p.username || 'guest')}</div></div>
+          </a>
+        </div>
+        <div class="side-card">
+          <h3>数据</h3>
+          <div class="side-stats">
+            <div class="side-stat"><span>浏览</span><strong>${Number(p.view_count || 0)}</strong></div>
+            <div class="side-stat"><span>评论</span><strong>${Number(p.comment_count || 0)}</strong></div>
+            <div class="side-stat"><span>赞</span><strong>${Number(p.like_count || 0)}</strong></div>
+            <div class="side-stat"><span>热度</span><strong>${heat}</strong></div>
+          </div>
+        </div>
+        <div class="side-card">
+          <h3>信息</h3>
+          <div class="side-stats">
+            <div class="side-stat"><span>类型</span><strong>${esc(typeLabel)}</strong></div>
+            <div class="side-stat"><span>板块</span><strong>${esc(p.board_id || 'general')}</strong></div>
+            <div class="side-stat"><span>红包</span><strong style="font-size:13px">${esc(rewardSummary)}</strong></div>
+            <div class="side-stat"><span>抽奖</span><strong style="font-size:13px">${esc(lotterySummary)}</strong></div>
+          </div>
+        </div>
+        <div class="side-card side-actions">
+          <a href="board.html?board=${encodeURIComponent(p.board_id || 'general')}">进入板块</a>
+          <button type="button" onclick="openTip()">打赏作者</button>
+          <button type="button" onclick="openReport('post','${esc(p.id)}')">举报内容</button>
+          ${canEdit ? `<a href="editor.html?edit=${esc(p.id)}">编辑内容</a>` : ''}
+        </div>
+      </aside>
+    </div>
+    `;
   const bodyWrap = document.getElementById('postBodyWrap');
   if (bodyWrap) window.NodeWeave.renderLinkPreviews(bodyWrap, p.content);
 }
