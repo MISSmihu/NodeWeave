@@ -1,6 +1,6 @@
 /* ===== NodeWeave // shared frontend shell ===== */
 (function () {
-  const PUBLIC_ORIGIN = 'https://nodeweave.wiltonmaggiojb.workers.dev';
+  const PUBLIC_ORIGIN = 'https://nodeweave.xyz';
   const state = { user: null, userLoaded: false };
   document.documentElement.removeAttribute('data-theme');
 

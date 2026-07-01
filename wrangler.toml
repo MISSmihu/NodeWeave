@@ -11,7 +11,7 @@ database_id = "9c7b4a51-db3e-45f3-b2fd-8b58be0dc236"
 [vars]
 ENV = "production"
 TURNSTILE_SITE_KEY = ""
-SITE_URL = "https://nodeweave.wiltonmaggiojb.workers.dev"
+SITE_URL = "https://nodeweave.xyz"
 
 [assets]
 directory = "./public/"

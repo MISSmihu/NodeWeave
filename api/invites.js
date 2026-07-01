@@ -15,7 +15,7 @@ async function requireLogin(c, next) {
 }
 
 function publicSiteUrl(env) {
-  return (env.SITE_URL || 'https://nodeweave.wiltonmaggiojb.workers.dev').replace(/\/+$/, '');
+  return (env.SITE_URL || 'https://nodeweave.xyz').replace(/\/+$/, '');
 }
 
 function buildInviteUrl(env, code) {
