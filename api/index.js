@@ -926,6 +926,7 @@ app.get('/robots.txt', (c) => {
     'Disallow: /editor.html',
     `Sitemap: ${base}/sitemap.xml`,
     `Sitemap: ${base}/google-sitemap.xml`,
+    `Sitemap: ${base}/sitemap.txt`,
     '',
   ].join('\n'), {
     headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=3600' },
@@ -946,6 +947,14 @@ app.get('/sitemap.xml', async (c) => {
 
 app.get('/sitemap-dynamic.xml', renderSitemap);
 
+app.get('/sitemap.txt', async (c) => {
+  const response = await fetchAsset(c, '/sitemap.txt');
+  const headers = new Headers(response.headers);
+  headers.set('content-type', 'text/plain; charset=utf-8');
+  headers.set('cache-control', 'public, max-age=300, s-maxage=300');
+  headers.delete('content-encoding');
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+});
 app.get('/google-sitemap.xml', async (c) => {
   const response = await fetchAsset(c, '/google-sitemap.xml');
   const headers = new Headers(response.headers);
