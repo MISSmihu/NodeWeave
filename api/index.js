@@ -925,15 +925,35 @@ app.get('/robots.txt', (c) => {
     'Disallow: /register.html',
     'Disallow: /editor.html',
     `Sitemap: ${base}/sitemap.xml`,
+    `Sitemap: ${base}/google-sitemap.xml`,
     '',
   ].join('\n'), {
     headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=3600' },
   });
 });
 
-app.get('/sitemap.xml', renderSitemap);
+app.get('/sitemap.xml', async (c) => {
+  const response = await fetchAsset(c, '/sitemap.xml');
+  if (response.ok) {
+    const headers = new Headers(response.headers);
+    headers.set('content-type', 'application/xml; charset=utf-8');
+    headers.set('cache-control', 'public, max-age=300, s-maxage=300');
+    headers.delete('content-encoding');
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+  }
+  return renderSitemap(c);
+});
 
 app.get('/sitemap-dynamic.xml', renderSitemap);
+
+app.get('/google-sitemap.xml', async (c) => {
+  const response = await fetchAsset(c, '/google-sitemap.xml');
+  const headers = new Headers(response.headers);
+  headers.set('content-type', 'application/xml; charset=utf-8');
+  headers.set('cache-control', 'public, max-age=300, s-maxage=300');
+  headers.delete('content-encoding');
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+});
 
 app.get('/post', renderPostSeoHtml);
 
