@@ -445,6 +445,8 @@ async function runMigrations(db) {
     `ALTER TABLE moderation_queue ADD COLUMN request_action TEXT DEFAULT ''`,
     `ALTER TABLE moderation_queue ADD COLUMN reviewed_by TEXT DEFAULT ''`,
     `ALTER TABLE moderation_queue ADD COLUMN result TEXT DEFAULT ''`,
+    `ALTER TABLE ai_review_config ADD COLUMN base_url TEXT DEFAULT ''`,
+    `ALTER TABLE ai_review_config ADD COLUMN api_key TEXT DEFAULT ''`,
     `ALTER TABLE reports ADD COLUMN target_user_id TEXT DEFAULT ''`,
     `ALTER TABLE reports ADD COLUMN ref_post_id TEXT DEFAULT ''`,
     `ALTER TABLE reports ADD COLUMN reviewer_id TEXT DEFAULT ''`,
@@ -508,7 +510,7 @@ async function runMigrations(db) {
   await db.prepare(`CREATE INDEX IF NOT EXISTS idx_user_invites_inviter ON user_invite_codes(inviter_id, created_at)`).run();
   await db.prepare(`CREATE INDEX IF NOT EXISTS idx_user_invites_used_by ON user_invite_codes(used_by)`).run();
   await db.prepare(`CREATE INDEX IF NOT EXISTS idx_user_invites_status ON user_invite_codes(status, created_at)`).run();
-  await db.prepare(`CREATE TABLE IF NOT EXISTS ai_review_config (id INTEGER PRIMARY KEY DEFAULT 1 CHECK(id=1), enabled INTEGER DEFAULT 0, provider TEXT DEFAULT 'glm', model TEXT DEFAULT 'glm-4-flash', threshold INTEGER DEFAULT 60, auto_block INTEGER DEFAULT 80, updated_at INTEGER, updated_by TEXT)`).run();
+  await db.prepare(`CREATE TABLE IF NOT EXISTS ai_review_config (id INTEGER PRIMARY KEY DEFAULT 1 CHECK(id=1), enabled INTEGER DEFAULT 0, provider TEXT DEFAULT 'relay', model TEXT DEFAULT 'deepseek-chat', threshold INTEGER DEFAULT 60, auto_block INTEGER DEFAULT 80, base_url TEXT DEFAULT '', api_key TEXT DEFAULT '', updated_at INTEGER, updated_by TEXT)`).run();
   await db.prepare(`CREATE TABLE IF NOT EXISTS config_audit_log (id TEXT PRIMARY KEY, config_key TEXT NOT NULL, old_value TEXT, new_value TEXT, changed_by TEXT NOT NULL, changed_at INTEGER NOT NULL, ip TEXT)`).run();
   const now = Date.now();
   const siteConfigDefaults = [

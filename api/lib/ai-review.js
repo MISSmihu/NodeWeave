@@ -1,5 +1,6 @@
 // api/lib/ai-review.js - AI 审核适配层（多供应商）
 const PROVIDERS = {
+  relay:     { name: '公益中转站(OpenAI兼容)', endpoint: '', keyEnv: 'AI_RELAY_API_KEY', baseUrlEnv: 'AI_RELAY_BASE_URL' },
   glm:       { name: '智谱 GLM',     endpoint: 'https://open.bigmodel.cn/api/paas/v4/chat/completions', keyEnv: 'GLM_API_KEY' },
   tongyi:    { name: '通义千问',      endpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', keyEnv: 'DASHSCOPE_API_KEY' },
   deepseek:  { name: 'DeepSeek',     endpoint: 'https://api.deepseek.com/chat/completions', keyEnv: 'DEEPSEEK_API_KEY' },
@@ -9,7 +10,21 @@ const PROVIDERS = {
 
 function providerApiKey(env, provider) {
   const providerCfg = PROVIDERS[provider];
-  return (providerCfg?.keyEnv && env[providerCfg.keyEnv]) || env.AI_REVIEW_API_KEY || '';
+  return String((providerCfg?.keyEnv && env[providerCfg.keyEnv]) || env.AI_REVIEW_API_KEY || '').trim();
+}
+
+function normalizeChatEndpoint(value) {
+  const base = String(value || '').trim().replace(/\/+$/g, '');
+  if (!base) return '';
+  if (/\/chat\/completions$/i.test(base)) return base;
+  return base + '/chat/completions';
+}
+
+function providerEndpoint(env, provider, cfg) {
+  const providerCfg = PROVIDERS[provider];
+  const baseUrl = String(cfg?.base_url || (providerCfg?.baseUrlEnv && env[providerCfg.baseUrlEnv]) || '').trim();
+  if (baseUrl) return normalizeChatEndpoint(baseUrl);
+  return providerCfg?.endpoint || '';
 }
 
 function buildReviewPrompt(text) {
@@ -31,12 +46,14 @@ async function reviewContent(text, env) {
   } catch(e) { /* 表不存在 */ }
   if (!cfg || !cfg.enabled) return { verdict: 'skip', score: 0, reason: 'AI审核未启用' };
 
-  const provider = cfg.provider || 'glm';
-  const model = cfg.model || 'glm-4-flash';
+  const provider = cfg.provider || 'relay';
+  const model = cfg.model || 'deepseek-chat';
   const providerCfg = PROVIDERS[provider];
   if (!providerCfg) return { verdict: 'skip', score: 0, reason: '未知供应商' };
-  const apiKey = providerApiKey(env, provider);
-  if (!apiKey) return { verdict: 'skip', score: 0, reason: `${providerCfg.name} 密钥未配置：${providerCfg.keyEnv || 'AI_REVIEW_API_KEY'}` };
+  const apiKey = String(cfg.api_key || providerApiKey(env, provider)).trim();
+  if (!apiKey) return { verdict: 'skip', score: 0, reason: providerCfg.name + ' 密钥未配置：后台 API Key 或 ' + (providerCfg.keyEnv || 'AI_REVIEW_API_KEY') };
+  const endpoint = providerEndpoint(env, provider, cfg);
+  if (!endpoint) return { verdict: 'skip', score: 0, reason: '中转站 Base URL 未配置' };
 
   const start = Date.now();
   try {
@@ -44,7 +61,7 @@ async function reviewContent(text, env) {
     if (provider === 'claude') {
       result = await callClaude(providerCfg, model, text, apiKey);
     } else {
-      result = await callOpenAICompat(providerCfg, model, text, apiKey);
+      result = await callOpenAICompat(endpoint, model, text, apiKey);
     }
     const parsed = parseVerdict(result, cfg);
     return { ...parsed, provider, model, latency_ms: Date.now() - start };
@@ -53,8 +70,8 @@ async function reviewContent(text, env) {
   }
 }
 
-async function callOpenAICompat(provider, model, text, apiKey) {
-  const resp = await fetch(provider.endpoint, {
+async function callOpenAICompat(endpoint, model, text, apiKey) {
+  const resp = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ model, messages: [{ role: 'user', content: buildReviewPrompt(text) }], temperature: 0.1, max_tokens: 200 }),

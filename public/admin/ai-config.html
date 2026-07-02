@@ -75,18 +75,29 @@
     <div class="page-section">
       <h3>模型与阈值</h3>
       <div class="form-group">
-        <label>AI 供应商</label>
+        <label>AI 接口类型</label>
         <select id="aiProvider">
-          <option value="glm">智谱 GLM（国产，推荐）</option>
-          <option value="tongyi">通义千问（国产）</option>
-          <option value="deepseek">DeepSeek（国产）</option>
-          <option value="openai">OpenAI（海外）</option>
-          <option value="claude">Claude（海外）</option>
+          <option value="relay">公益中转站 / OpenAI兼容</option>
+          <option value="deepseek">DeepSeek 官方</option>
+          <option value="glm">智谱 GLM 官方</option>
+          <option value="tongyi">通义千问官方</option>
+          <option value="openai">OpenAI 官方</option>
+          <option value="claude">Claude 官方</option>
         </select>
       </div>
       <div class="form-group">
+        <label>中转站 Base URL</label>
+        <input type="text" id="aiBaseUrl" placeholder="https://你的中转站域名/v1">
+      </div>
+      <div class="form-group">
+        <label>API KEY（留空表示不修改已保存的 Key）</label>
+        <input type="password" id="aiApiKey" placeholder="粘贴公益中转站 API Key">
+        <label style="display:flex;align-items:center;gap:8px;margin-top:8px;text-transform:none;font-family:var(--font-body);font-size:12px;color:var(--text-mute)"><input type="checkbox" id="clearApiKey" style="width:auto">清空已保存 Key</label>
+        <div id="apiKeyState" style="font-size:12px;color:var(--text-mute);margin-top:6px">当前 Key：未配置</div>
+      </div>
+      <div class="form-group">
         <label>模型名称</label>
-        <input type="text" id="aiModel" placeholder="glm-4-flash">
+        <input type="text" id="aiModel" placeholder="deepseek-chat">
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -99,14 +110,14 @@
         </div>
       </div>
       <p style="font-size:12px;color:var(--text-mute);margin-top:8px">
-        ⚠️ 使用海外供应商（OpenAI/Claude）需注意数据出境合规。推荐优先使用国产模型。
+        推荐使用公益中转站 / OpenAI兼容接口。Base URL 一般形如 https://域名/v1，系统会自动补 /chat/completions。
       </p>
       <button class="btn-primary" onclick="saveConfig()" style="margin-top:16px">保存配置</button>
       <div class="page-section" style="margin:18px 0 0;padding:18px">
         <h3>API KEY / Worker Secret</h3>
-        <p style="font-size:12px;color:var(--text-mute);line-height:1.8">密钥不存数据库，也不会回传到前端。请在 Cloudflare Workers Secret 里配置对应供应商密钥，后台这里只显示是否已配置。</p>
+        <p style="font-size:12px;color:var(--text-mute);line-height:1.8">可以直接在本页保存公益中转站 Key；保存后只显示掩码，不回显明文。也支持 Cloudflare Worker Secret 作为兜底。</p>
         <div class="secret-grid" id="secretList"><div class="secret-card">正在读取密钥状态...</div></div>
-        <div class="cmd-box">示例：npx wrangler secret put DEEPSEEK_API_KEY<br>通用兜底：npx wrangler secret put AI_REVIEW_API_KEY</div>
+        <div class="cmd-box">中转站示例 Base URL：https://api.example.com/v1<br>如果使用 Worker Secret，可配置 AI_RELAY_API_KEY / AI_RELAY_BASE_URL</div>
       </div>
       <div class="msg" id="saveMsg"></div>
     </div>
@@ -133,8 +144,10 @@ async function loadConfig() {
     if (json.code !== 0) return;
     const c = json.data;
     document.getElementById('aiEnabled').checked = c.enabled === 1;
-    document.getElementById('aiProvider').value = c.provider || 'glm';
-    document.getElementById('aiModel').value = c.model || 'glm-4-flash';
+    document.getElementById('aiProvider').value = c.provider || 'relay';
+    document.getElementById('aiBaseUrl').value = c.base_url || '';
+    document.getElementById('aiModel').value = c.model || 'deepseek-chat';
+    document.getElementById('apiKeyState').textContent = '当前 Key：' + (c.api_key_configured ? (c.api_key_masked || '已配置') : '未配置');
     document.getElementById('aiThreshold').value = c.threshold || 60;
     document.getElementById('aiAutoBlock').value = c.auto_block || 80;
     renderSecrets(c.secrets);
@@ -148,7 +161,10 @@ async function saveConfig() {
       body: JSON.stringify({
         enabled: document.getElementById('aiEnabled').checked ? 1 : 0,
         provider: document.getElementById('aiProvider').value,
+        base_url: document.getElementById('aiBaseUrl').value.trim(),
         model: document.getElementById('aiModel').value.trim(),
+        api_key: document.getElementById('aiApiKey').value.trim(),
+        clear_api_key: document.getElementById('clearApiKey').checked,
         threshold: +document.getElementById('aiThreshold').value,
         auto_block: +document.getElementById('aiAutoBlock').value,
       }),
@@ -156,7 +172,7 @@ async function saveConfig() {
     const json = await res.json();
     const msg = document.getElementById('saveMsg');
     if (json.code !== 0) { msg.textContent = json.msg; msg.className = 'msg show msg-err'; }
-    else { msg.textContent = '配置已保存'; msg.className = 'msg show msg-ok'; }
+    else { msg.textContent = '配置已保存'; msg.className = 'msg show msg-ok'; document.getElementById('aiApiKey').value = ''; document.getElementById('clearApiKey').checked = false; if (json.data?.config) { renderSecrets(json.data.config.secrets); document.getElementById('apiKeyState').textContent = '当前 Key：' + (json.data.config.api_key_configured ? (json.data.config.api_key_masked || '已配置') : '未配置'); } }
     setTimeout(() => msg.classList.remove('show'), 2000);
   } catch(e) {}
 }
