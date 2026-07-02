@@ -1,4 +1,4 @@
-﻿// api/index.js - Worker 入口，挂载所有路由
+// api/index.js - Worker 入口，挂载所有路由
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
@@ -715,6 +715,9 @@ async function renderSitemap(c) {
     { path: 'shop.html', priority: '0.5', changefreq: 'weekly' },
     { path: 'achievements.html', priority: '0.5', changefreq: 'weekly' },
     { path: 'levels.html', priority: '0.5', changefreq: 'weekly' },
+    { path: 'legal/terms.html', priority: '0.4', changefreq: 'monthly' },
+    { path: 'legal/privacy.html', priority: '0.4', changefreq: 'monthly' },
+    { path: 'legal/rules.html', priority: '0.4', changefreq: 'monthly' },
   ];
   let posts = [];
   try {
@@ -932,6 +935,14 @@ app.get('/post', renderPostSeoHtml);
 
 app.get('/post.html', renderPostSeoHtml);
 
+app.get('/index.html', (c) => c.redirect('/', 301));
+
+app.get('/board.html', async (c) => {
+  const url = new URL(c.req.url);
+  const board = String(url.searchParams.get('board') || '').trim();
+  if (board) return c.redirect(`/board/${encodeURIComponent(board)}`, 301);
+  return fetchAsset(c, '/board.html');
+});
 app.get('*', async (c) => {
   const url = new URL(c.req.url);
   if (url.pathname.startsWith('/api/')) {
