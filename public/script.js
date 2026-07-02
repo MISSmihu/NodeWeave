@@ -95,9 +95,18 @@
     location.href = `${loginUrl}?redirect=${encodeURIComponent(target)}`;
   }
 
+  function isSearchCrawler() {
+    return /Googlebot|Bingbot|Slurp|DuckDuckBot|Baiduspider|YandexBot|Sogou|360Spider|Bytespider|PetalBot/i.test(navigator.userAgent || '');
+  }
+
   async function currentUser(force) {
     if (state.userLoaded && !force) return state.user;
     state.userLoaded = true;
+    if (isSearchCrawler()) {
+      state.user = null;
+      renderAuth();
+      return state.user;
+    }
     try {
       const json = await apiJson('/api/account/me');
       state.user = json.code === 0 ? json.data : null;

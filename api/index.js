@@ -914,6 +914,10 @@ app.get('/robots.txt', (c) => {
   return new Response([
     'User-agent: *',
     'Allow: /',
+    'Allow: /api/boards',
+    'Allow: /api/posts',
+    'Allow: /api/site-config/public',
+    'Allow: /api/announcements',
     'Disallow: /admin/',
     'Disallow: /account/',
     'Disallow: /api/',
