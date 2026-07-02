@@ -39,6 +39,14 @@
 .msg.show{display:block}
 .msg-ok{background:rgba(127,255,0,.1);color:var(--green);border:1px solid rgba(127,255,0,.2)}
 .msg-err{background:rgba(255,0,60,.1);color:var(--magenta);border:1px solid rgba(255,0,60,.2)}
+.secret-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-top:12px}
+.secret-card{border:1px solid var(--border);background:rgba(255,255,255,.035);border-radius:8px;padding:12px}
+.secret-card b{display:block;color:var(--text);font-size:13px;margin-bottom:5px}
+.secret-card code{display:block;color:var(--cyan);font-family:var(--font-mono);font-size:11px;word-break:break-all}
+.secret-state{display:inline-flex;margin-top:8px;padding:3px 8px;border-radius:999px;font-size:11px;font-family:var(--font-mono);border:1px solid var(--border);color:var(--text-mute)}
+.secret-state.ok{color:var(--green);border-color:rgba(127,255,0,.25);background:rgba(127,255,0,.08)}
+.secret-state.miss{color:var(--magenta);border-color:rgba(255,0,60,.25);background:rgba(255,0,60,.08)}
+.cmd-box{margin-top:12px;padding:12px;border-radius:8px;background:rgba(0,0,0,.28);border:1px solid var(--border);font-family:var(--font-mono);font-size:12px;color:var(--text-dim);line-height:1.7}
 </style>
 </head>
 <body>
@@ -94,12 +102,30 @@
         ⚠️ 使用海外供应商（OpenAI/Claude）需注意数据出境合规。推荐优先使用国产模型。
       </p>
       <button class="btn-primary" onclick="saveConfig()" style="margin-top:16px">保存配置</button>
+      <div class="page-section" style="margin:18px 0 0;padding:18px">
+        <h3>API KEY / Worker Secret</h3>
+        <p style="font-size:12px;color:var(--text-mute);line-height:1.8">密钥不存数据库，也不会回传到前端。请在 Cloudflare Workers Secret 里配置对应供应商密钥，后台这里只显示是否已配置。</p>
+        <div class="secret-grid" id="secretList"><div class="secret-card">正在读取密钥状态...</div></div>
+        <div class="cmd-box">示例：npx wrangler secret put DEEPSEEK_API_KEY<br>通用兜底：npx wrangler secret put AI_REVIEW_API_KEY</div>
+      </div>
       <div class="msg" id="saveMsg"></div>
     </div>
   </main>
 </div>
 <script src="../script.js"></script>
 <script>
+function renderSecrets(secrets) {
+  const box = document.getElementById('secretList');
+  if (!box) return;
+  const providers = secrets && secrets.providers ? secrets.providers : [];
+  if (!providers.length) { box.innerHTML = '<div class="secret-card">暂无密钥状态</div>'; return; }
+  box.innerHTML = providers.map(item => {
+    const stateClass = item.configured ? 'ok' : 'miss';
+    const stateText = item.configured ? '已配置' : '未配置';
+    return '<div class="secret-card"><b>' + item.name + '</b><code>' + item.key_env + '</code><span class="secret-state ' + stateClass + '">' + stateText + '</span></div>';
+  }).join('');
+}
+
 async function loadConfig() {
   try {
     const res = await fetch('/api/admin/ai-config');
@@ -111,6 +137,7 @@ async function loadConfig() {
     document.getElementById('aiModel').value = c.model || 'glm-4-flash';
     document.getElementById('aiThreshold').value = c.threshold || 60;
     document.getElementById('aiAutoBlock').value = c.auto_block || 80;
+    renderSecrets(c.secrets);
   } catch(e) {}
 }
 

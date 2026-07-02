@@ -1,9 +1,24 @@
-﻿// api/admin/ai-config.js - AI 审核配置管理
+// api/admin/ai-config.js - AI 审核配置管理
 import { Hono } from 'hono';
 import { authUser } from '../lib/jwt.js';
 import { ok, err, CODE } from '../lib/response.js';
+import { PROVIDERS } from '../lib/ai-review.js';
 
 const aiConfig = new Hono();
+
+function secretStatus(env) {
+  const entries = Object.entries(PROVIDERS).map(([id, provider]) => ({
+    id,
+    name: provider.name,
+    key_env: provider.keyEnv || 'AI_REVIEW_API_KEY',
+    configured: Boolean((provider.keyEnv && env[provider.keyEnv]) || env.AI_REVIEW_API_KEY),
+  }));
+  return {
+    fallback_key_env: 'AI_REVIEW_API_KEY',
+    fallback_configured: Boolean(env.AI_REVIEW_API_KEY),
+    providers: entries,
+  };
+}
 
 async function requireAdmin(c, next) {
   const user = await authUser(c, c.env);
@@ -19,9 +34,9 @@ async function requireAdmin(c, next) {
 aiConfig.get('/', requireAdmin, async (c) => {
   try {
     const cfg = await c.env.DB.prepare('SELECT * FROM ai_review_config WHERE id=1').first();
-    return ok(c, cfg || { enabled: 0, provider: 'glm', model: 'glm-4-flash', threshold: 60, auto_block: 80 });
+    return ok(c, { ...(cfg || { enabled: 0, provider: 'glm', model: 'glm-4-flash', threshold: 60, auto_block: 80 }), secrets: secretStatus(c.env) });
   } catch(e) {
-    return ok(c, { enabled: 0, provider: 'glm', model: 'glm-4-flash', threshold: 60, auto_block: 80 });
+    return ok(c, { enabled: 0, provider: 'glm', model: 'glm-4-flash', threshold: 60, auto_block: 80, secrets: secretStatus(c.env) });
   }
 });
 

@@ -1,11 +1,16 @@
-﻿// api/lib/ai-review.js - AI 审核适配层（多供应商）
+// api/lib/ai-review.js - AI 审核适配层（多供应商）
 const PROVIDERS = {
-  glm:       { name: '智谱 GLM',     endpoint: 'https://open.bigmodel.cn/api/paas/v4/chat/completions' },
-  tongyi:    { name: '通义千问',      endpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions' },
-  deepseek:  { name: 'DeepSeek',     endpoint: 'https://api.deepseek.com/chat/completions' },
-  openai:    { name: 'OpenAI(海外)',  endpoint: 'https://api.openai.com/v1/chat/completions' },
-  claude:    { name: 'Claude(海外)',  endpoint: 'https://api.anthropic.com/v1/messages' },
+  glm:       { name: '智谱 GLM',     endpoint: 'https://open.bigmodel.cn/api/paas/v4/chat/completions', keyEnv: 'GLM_API_KEY' },
+  tongyi:    { name: '通义千问',      endpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', keyEnv: 'DASHSCOPE_API_KEY' },
+  deepseek:  { name: 'DeepSeek',     endpoint: 'https://api.deepseek.com/chat/completions', keyEnv: 'DEEPSEEK_API_KEY' },
+  openai:    { name: 'OpenAI(海外)',  endpoint: 'https://api.openai.com/v1/chat/completions', keyEnv: 'OPENAI_API_KEY' },
+  claude:    { name: 'Claude(海外)',  endpoint: 'https://api.anthropic.com/v1/messages', keyEnv: 'CLAUDE_API_KEY' },
 };
+
+function providerApiKey(env, provider) {
+  const providerCfg = PROVIDERS[provider];
+  return (providerCfg?.keyEnv && env[providerCfg.keyEnv]) || env.AI_REVIEW_API_KEY || '';
+}
 
 function buildReviewPrompt(text) {
   return `你是内容审核员。判断以下用户内容是否违反中国法律法规。
@@ -28,17 +33,16 @@ async function reviewContent(text, env) {
 
   const provider = cfg.provider || 'glm';
   const model = cfg.model || 'glm-4-flash';
-  const apiKey = env.AI_REVIEW_API_KEY;
-  if (!apiKey && provider !== 'claude') return { verdict: 'skip', score: 0, reason: 'AI审核密钥未配置' };
-
   const providerCfg = PROVIDERS[provider];
   if (!providerCfg) return { verdict: 'skip', score: 0, reason: '未知供应商' };
+  const apiKey = providerApiKey(env, provider);
+  if (!apiKey) return { verdict: 'skip', score: 0, reason: `${providerCfg.name} 密钥未配置：${providerCfg.keyEnv || 'AI_REVIEW_API_KEY'}` };
 
   const start = Date.now();
   try {
     let result;
     if (provider === 'claude') {
-      result = await callClaude(providerCfg, model, text, env);
+      result = await callClaude(providerCfg, model, text, apiKey);
     } else {
       result = await callOpenAICompat(providerCfg, model, text, apiKey);
     }
@@ -59,9 +63,7 @@ async function callOpenAICompat(provider, model, text, apiKey) {
   return json.choices?.[0]?.message?.content || '';
 }
 
-async function callClaude(provider, model, text, env) {
-  const apiKey = env.CLAUDE_API_KEY;
-  if (!apiKey) throw new Error('Claude API key not configured');
+async function callClaude(provider, model, text, apiKey) {
   const resp = await fetch(provider.endpoint, {
     method: 'POST',
     headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
