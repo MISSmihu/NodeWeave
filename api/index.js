@@ -709,7 +709,11 @@ async function renderSitemap(c) {
     { path: '', priority: '1.0', changefreq: 'daily' },
     { path: 'boards.html', priority: '0.8', changefreq: 'daily' },
     { path: 'blog.html', priority: '0.8', changefreq: 'daily' },
+    { path: 'search.html', priority: '0.7', changefreq: 'daily' },
     { path: 'announcements.html', priority: '0.6', changefreq: 'weekly' },
+    { path: 'signin.html', priority: '0.5', changefreq: 'daily' },
+    { path: 'shop.html', priority: '0.5', changefreq: 'weekly' },
+    { path: 'achievements.html', priority: '0.5', changefreq: 'weekly' },
     { path: 'levels.html', priority: '0.5', changefreq: 'weekly' },
   ];
   let posts = [];
@@ -920,16 +924,7 @@ app.get('/robots.txt', (c) => {
   });
 });
 
-app.get('/sitemap.xml', async (c) => {
-  const response = await fetchAsset(c, '/sitemap.xml');
-  if (response.ok) {
-    const headers = new Headers(response.headers);
-    headers.set('content-type', 'application/xml; charset=utf-8');
-    headers.set('cache-control', 'public, max-age=3600');
-    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
-  }
-  return renderSitemap(c);
-});
+app.get('/sitemap.xml', renderSitemap);
 
 app.get('/sitemap-dynamic.xml', renderSitemap);
 

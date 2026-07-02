@@ -1,9 +1,13 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://nodeweave.xyz/</loc><lastmod>2026-07-01T00:00:00.000Z</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>
   <url><loc>https://nodeweave.xyz/boards.html</loc><lastmod>2026-07-01T00:00:00.000Z</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
   <url><loc>https://nodeweave.xyz/blog.html</loc><lastmod>2026-07-01T00:00:00.000Z</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://nodeweave.xyz/search.html</loc><lastmod>2026-07-01T00:00:00.000Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
   <url><loc>https://nodeweave.xyz/announcements.html</loc><lastmod>2026-07-01T00:00:00.000Z</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://nodeweave.xyz/signin.html</loc><lastmod>2026-07-01T00:00:00.000Z</lastmod><changefreq>daily</changefreq><priority>0.5</priority></url>
+  <url><loc>https://nodeweave.xyz/shop.html</loc><lastmod>2026-07-01T00:00:00.000Z</lastmod><changefreq>weekly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://nodeweave.xyz/achievements.html</loc><lastmod>2026-07-01T00:00:00.000Z</lastmod><changefreq>weekly</changefreq><priority>0.5</priority></url>
   <url><loc>https://nodeweave.xyz/levels.html</loc><lastmod>2026-07-01T00:00:00.000Z</lastmod><changefreq>weekly</changefreq><priority>0.5</priority></url>
   <url><loc>https://nodeweave.xyz/board/general</loc><lastmod>2026-07-01T00:00:00.000Z</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>
   <url><loc>https://nodeweave.xyz/board/qa</loc><lastmod>2026-07-01T00:00:00.000Z</lastmod><changefreq>daily</changefreq><priority>0.6</priority></url>
