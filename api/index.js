@@ -703,7 +703,7 @@ async function fetchAsset(c, pathname) {
   return c.env.ASSETS.fetch(new Request(url, c.req.raw));
 }
 
-async function renderSitemap(c) {
+async function collectSitemapEntries(c) {
   const base = siteBaseUrl(c);
   const staticPages = [
     { path: '', priority: '1.0', changefreq: 'daily' },
@@ -730,7 +730,7 @@ async function renderSitemap(c) {
     ).all();
     posts = rows.results || [];
   } catch (error) {}
-  const urls = [
+  return [
     ...staticPages.map(page => ({
       loc: page.path ? absoluteUrl(base, page.path) : `${base}/`,
       lastmod: isoDate(STATIC_LASTMOD),
@@ -750,13 +750,22 @@ async function renderSitemap(c) {
       priority: post.type === 'blog' ? '0.8' : '0.7',
     })),
   ];
+}
+
+async function renderSitemap(c) {
+  const urls = await collectSitemapEntries(c);
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
     urls.map(item => `  <url><loc>${escapeXml(item.loc)}</loc><lastmod>${escapeXml(item.lastmod)}</lastmod><changefreq>${escapeXml(item.changefreq)}</changefreq><priority>${escapeXml(item.priority)}</priority></url>`).join('\n') +
     `\n</urlset>`;
-  return new Response(xml, { headers: { 'content-type': 'application/xml; charset=utf-8', 'cache-control': 'public, max-age=900' } });
+  return new Response(xml, { headers: { 'content-type': 'application/xml; charset=utf-8', 'cache-control': 'public, max-age=300, s-maxage=300' } });
 }
 
+async function renderTextSitemap(c) {
+  const urls = await collectSitemapEntries(c);
+  const text = `${urls.map(item => item.loc).join('\n')}\n`;
+  return new Response(text, { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=300, s-maxage=300' } });
+}
 async function renderPostSeoHtml(c) {
   const url = new URL(c.req.url);
   const postId = url.searchParams.get('id');
@@ -947,22 +956,8 @@ app.get('/sitemap.xml', async (c) => {
 
 app.get('/sitemap-dynamic.xml', renderSitemap);
 
-app.get('/sitemap.txt', async (c) => {
-  const response = await fetchAsset(c, '/sitemap.txt');
-  const headers = new Headers(response.headers);
-  headers.set('content-type', 'text/plain; charset=utf-8');
-  headers.set('cache-control', 'public, max-age=300, s-maxage=300');
-  headers.delete('content-encoding');
-  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
-});
-app.get('/google-sitemap.xml', async (c) => {
-  const response = await fetchAsset(c, '/google-sitemap.xml');
-  const headers = new Headers(response.headers);
-  headers.set('content-type', 'application/xml; charset=utf-8');
-  headers.set('cache-control', 'public, max-age=300, s-maxage=300');
-  headers.delete('content-encoding');
-  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
-});
+app.get('/sitemap.txt', renderTextSitemap);
+app.get('/google-sitemap.xml', renderSitemap);
 
 app.get('/post', renderPostSeoHtml);
 
